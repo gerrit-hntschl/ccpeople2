@@ -1,0 +1,79 @@
+{
+  "name": "CCPeople2",
+  "components": {
+    "peopleservice": {
+      "expose": [
+        {
+          "port": "8000",
+          "component": "peopleservice/app",
+          "target_port": "8000"
+        },
+        {
+          "port": "4334",
+          "component": "peopleservice/datomicdb",
+          "target_port": "4334"
+        },
+        {
+          "port": "5432",
+          "component": "peopleservice/postgres",
+          "target_port": "5432"
+        }
+      ]
+    },
+    "peopleservice/app": {
+      "image": "registry.giantswarm.io/gerrit/peopleapp",
+      "ports": [
+        8000
+      ],
+      "env": {
+          "DATOMIC_CONNECT_URL": "sql://people?jdbc:postgresql://postgres:5432/datomic?user=datomic&password=datomic"
+      },
+      "domains": {
+        "8000/tcp": [
+          "people-codecentric.gigantic.io"
+        ]
+      },
+      "links": [
+        {
+          "component": "peopleservice/datomicdb",
+          "target_port": "4334"
+        },
+        {
+          "component": "peopleservice/postgres",
+          "target_port": "5432"
+        }
+      ]
+    },
+    "peopleservice/datomicdb": {
+      "image": "registry.giantswarm.io/gerrit/datomicdb",
+      "ports": [
+        4334
+      ],
+      "links": [
+        {
+          "component": "peopleservice/postgres",
+          "target_port": "5432"
+        }
+      ],
+      "volumes": [
+        {
+          "path": "/data",
+          "size": "2 GB"
+        }
+      ]
+    },
+    "peopleservice/postgres": {
+      "image": "registry.giantswarm.io/gerrit/postgres",
+      "ports": [ 5432 ],
+      "env": {
+          "POSTGRES_PASSWORD": "mysecretpassword"
+      },
+      "volumes": [
+          {
+              "path": "/var/lib/postgresql/data",
+              "size": "10 GB"
+          }
+      ]
+    }
+  }
+}

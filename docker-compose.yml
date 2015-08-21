@@ -1,0 +1,47 @@
+postgres:
+  build: postgres
+  ports:
+    - "5432:5432"
+  volumes:
+    - "/home/core/data:/var/lib/postgresql/data"
+  environment:
+    - POSTGRES_PASSWORD=mysecretpassword
+datomicdb:
+  build: transactor
+  ports:
+    - "4334:4334"
+  links:
+    - postgres
+    - waiter
+  volumes:
+    - "/home/core/share/transactor/data:/data"
+waiter:
+  image: aanand/wait
+  links:
+    - postgres
+console:
+  build: datomic-console
+  ports:
+    - "9000:9000"
+  links:
+    - waiter
+    - datomicdb
+    - postgres
+devapp:
+  image: clojure:latest
+  ports:
+    - "35000:35000"
+    - "8000:8000"
+  volumes:
+    - "/home/core/share/CCPeople2:/usr/src/app"
+  working_dir: "/usr/src/app"
+  environment:
+    - DATOMIC_USER
+    - DATOMIC_PASSWORD
+    - DATOMIC_CONNECT_URL=sql://people?jdbc:postgresql://postgres:5432/datomic?user=datomic&password=datomic
+  links:
+    - waiter
+    - datomicdb
+    - postgres
+  command: lein repl :headless :port 35000
+
