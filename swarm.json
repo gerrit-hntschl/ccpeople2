@@ -1,5 +1,5 @@
 {
-  "name": "CCPeople2",
+  "name": "ccpeople2",
   "components": {
     "peopleservice": {
       "expose": [

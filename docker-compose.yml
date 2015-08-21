@@ -33,7 +33,7 @@ devapp:
     - "35000:35000"
     - "8000:8000"
   volumes:
-    - "/home/core/share/CCPeople2:/usr/src/app"
+    - "/home/core/share/ccpeople2:/usr/src/app"
   working_dir: "/usr/src/app"
   environment:
     - DATOMIC_USER
