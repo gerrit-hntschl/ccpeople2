@@ -28,13 +28,12 @@ console:
     - datomicdb
     - postgres
 devapp:
-  image: clojure:latest
+  build: app
   ports:
-    - "35000:35000"
+    - "35001:35001"
     - "8000:8000"
   volumes:
-    - "/home/core/share/ccpeople2:/usr/src/app"
-  working_dir: "/usr/src/app"
+    - "/home/core/share/app:/usr/src/app"
   environment:
     - DATOMIC_USER
     - DATOMIC_PASSWORD
@@ -43,5 +42,4 @@ devapp:
     - waiter
     - datomicdb
     - postgres
-  command: lein repl :headless :port 35000
 

@@ -4,7 +4,7 @@ MAINTAINER Christian Romney "cromney@pointslope.com"
 
 ENV DATOMIC_VERSION 0.9.5206
 ENV DATOMIC_HOME /opt/datomic-pro-$DATOMIC_VERSION
-ENV DATOMIC_DATA $DATOMIC_HOME/data
+ENV DATOMIC_DATA /data
 
 # Datomic Pro Starter as easy as 1-2-3
 # 1. Create a .credentials file containing user:pass

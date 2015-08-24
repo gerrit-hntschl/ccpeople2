@@ -3,3 +3,6 @@ app/app.iml
 .credentials
 transactor/config/dev-transactor.properties
 .vagrant/*
+/dev.sh
+/transactor/data/hornet/server.lock
+/app/log/*
