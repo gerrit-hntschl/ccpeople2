@@ -9,3 +9,5 @@ transactor/config/dev-transactor.properties
 /applic/.idea/*
 /applic/applic.iml
 /applic/.lein-env
+/app/applic.iml
+/app/.lein-env

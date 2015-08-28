@@ -1,4 +1,4 @@
-(ns applic.server
+(ns app.server
   (:require [aleph.http :as http]
             [environ.core :refer [env]]
             [hiccup.page :as page]

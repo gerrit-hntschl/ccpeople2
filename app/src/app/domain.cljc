@@ -1,4 +1,4 @@
-(ns applic.domain
+(ns app.domain
   #?(:cljs (:require
              [reagent.core :refer [atom]])))
 

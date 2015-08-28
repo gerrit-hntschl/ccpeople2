@@ -1,4 +1,4 @@
-(defproject applic "0.1.0-SNAPSHOT"
+(defproject app "0.1.0-SNAPSHOT"
   :description "FIXME: write this!"
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
@@ -37,7 +37,7 @@
              :uberjar    {:aot :all
                           :uberjar-name "app.jar"
                           :omit-source true}}
-  :main applic.server
+  :main app.server
 
   :source-paths ["src"]
   :jvm-opts ^:replace ["-Dfile.encoding=UTF-8"]
@@ -47,17 +47,17 @@
     :builds [{:id "dev"
               :source-paths ["src" "dev"]
 
-              :figwheel { :on-jsload "applic.core/on-js-reload" }
+              :figwheel { :on-jsload "app.core/on-js-reload" }
 
-              :compiler {:main applic.core
+              :compiler {:main app.core
                          :asset-path "js/compiled/out"
-                         :output-to "resources/public/js/compiled/applic.js"
+                         :output-to "resources/public/js/compiled/app.js"
                          :output-dir "resources/public/js/compiled/out"
                          :source-map-timestamp true }}
              {:id "min"
               :source-paths ["src"]
-              :compiler {:output-to "resources/public/js/compiled/applic.js"
-                         :main applic.core
+              :compiler {:output-to "resources/public/js/compiled/app.js"
+                         :main app.core
                          :optimizations :advanced
                          :pretty-print false}}]}
   

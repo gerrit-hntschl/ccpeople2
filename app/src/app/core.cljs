@@ -1,7 +1,7 @@
-(ns ^:figwheel-always applic.core
+(ns ^:figwheel-always app.core
   (:require
               [reagent.core :as reagent]
-              [applic.domain :as domain]
+              [app.domain :as domain]
               [bidi.bidi :as bidi]
               [goog.events :as events]
 
