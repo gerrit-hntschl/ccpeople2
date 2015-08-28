@@ -8,3 +8,4 @@ transactor/config/dev-transactor.properties
 /app/log/*
 /applic/.idea/*
 /applic/applic.iml
+/applic/.lein-env
