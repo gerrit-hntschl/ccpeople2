@@ -6,3 +6,5 @@ transactor/config/dev-transactor.properties
 /dev.sh
 /transactor/data/hornet/server.lock
 /app/log/*
+/applic/.idea/*
+/applic/applic.iml
