@@ -1,0 +1,9 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Vagrant REPL" type="ClojureREPL" factoryName="Remote">
+    <setting name="host" value="localhost" />
+    <setting name="port" value="35001" />
+    <setting name="useLein" value="false" />
+    <setting name="leinProjectName" value="app:0.1.0-SNAPSHOT" />
+    <method />
+  </configuration>
+</component>
