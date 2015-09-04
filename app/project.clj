@@ -9,6 +9,7 @@
                  [com.cognitect/transit-cljs "0.8.220"]
                  [com.cognitect/transit-clj "0.8.281"]
                  [environ "1.0.0"]
+                 [ring-middleware-format "0.5.0"]
                  [org.clojure/clojurescript "1.7.48"]
                  [prismatic/schema "0.4.3"]
                  [com.stuartsierra/component "0.2.3"]
@@ -33,7 +34,8 @@
                    :plugins [[lein-cljsbuild "1.0.5"]
                              [lein-figwheel "0.3.5"]
                              [lein-environ "1.0.0"]]
-                   :source-paths ["dev"]}
+                   :source-paths ["dev"]
+                   :jvm-opts ^:replace ["-Dfile.encoding=UTF-8" "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"]}
              :uberjar    {:aot :all
                           :uberjar-name "app.jar"
                           :omit-source true}}
@@ -46,7 +48,6 @@
   :cljsbuild {
     :builds [{:id "dev"
               :source-paths ["src" "dev"]
-
               :figwheel { :on-jsload "app.core/on-js-reload" }
 
               :compiler {:main app.core

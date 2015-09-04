@@ -148,6 +148,7 @@ Vagrant.configure("2") do |config|
       config.vm.network "forwarded_port", guest: 4334, host: 4334, auto_correct: true
       config.vm.network "forwarded_port", guest: 5432, host: 5432, auto_correct: true
       config.vm.network "forwarded_port", guest: 35001, host: 35001, auto_correct: true
+      config.vm.network "forwarded_port", guest: 5005, host: 5005, auto_correct: true
 
 
       # Uncomment below to enable NFS for sharing the host machine into the coreos-vagrant VM.
