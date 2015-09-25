@@ -4,7 +4,7 @@
               [app.domain :as domain]
               [bidi.bidi :as bidi]
               [goog.events :as events]
-
+              [app.gsignin :as gs]
               [goog.history.EventType :as EventType])
   (:import [goog.history Html5History EventType]))
 
@@ -46,8 +46,12 @@
   (let [{page-params :route-params :as route-state} (:page @domain/app-state)]
     ((handlers route-state) page-params)))
 
+(defn page []
+  [:div
+   [gs/sign-in]
+   [dispatcher]])
 
-(reagent/render-component [dispatcher]
+(reagent/render-component [page]
                           (.getElementById js/document "app"))
 
 

@@ -9,8 +9,9 @@
                  [com.cognitect/transit-cljs "0.8.220"]
                  [com.cognitect/transit-clj "0.8.281"]
                  [environ "1.0.0"]
-                 [ring-middleware-format "0.5.0"]
+                 [ring-middleware-format "0.6.0"]
                  [org.clojure/clojurescript "1.7.48"]
+                 [org.clojure/tools.reader "0.9.2"]
                  [prismatic/schema "0.4.3"]
                  [com.stuartsierra/component "0.2.3"]
                  [org.postgresql/postgresql "9.3-1102-jdbc41"]
@@ -25,20 +26,23 @@
                  [ring/ring-devel "1.4.0"]
                  [ring/ring-defaults "0.1.5"]
                  [hiccup "1.0.5"]
-                 [reagent "0.5.0"]]
+                 [reagent "0.5.0"]
+                 [buddy/buddy-auth "0.6.2"]
+                 [sudharsh/clj-oauth2 "0.5.3"]]
 
   
 
-  :profiles {:dev {:dependencies [[alembic "0.3.2"]
-                                  [figwheel-sidecar "0.3.7"]]
-                   :plugins [[lein-cljsbuild "1.0.5"]
-                             [lein-figwheel "0.3.5"]
-                             [lein-environ "1.0.0"]]
-                   :source-paths ["dev"]
-                   :jvm-opts ^:replace ["-Dfile.encoding=UTF-8" "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"]}
-             :uberjar    {:aot :all
-                          :uberjar-name "app.jar"
-                          :omit-source true}}
+  :profiles {:dev     {:dependencies [[alembic "0.3.2"]
+                                      [figwheel-sidecar "0.4.0"]]
+                       :plugins      [[lein-cljsbuild "1.0.5"]
+                                      [lein-figwheel "0.4.0"]
+                                      [lein-environ "1.0.0"]]
+                       :source-paths ["dev"]
+                       :jvm-opts     ^:replace ["-Dfile.encoding=UTF-8" ;"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
+                                                ]}
+             :uberjar {:aot          :all
+                       :uberjar-name "app.jar"
+                       :omit-source  true}}
   :main app.server
 
   :source-paths ["src"]
