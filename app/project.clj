@@ -12,8 +12,10 @@
                  [ring-middleware-format "0.6.0"]
                  [org.clojure/clojurescript "1.7.48"]
                  [org.clojure/tools.reader "0.9.2"]
+                 [cljs-ajax "0.3.14"]
                  [prismatic/schema "0.4.3"]
                  [com.stuartsierra/component "0.2.3"]
+                 [io.rkn/conformity "0.3.5"]
                  [org.postgresql/postgresql "9.3-1102-jdbc41"]
                  [com.datomic/datomic-pro "0.9.5206"
                   :exclusions [org.slf4j/slf4j-nop

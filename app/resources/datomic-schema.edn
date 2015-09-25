@@ -1,0 +1,39 @@
+{:ccpeople2/schema1
+ {:txes [[{:db/id                 #db/id [:db.part/db]
+           :db/ident              :user/id
+           :db/valueType          :db.type/uuid
+           :db/cardinality        :db.cardinality/one
+           :db/unique             :db.unique/value
+           :db/index              true
+           :db.install/_attribute :db.part/db
+           :db/doc                "The global ID of a user."}
+          {:db/id                 #db/id [:db.part/db]
+           :db/ident              :user/first-name
+           :db/valueType          :db.type/string
+           :db/cardinality        :db.cardinality/one
+           :db.install/_attribute :db.part/db
+           :db/doc                "The firstname of a user."}
+          {:db/id                 #db/id [:db.part/db]
+           :db/ident              :user/last-name
+           :db/valueType          :db.type/string
+           :db/cardinality        :db.cardinality/one
+           :db.install/_attribute :db.part/db
+           :db/doc                "The lastname of a user."}
+          {:db/id                 #db/id [:db.part/db]
+           :db/ident              :user/email
+           :db/valueType          :db.type/string
+           :db/cardinality        :db.cardinality/one
+           :db.install/_attribute :db.part/db
+           :db/doc                "The lastname of a user."}
+          {:db/id                 #db/id [:db.part/db]
+           :db/ident              :user/google-id
+           :db/valueType          :db.type/string
+           :db/cardinality        :db.cardinality/one
+           :db/unique             :db.unique/value
+           :db.install/_attribute :db.part/db
+           :db/index              true
+           :db/doc                "The lastname of a user."}
+          ]
+         [{:db/id                 #db/id [:db.part/db]
+           :db/ident              :partition/people
+           :db.install/_partition :db.part/db}]]}}

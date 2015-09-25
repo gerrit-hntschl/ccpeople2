@@ -38,7 +38,7 @@ devapp:
   environment:
     - DATOMIC_USER
     - DATOMIC_PASSWORD
-    - DATOMIC_CONNECT_URL=sql://people?jdbc:postgresql://postgres:5432/datomic?user=datomic&password=datomic
+    - DATOMIC_CONNECT_URL=datomic:sql://people?jdbc:postgresql://postgres:5432/datomic?user=datomic&password=datomic
   links:
     - waiter
     - datomicdb

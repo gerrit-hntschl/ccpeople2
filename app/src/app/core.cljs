@@ -14,22 +14,24 @@
 
 ;; define your app data so that it doesn't get over-written on reload
 
-(defn hello-world [{:keys [username]}]
-  [:h1 (str (:hello/text @domain/app-state) username)])
+(defn profile-page [_]
+  [:div
+   [:h1 (str (:user/first-name (:user @domain/app-state))
+             " "
+             (:user/last-name (:user @domain/app-state)))]
+   [:pre (:user/email (:user @domain/app-state))]])
 
 (defn bye-world [_]
   [:h1 (:bye/text @domain/app-state)])
 
-(def routes ["" {"hello"                :hello
-                 ["hello/" [ #"[A-Za-z]+" :username]] :hello-user
-                 "bye"                  :bye}])
+(def routes ["" {"profile" :profile
+                 "people" :people}])
 
-(defmulti handlers :handler :default :hello)
+(defmulti handlers :handler :default :profile)
 
-(defmethod handlers :bye [] bye-world)
+(defmethod handlers :people [] bye-world)
 
-(defmethod handlers :hello [] hello-world)
-(defmethod handlers :hello-user [] hello-world)
+(defmethod handlers :profile [] profile-page)
 
 (defn update-page-to-token [token]
   (swap! domain/app-state assoc :page (bidi/match-route routes token)))
@@ -41,6 +43,11 @@
                                     (update-page-to-token (.-token e))))))
 
 (update-page-to-token (.getToken history))
+
+(gs/watch-user :auth-watch
+               (fn [user]
+                 (println "useroo:" (pr-str user))
+                 (swap! domain/app-state assoc :user user)))
 
 (defn dispatcher []
   (let [{page-params :route-params :as route-state} (:page @domain/app-state)]
