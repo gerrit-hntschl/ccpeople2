@@ -19,7 +19,22 @@ $vm_gui = false
 $vm_memory = 4096
 $vm_cpus = 1
 $shared_folders = {}
-$forwarded_ports = {}
+$forwarded_ports = {
+# figwheel
+  3449 => 3449, 
+# datomic
+  4334 => 4334, 
+# remote debugger
+  5005 => 5005, 
+# postgres
+  5432 => 5432, 
+# web
+  8000 => 8000, 
+# datomic console
+  9000 => 9000, 
+# nREPL
+  35001 => 35001
+}
 $expose_docker_tcp = 2375
 
 # Attempt to apply the deprecated environment variable NUM_INSTANCES to
@@ -142,14 +157,6 @@ Vagrant.configure("2") do |config|
 
       ip = "172.17.8.#{i+100}"
       config.vm.network :private_network, ip: ip
-
-      config.vm.network "forwarded_port", guest: 9000, host: 9000, auto_correct: true
-      config.vm.network "forwarded_port", guest: 8000, host: 8000, auto_correct: true
-      config.vm.network "forwarded_port", guest: 4334, host: 4334, auto_correct: true
-      config.vm.network "forwarded_port", guest: 5432, host: 5432, auto_correct: true
-      config.vm.network "forwarded_port", guest: 35001, host: 35001, auto_correct: true
-      config.vm.network "forwarded_port", guest: 5005, host: 5005, auto_correct: true
-
 
       # Uncomment below to enable NFS for sharing the host machine into the coreos-vagrant VM.
       config.vm.synced_folder ".", "/home/core/share", id: "core", :nfs => true, :mount_options => ['nolock,vers=3,udp']

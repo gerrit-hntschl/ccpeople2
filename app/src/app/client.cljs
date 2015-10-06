@@ -1,4 +1,4 @@
-(ns ^:figwheel-always app.core
+(ns ^:figwheel-always app.client
   (:require
               [reagent.core :as reagent]
               [app.domain :as domain]
@@ -24,6 +24,9 @@
 (defn bye-world [_]
   [:h1 (:bye/text @domain/app-state)])
 
+(defn tabs []
+  [:div ""])
+
 (def routes ["" {"profile" :profile
                  "people" :people}])
 
@@ -46,7 +49,6 @@
 
 (gs/watch-user :auth-watch
                (fn [user]
-                 (println "useroo:" (pr-str user))
                  (swap! domain/app-state assoc :user user)))
 
 (defn dispatcher []
@@ -58,8 +60,9 @@
    [gs/sign-in]
    [dispatcher]])
 
-(reagent/render-component [page]
-                          (.getElementById js/document "app"))
+(defn start []
+  (reagent/render-component [page]
+                            (.getElementById js/document "app")))
 
 
 (defn on-js-reload []
