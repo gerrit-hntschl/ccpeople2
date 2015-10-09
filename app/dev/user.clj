@@ -1,6 +1,5 @@
 (ns user
-  (:require [figwheel-sidecar.repl-api :as rapi]
-            [alembic.still :refer [load-project]]
+  (:require [alembic.still :refer [load-project]]
             [clojure.repl :refer :all]
             [clojure.pprint :refer [pprint]]
             [clojure.tools.namespace.repl :refer [refresh]]
@@ -9,7 +8,7 @@
             [meta-merge.core :refer [meta-merge]]
             [com.stuartsierra.component :as component]
             [ring.middleware.stacktrace :refer [wrap-stacktrace]]
-            [duct.component.figwheel :as figwheel]
+            [figwheel-sidecar.repl-api :as ra]
             [eftest.runner :as eftest]
             [app.config :as config]
             [app.system :as system]
@@ -26,29 +25,47 @@
       (alter-var-root #'rs resp)
       resp)))
 
+(def figwheel-config
+  {:figwheel-options {}                                     ;; <-- figwheel server config goes here
+   :build-ids        ["dev"]                                ;; <-- a vector of build ids to start autobuilding
+   :all-builds                                              ;; <-- supply your build configs here
+                     [{:id           "dev"
+                       :figwheel     true
+                       :source-paths ["src" "dev"]
+                       :compiler     {:main            "cljs.user"
+                                      :asset-path      "js"
+                                      :output-to       "target/figwheel/public/js/main.js"
+                                      :output-dir      "target/figwheel/public/js"
+                                      :source-map      true
+                                      :source-map-path "js"
+                                      ;    :verbose    true
+                                      }}]})
+
 (def dev-config
   {:app {:middleware [wrap-stacktrace
                       wrap-last-request]}
    :figwheel
-        {:css-dirs ["resources/public/css"]
-         :builds   [{:source-paths ["src" "dev"]
-                     :build-options
-                                   {:optimizations :none
-                                    :main "cljs.user"
-                                    :asset-path "js"
-                                    :output-to  "target/figwheel/public/js/main.js"
-                                    :output-dir "target/figwheel/public/js"
-                                    :source-map true
-                                    :source-map-path "js"}}]}})
+        figwheel-config})
 
 (def config
   (meta-merge config/defaults
 ;              config/environ
               dev-config))
 
+(defrecord Figwheel []
+  component/Lifecycle
+  (start [config]
+    (ra/start-figwheel! config)
+    config)
+  (stop [config]
+    (ra/stop-figwheel!)
+    config))
+
+
+
 (defn new-system []
    (into (system/new-system config)
-        {:figwheel (figwheel/server (:figwheel config))}))
+        {:figwheel (map->Figwheel (:figwheel config))}))
 
 (ns-unmap *ns* 'test)
 
@@ -56,7 +73,7 @@
   (eftest/run-tests (eftest/find-tests "test") {:multithread? false}))
 
 (defn cljs-repl []
- (rapi/cljs-repl))
+ (ra/cljs-repl))
 
 (defn reset []
   (reload/reset))

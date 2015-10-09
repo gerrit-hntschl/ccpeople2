@@ -37,29 +37,31 @@
   :profiles
   {:dev           [:project/dev :profiles/dev]
    :test          [:project/test :profiles/test]
-   :uberjar {:aot          :all
-             :uberjar-name "app.jar"
-             :omit-source  true}
+   :uberjar       {:aot          :all
+                   :uberjar-name "app.jar"
+                   :omit-source  true}
    :repl          {:resource-paths ^:replace ["resources" "target/figwheel"]
                    :prep-tasks     ^:replace [["compile"]]}
    :profiles/dev  {}
    :profiles/test {}
-   :dev   {:source-paths ["dev"]
-                   :repl-options {:init-ns user}
-                   :dependencies [[alembic "0.3.2"]
-                                  [figwheel-sidecar "0.4.0"]
-                                  [reloaded.repl "0.2.0"]
-                                  [org.clojure/tools.namespace "0.2.11"]
-                                  [eftest "0.1.0"]
-                                  [kerodon "0.7.0"]
-                                  [duct/figwheel-component "0.2.0"]
-                                  [figwheel "0.4.0"]]
-                   :plugins      [[lein-cljsbuild "1.1.0"]
-                                  [lein-figwheel "0.4.0"]
-                                  [lein-environ "1.0.1"]]
-                   :jvm-opts     ^:replace ["-Dfile.encoding=UTF-8" ;"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
-                                            ]
-                   :env          {:port 8000}}
+   :project/dev   {:source-paths     ["dev"]
+                   :repl-options     {:init-ns user
+                                      :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
+                   :dependencies     [[alembic "0.3.2"]
+                                      [com.cemerick/piggieback "0.2.1"]
+                                      [figwheel-sidecar "0.4.1"]
+                                      [reloaded.repl "0.2.0"]
+                                      [org.clojure/tools.namespace "0.2.11"]
+                                      [eftest "0.1.0"]
+                                      [kerodon "0.7.0"]
+                                      [duct/figwheel-component "0.2.0"]
+                                      [figwheel "0.4.1"]]
+                   :plugins          [[lein-cljsbuild "1.1.0"]
+                                      [lein-figwheel "0.4.1"]
+                                      [lein-environ "1.0.1"]]
+                   :jvm-opts         ^:replace ["-Dfile.encoding=UTF-8" ;"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
+                                                ]
+                   :env              {:port 8000}}
    :project/test  {}}
 
   :main app.main
