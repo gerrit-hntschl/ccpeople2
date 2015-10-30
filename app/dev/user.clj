@@ -4,7 +4,7 @@
             [clojure.pprint :refer [pprint]]
             [clojure.tools.namespace.repl :refer [refresh]]
             [clojure.java.io :as io]
-            [reloaded.repl :refer [system init start stop] :as reload]
+            [reloaded.repl :refer [init start stop] :as reload]
             [meta-merge.core :refer [meta-merge]]
             [com.stuartsierra.component :as component]
             [ring.middleware.stacktrace :refer [wrap-stacktrace]]
@@ -24,6 +24,9 @@
     (let [resp (handler req)]
       (alter-var-root #'rs resp)
       resp)))
+
+(defn system []
+  reload/system)
 
 (def figwheel-config
   {:figwheel-options {}                                     ;; <-- figwheel server config goes here

@@ -7,3 +7,4 @@ transactor/config/dev-transactor.properties
 /app/log/
 .idea
 .lein-env
+/app/profiles.clj

@@ -36,4 +36,22 @@
           ]
          [{:db/id                 #db/id [:db.part/db]
            :db/ident              :partition/people
-           :db.install/_partition :db.part/db}]]}}
+           :db.install/_partition :db.part/db}]
+         [{:db/id                 #db/id [:db.part/db]
+           :db/ident              :worklog/id
+           :db/valueType          :db.type/long
+           :db/cardinality        :db.cardinality/one
+           :db/unique             :db.unique/identity
+           :db/index              true
+           :db.install/_attribute :db.part/db}
+          {:db/id                 #db/id [:db.part/db]
+           :db/ident              :worklog/description
+           :db/valueType          :db.type/string
+           :db/cardinality        :db.cardinality/one
+           :db/fulltext           true
+           :db.install/_attribute :db.part/db}
+          {:db/id                 #db/id [:db.part/db]
+           :db/ident              :worklog/hours
+           :db/valueType          :db.type/double
+           :db/cardinality        :db.cardinality/one
+           :db.install/_attribute :db.part/db}]]}}

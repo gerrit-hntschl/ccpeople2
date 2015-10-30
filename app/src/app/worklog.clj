@@ -1,12 +1,17 @@
 (ns app.worklog
   (:require [net.cgrand.enlive-html :as html]
             [aleph.http :as http]
+            [aleph.http.client-middleware :as mw]
+            [datomic.api :as d]
+            [environ.core :refer [env]]
             [byte-streams :as bs]
             [schema.core :as s]
             [schema.coerce :as coerce]
             [clj-time.core :as time]
             [clj-time.format :as format]
-            [schema.utils :as s-util])
+            [schema.utils :as s-util]
+            [clojure.set :as set]
+            [app.storage :as storage])
   (:import (java.io StringReader)
            (java.util Date)))
 
@@ -79,10 +84,13 @@
 
 ;; worklog_id -> entity-id
 
-(defn fetch-worklogs [jira-tempo-uri]
-  (-> @(http/get jira-tempo-uri)
+(defn get-body [uri]
+  (-> @(http/get uri)
       :body
       bs/to-string))
+
+(defn fetch-worklogs [jira-tempo-uri]
+  (get-body jira-tempo-uri))
 
 (defn simple-worklog [worklog-node]
   (->> worklog-node
@@ -100,4 +108,19 @@
                   worklog-coercer
                   simple-worklog)))))
 
+(def datomic-attributes {:worklog_id :worklog/id
+                         :work_description :worklog/description
+                         :hours :worklog/hours})
+
+(defn jira-data-to-datomic [jira-data]
+  (-> jira-data
+      (set/rename-keys datomic-attributes)
+      (select-keys (vals datomic-attributes))
+      (assoc :db/id (storage/people-tempid))))
+
+(defn worklog-import [conn jira-worklogs]
+  (->> jira-worklogs
+       (map jira-data-to-datomic)
+       (d/transact conn)
+       (deref)))
 
