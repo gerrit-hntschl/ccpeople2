@@ -2,8 +2,8 @@
   <configuration default="false" name="Figwheel REPL" type="ClojureREPL" factoryName="Remote">
     <setting name="host" value="localhost" />
     <setting name="port" value="7888" />
-    <setting name="useLein" value="false" />
-    <setting name="leinProjectName" value="app:0.1.0-SNAPSHOT" />
+    <setting name="replType" value="0" />
+    <module name="app" />
     <method />
   </configuration>
 </component>
