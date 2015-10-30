@@ -65,11 +65,9 @@ $install_user_vars = <<SCRIPT
 
     cp /usr/share/skel/.bashrc /home/core
 
-    echo "export DATOMIC_USER=#{ENV['DATOMIC_USER']}" >> /home/core/.bashrc
-    echo "export DATOMIC_PASSWORD=#{ENV['DATOMIC_PASSWORD']}" >> /home/core/.bashrc
-
     mkdir /home/core/bin
     echo "export PATH=/home/core/bin:$PATH" >> /home/core/.bashrc
+    echo "cd share" >> /home/core/.bashrc
 
     mkdir /home/core/data
 
