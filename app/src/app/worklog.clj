@@ -10,6 +10,7 @@
             [clj-time.core :as time]
             [clj-time.format :as format]
             [schema.utils :as s-util]
+            [cheshire.core :as json]
             [clojure.set :as set]
             [app.storage :as storage])
   (:import (java.io StringReader)
@@ -123,4 +124,30 @@
        (map jira-data-to-datomic)
        (d/transact conn)
        (deref)))
+
+(def users-uri-suffix "/rest/api/2/user/assignable/search?project=TIMXIII")
+
+(def teams-uri "/rest/tempo-teams/1/team/")
+
+(defn team-members [team]
+  (format "/rest/tempo-teams/2/team/%s/member" team))
+
+(defn fetch-jira [jira-base-uri uri-suffix username password]
+  (-> @(http/get (str jira-base-uri uri-suffix) {:basic-auth [username password]
+                                                 :middleware mw/wrap-basic-auth})
+      :body
+      bs/to-string
+      (json/parse-string keyword)))
+
+;; TODO workaround for missing authorization for using batch user retrieval
+(defn stupid-fetch-jira-users []
+  (->>
+    ;; 15 is team solingen
+    (fetch-jira (env :jira-base-url) (team-members "15") (env :jira-username) (env :jira-password))
+    (map (fn [team-member] (get-in team-member [:member :name])))
+    (mapv (fn [username]
+            ;; don't overload jira
+            (Thread/sleep 2000)
+            (fetch-jira (env :jira-base-url) (str "/rest/api/2/user?username=" username) (env :jira-username) (env :jira-password))))))
+
 

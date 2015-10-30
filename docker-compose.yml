@@ -40,6 +40,9 @@ devapp:
     - DATOMIC_USER
     - DATOMIC_PASSWORD
     - DATOMIC_CONNECT_URL=datomic:sql://people?jdbc:postgresql://postgres:5432/datomic?user=datomic&password=datomic
+    - JIRA_USERNAME
+    - JIRA_PASSWORD
+    - JIRA_TEMPO_API_TOKEN
   links:
     - waiter
     - datomicdb
