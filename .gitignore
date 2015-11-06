@@ -5,6 +5,6 @@ transactor/config/dev-transactor.properties
 /dev.sh
 /transactor/data/hornet/server.lock
 /app/log/
-.idea
+.idea/
 .lein-env
 /app/profiles.clj

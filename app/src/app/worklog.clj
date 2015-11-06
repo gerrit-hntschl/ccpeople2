@@ -109,19 +109,36 @@
                   worklog-coercer
                   simple-worklog)))))
 
-(def datomic-attributes {:worklog_id :worklog/id
+(def worklog-attributes {:worklog_id       :worklog/id
                          :work_description :worklog/description
-                         :hours :worklog/hours})
+                         :username         :worklog/user
+                         :hours            :worklog/hours})
 
-(defn jira-data-to-datomic [jira-data]
+(def jira-user-attributes {:name          :user/jira-username
+                           :emailAddress :user/email})
+
+(defn jira-data-to-datomic [attributes jira-data]
   (-> jira-data
-      (set/rename-keys datomic-attributes)
-      (select-keys (vals datomic-attributes))
+      (set/rename-keys attributes)
+      (select-keys (vals attributes))
       (assoc :db/id (storage/people-tempid))))
+
+(defn lookup-user [worklog]
+  (update worklog :worklog/user (fn [username] [:user/jira-username username]))
+  )
 
 (defn worklog-import [conn jira-worklogs]
   (->> jira-worklogs
-       (map jira-data-to-datomic)
+       (map (partial jira-data-to-datomic worklog-attributes))
+       (map lookup-user)
+       (d/transact conn)
+       (deref)))
+
+
+
+(defn user-import [conn jira-user]
+  (->> jira-user
+       (map (partial jira-data-to-datomic jira-user-attributes))
        (d/transact conn)
        (deref)))
 
@@ -138,6 +155,20 @@
       :body
       bs/to-string
       (json/parse-string keyword)))
+
+(defn fetch-users [l]
+  (Thread/sleep 10)
+  (fetch-jira
+    (env :jira-base-url)
+    (format "/rest/api/2/user/search?username=%s&maxResults=1000" l)
+    (env :jira-username)
+    (env :jira-password)))
+
+(defn fetch-all-jira-users []
+  (->> (seq "abcdefghijklmnopqrstuvwxyz")
+       (mapcat fetch-users)
+       (set))
+  )
 
 ;; TODO workaround for missing authorization for using batch user retrieval
 (defn stupid-fetch-jira-users []
