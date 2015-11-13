@@ -20,9 +20,16 @@
 
 (def timestamp-formatter (format/formatter time/utc "yyyy-MM-dd HH:mm:ss" "yyyy-MM-dd"))
 
+
+(defn matches [r]
+  (fn [s]
+    (re-matches r s)))
+
 (s/defschema TimeIssue (s/pred (fn [s] (.startsWith s "TIMXIII")) "Time tracking issue name"))
 
 (s/defschema NonEmptyString (s/constrained s/Str seq "Non-empty string"))
+
+(s/defschema EmailAddress (s/constrained NonEmptyString (matches #"[^@]+@[^@]+") "Email address"))
 
 (s/defschema WorkLog
   "The schema of Jira worklog tags as returned by the Tempo Plugin"
@@ -60,15 +67,6 @@
    ; :external_id
    ;; allow other fields
    s/Keyword                           s/Any})
-
-(s/defschema JiraUser
-  {:id long
-   :member {:name NonEmptyString
-            :type s/Str
-            :activeInJira s/Bool
-            :displayname NonEmptyString
-            ;; :avatar
-            s/Keyword s/Any}})
 
 (defn read-instant-date [date-string]
   (-> (format/parse timestamp-formatter date-string)
@@ -146,10 +144,13 @@
        (d/transact conn)
        (deref)))
 
+(s/defschema JiraUser
+  {:name NonEmptyString
+   :emailAddress EmailAddress
+   s/Keyword s/Any})
 
-
-(defn user-import [conn jira-user]
-  (->> jira-user
+(defn user-import [conn jira-users]
+  (->> jira-users
        (map (partial jira-data-to-datomic jira-user-attributes))
        (d/transact conn)
        (deref)))
@@ -176,11 +177,22 @@
     (env :jira-username)
     (env :jira-password)))
 
+(def ignored-users #{"CoDiRadiator"
+                     "jiraapi"
+                     "admin"
+                     "generali-guest"
+                     "reporting"
+                     "ui-test"
+                     "eai-monitor"})
+
 (defn fetch-all-jira-users []
   (->> (seq "abcdefghijklmnopqrstuvwxyz")
        (mapcat fetch-users)
-       (set))
-  )
+       (map (fn [user] (s/validate JiraUser user)))
+       (filter (fn [user] (.endsWith (:emailAddress user) "@codecentric.de")))
+       ;; remove duplicate email user
+       (remove (comp ignored-users :name))
+       (set)))
 
 ;; TODO workaround for missing authorization for using batch user retrieval
 (defn stupid-fetch-jira-users []
