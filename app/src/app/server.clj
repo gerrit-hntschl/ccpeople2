@@ -39,9 +39,10 @@
 
 (defn auth-handler [conn req]
   (if-let [user-data (oauth/extract-user-data (get-in req [:params :token]))]
-    (let [stored-user (->> (storage/user-id-by-openid-or-create conn user-data)
-                          (storage/existing-user-data conn))]
-      (response stored-user))
+    (let [stored-data (->> (storage/user-id-by-openid-or-create conn user-data)
+                           (storage/existing-user-data conn))]
+      (println "responsedata:" stored-data)
+      (response stored-data))
     {:status 400
      :body "Invalid token"}))
 

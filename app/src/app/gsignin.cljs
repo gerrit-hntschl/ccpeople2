@@ -1,26 +1,12 @@
 (ns app.gsignin
   (:require-macros [cljs.core.async.macros :refer [go go-loop]])
-  (:require  [reagent.core :as r]
-             [ajax.core :as ajax]
-             [cljs.core.async :refer [put! chan <! >! buffer]]))
+  (:require [reagent.core :as r]
+            [app.domain :as domain]
+            [material-ui.core :as ui :include-macros true]
+            [cljs.core.async :refer [put! chan <! >! buffer]]
+            [clojure.string :as str]))
 
 (enable-console-print!)
-(def user (r/atom {}))
-
-(defn error-handler [{:keys [status status-text]}]
-  (.log js/console (str "something bad happened: " status " " status-text)))
-
-(defn watch-user [watch-key handler-fn]
-  (add-watch user watch-key (fn [_ _ old new]
-                                (if (:token new)
-                                  ;; todo post + CSRF protection
-                                  (ajax/GET "/auth"
-                                            {:params        (select-keys new [:token])
-                                             :handler       handler-fn
-                                             :error-handler error-handler
-                                             :response-format :json
-                                             :keywords? true})
-                                  (handler-fn nil)))))
 
 (defn load-gapi-auth2 []
   (let [c (chan)]
@@ -36,11 +22,17 @@
 (defn handle-user-change
   [u]
   (let [profile (.getBasicProfile u)]
-    (reset! user
-            {:name       (if profile (.getName profile) nil)
-             :image-url  (if profile (.getImageUrl profile) nil)
-             :token      (get-google-token)
-             :signed-in? (.isSignedIn u)})))
+    (if (.isSignedIn u)
+      (swap! domain/app-state
+             (partial merge-with merge)
+             {:user
+              {:user/full-name  (.getName profile)
+               :user/image-url  (.getImageUrl profile)
+               :user/token      (get-google-token)
+               :user/signed-in? (.isSignedIn u)}})
+      (swap! domain/app-state
+             dissoc
+             :user))))
 
 (defonce _ (go
              (<! (load-gapi-auth2))
@@ -50,15 +42,33 @@
              (let [current-user (.-currentUser (auth-instance))]
                (.listen current-user handle-user-change))))
 
-(defn sign-in []
-  [:div
-   (if-not (:signed-in? @user) [:a {:href "#" :on-click #(.signIn (auth-instance))} "Sign In"]
-                               [:div
-                                [:p
-                                 [:strong (:name @user)]
-                                 [:br]
-                                 [:img {:src (:image-url @user)}]]
-                                [:a {:href "#" :on-click #(.signOut (auth-instance))} "Sign Out"]])])
+(defn signed-in? [app-state]
+  (boolean (get-in app-state [:user :user/signed-in?])))
+
+(defn initials [{:keys [user/full-name]}]
+  (->> (str/split full-name " ")
+       (map first)
+       (map str/upper-case)
+       (str/join)))
+
+(defn signed-in-component []
+  (let [state @domain/app-state
+        user (:user state)
+        image-url (-> user :user/image-url)]
+    (when (signed-in? state)
+      [ui/Avatar
+      (cond-> {:on-click #(.signOut (auth-instance))
+               :style {:cursor "pointer"}} image-url (assoc :src image-url))
+      (when-not image-url (initials user))])))
+
+(defn sign-in-component []
+  (let [state @domain/app-state]
+    (when-not (signed-in? state)
+      [:div
+       [ui/RaisedButton {:label    "Sign in"
+                         :on-click #(.signIn (auth-instance))
+                         :style    {:margin "16px 32px 0px 32px"}}]]
+      )))
 
 
 

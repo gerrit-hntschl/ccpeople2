@@ -21,6 +21,8 @@
            :db/doc                "The lastname of a user."}
           {:db/id                 #db/id [:db.part/db]
            :db/ident              :user/email
+           :db/index              true
+           :db/unique             :db.unique/value
            :db/valueType          :db.type/string
            :db/cardinality        :db.cardinality/one
            :db.install/_attribute :db.part/db
@@ -67,4 +69,8 @@
            :db/valueType          :db.type/ref
            :db/cardinality        :db.cardinality/one
            :db.install/_attribute :db.part/db}]
-         ]}}
+         [{:db/id                 #db/id [:db.part/db]
+           :db/ident              :worklog/work-date
+           :db/valueType          :db.type/instant
+           :db/cardinality        :db.cardinality/one
+           :db.install/_attribute :db.part/db}]]}}

@@ -19,16 +19,17 @@
         r @(d/transact conn [
                              (assoc user
                                :user/id (d/squuid)
-                               :db/id user-tempid)])
+                               :db/id [:user/email (:user/email user)])])
         db-after (:db-after r)
         tempids (:tempids r)]
     (d/resolve-tempid db-after tempids user-tempid)))
 
 (defn user-id-by-email [dbval email]
   (q-one '[:find ?u
-           :in [$ ?email]
+           :in $ ?email
            :where [?u :user/email ?email]]
-         dbval))
+         dbval
+         email))
 
 (defn user-id-by-unique-identity [dbval openid-identity]
   (q-one '{:find [?u]
@@ -43,7 +44,10 @@
     (create-openid-user conn user-data)))
 
 (defn existing-user-data [conn id]
-  (->>  id (d/entity (db conn)) (d/touch) (into {})))
+  (def xxid id)
+  (let [user-entity (d/entity (db conn) id)]
+    {:user     (->> user-entity (d/touch) (into {}))
+     :worklogs (->> (:worklog/_user user-entity) (map (comp #(dissoc % :worklog/user) (partial into {}) d/touch)))}))
 
 (defrecord DatomicDatabase [uri]
   component/Lifecycle

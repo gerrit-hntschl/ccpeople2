@@ -22,34 +22,36 @@
 
 (s/defschema TimeIssue (s/pred (fn [s] (.startsWith s "TIMXIII")) "Time tracking issue name"))
 
+(s/defschema NonEmptyString (s/constrained s/Str seq "Non-empty string"))
+
 (s/defschema WorkLog
   "The schema of Jira worklog tags as returned by the Tempo Plugin"
-  {:billing_key                        (s/maybe s/Str)
+  {:billing_key                        (s/maybe NonEmptyString)
    :issue_id                           long
    :issue_key                          TimeIssue
    :hash_value                         s/Str
-   :username                           s/Str
+   :username                           NonEmptyString
    ;; daily rate
    (s/optional-key :customField_10084) Double
    ;; date format "2015-10-23 00:00:00"
    :work_date_time                     Date
    :work_description                   s/Str
-   :activity_name                      s/Str
-   :reporter                           s/Str
+   :activity_name                      NonEmptyString
+   :reporter                           NonEmptyString
    ;; date "2015-10-23"
    :work_date                          Date
    :hours                              Double
    ;; remaining hours?
    (s/optional-key :customField_10406) Double
    ;; contract type? "Monatl. nach Zeit"
-   (s/optional-key :customField_10100) s/Str
-   :activity_id                        s/Str
+   (s/optional-key :customField_10100) NonEmptyString
+   :activity_id                        NonEmptyString
    ;; unique over all worklogs? identity of entry
    :worklog_id                         Long
    ;; same as username
-   :staff_id                           s/Str
+   :staff_id                           NonEmptyString
    ;; some date? "2014-08-01 00:00:00.0"
-   (s/optional-key :customField_10501) s/Str
+   (s/optional-key :customField_10501) NonEmptyString
    ; :external_hours                     Double
    ; :billing_attributes
    ; :external_tstamp
@@ -58,6 +60,15 @@
    ; :external_id
    ;; allow other fields
    s/Keyword                           s/Any})
+
+(s/defschema JiraUser
+  {:id long
+   :member {:name NonEmptyString
+            :type s/Str
+            :activeInJira s/Bool
+            :displayname NonEmptyString
+            ;; :avatar
+            s/Keyword s/Any}})
 
 (defn read-instant-date [date-string]
   (-> (format/parse timestamp-formatter date-string)
@@ -112,7 +123,8 @@
 (def worklog-attributes {:worklog_id       :worklog/id
                          :work_description :worklog/description
                          :username         :worklog/user
-                         :hours            :worklog/hours})
+                         :hours            :worklog/hours
+                         :work_date        :worklog/work-date})
 
 (def jira-user-attributes {:name          :user/jira-username
                            :emailAddress :user/email})
@@ -157,7 +169,7 @@
       (json/parse-string keyword)))
 
 (defn fetch-users [l]
-  (Thread/sleep 10)
+  (Thread/sleep 100)
   (fetch-jira
     (env :jira-base-url)
     (format "/rest/api/2/user/search?username=%s&maxResults=1000" l)

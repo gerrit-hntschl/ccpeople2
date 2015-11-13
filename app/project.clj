@@ -32,9 +32,12 @@
                  [ring/ring-defaults "0.1.5"]
                  [clj-time "0.11.0"]
                  [hiccup "1.0.5"]
-                 [reagent "0.5.0"]
+                 ;; currently we use the react packaged with material-ui
+                 [reagent "0.5.1" :exclusions [cljsjs/react]]
+                 [com.andrewmcveigh/cljs-time "0.3.14"]
                  [buddy/buddy-auth "0.6.2"]
-                 [sudharsh/clj-oauth2 "0.5.3"]]
+                 ;[sudharsh/clj-oauth2 "0.5.3"]
+                 ]
 
   :profiles
   {:dev           [:project/dev :profiles/dev]
@@ -84,7 +87,8 @@
                           :source-paths ["src" "dev"]
                           :figwheel     {:on-jsload "app.client/on-js-reload"}
 
-                          :compiler     {:main                 app.client
+                          :compiler     {:preamble ["resources/material.js"]
+                                         :main                 app.client
                                          :asset-path           "js/compiled/out"
                                          :output-to            "resources/public/js/compiled/app.js"
                                          :output-dir           "resources/public/js/compiled/out"
