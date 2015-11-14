@@ -6,6 +6,7 @@
               [bidi.bidi :as bidi]
               [goog.events :as events]
               [app.gsignin :as gs]
+              [app.donut-service :as donut-service]
               [cljs-time.core :as time]
               [material-ui.core :as ui :include-macros true]
               [goog.history.EventType :as EventType])
@@ -15,6 +16,7 @@
 
 (println "Edits to this text should show up in your developer console.")
 
+(donut-service/create-donut "data.json" #js["red" "green" "blue", "grey"])
 
 ;; define your app data so that it doesn't get over-written on reload
 
