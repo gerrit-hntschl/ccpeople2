@@ -2,6 +2,7 @@
   (:require [alembic.still :refer [load-project]]
             [clojure.repl :refer :all]
             [clojure.pprint :refer [pprint]]
+            [datomic.api :as d]
             [clojure.tools.namespace.repl :refer [refresh]]
             [clojure.java.io :as io]
             [reloaded.repl :refer [init start stop] :as reload]
@@ -86,6 +87,9 @@
 
 (defn routes []
   (-> system :router :routes))
+
+(defn reset-database []
+  (d/delete-database (:uri (:database (system)))))
 
 (defn route-handler-for [uri]
   (bidi/match-route (routes) uri))

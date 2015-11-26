@@ -5,6 +5,7 @@
             :url  "http://www.eclipse.org/legal/epl-v10.html"}
 
   :dependencies [[org.clojure/clojure "1.7.0"]
+                 [org.clojure/test.check "0.9.0"]
                  [aleph "0.4.0"]
                  [com.cognitect/transit-cljs "0.8.220"]
                  [com.cognitect/transit-clj "0.8.281"]
@@ -20,7 +21,7 @@
                  [com.stuartsierra/component "0.3.0"]
                  [io.rkn/conformity "0.3.5"]
                  [org.postgresql/postgresql "9.3-1102-jdbc41"]
-                 [com.datomic/datomic-pro "0.9.5206"
+                 [com.datomic/datomic-pro "0.9.5327"
                   :exclusions [org.slf4j/slf4j-nop
                                joda-time org.slf4j/slf4j-log4j12
                                org.slf4j/slf4j-api]]
@@ -72,6 +73,7 @@
   :main app.main
 
   :source-paths ["src"]
+  :test-paths ["test"]
   :resource-paths ["resources" "target/cljsbuild"]
   :prep-tasks [["cljsbuild" "once"] ["compile"]]
   :jvm-opts ^:replace ["-Dfile.encoding=UTF-8"]
