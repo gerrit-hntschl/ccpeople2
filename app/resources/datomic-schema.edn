@@ -73,4 +73,56 @@
            :db/ident              :worklog/work-date
            :db/valueType          :db.type/instant
            :db/cardinality        :db.cardinality/one
+           :db.install/_attribute :db.part/db}]
+         [{:db/id                 #db/id [:db.part/db]
+           :db/ident              :ticket/id
+           :db/unique             :db.unique/identity
+           :db/valueType          :db.type/long
+           :db/cardinality        :db.cardinality/one
+           :db.install/_attribute :db.part/db}
+          {:db/id                 #db/id [:db.part/db]
+           :db/ident              :ticket/key
+           :db/valueType          :db.type/string
+           :db/cardinality        :db.cardinality/one
+           :db.install/_attribute :db.part/db}
+          {:db/id                 #db/id [:db.part/db]
+           :db/ident              :ticket/title
+           :db/valueType          :db.type/string
+           :db/cardinality        :db.cardinality/one
+           :db.install/_attribute :db.part/db}
+          {:db/id                 #db/id [:db.part/db]
+           :db/ident              :ticket/customer
+           :db/valueType          :db.type/ref
+           :db/cardinality        :db.cardinality/one
+           :db.install/_attribute :db.part/db}
+          {:db/id                 #db/id [:db.part/db]
+           :db/ident              :customer/id
+           :db/valueType          :db.type/long
+           :db/unique             :db.unique/identity
+           :db/cardinality        :db.cardinality/one
+           :db.install/_attribute :db.part/db}
+          {:db/id                 #db/id [:db.part/db]
+           :db/ident              :customer/name
+           :db/valueType          :db.type/string
+           :db/cardinality        :db.cardinality/one
+           :db.install/_attribute :db.part/db}
+          ;; invoicing enum
+          {:db/id                 #db/id [:db.part/db]
+           :db/ident              :invoicing/time-and-material}
+          {:db/id                 #db/id [:db.part/db]
+           :db/ident              :invoicing/fixed-price}
+          {:db/id                 #db/id [:db.part/db]
+           :db/ident              :invoicing/not-billable}
+          {:db/id                 #db/id [:db.part/db]
+           :db/ident              :ticket/invoicing
+           ;; we are referencing the enum constants, which are entities themselves
+           :db/valueType          :db.type/ref
+           :db/cardinality        :db.cardinality/one
+           :db.install/_attribute :db.part/db}
+
+          ]
+         [{:db/id                 #db/id [:db.part/db]
+           :db/ident              :worklog/ticket
+           :db/valueType          :db.type/ref
+           :db/cardinality        :db.cardinality/one
            :db.install/_attribute :db.part/db}]]}}

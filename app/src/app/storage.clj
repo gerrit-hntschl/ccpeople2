@@ -24,6 +24,13 @@
         tempids (:tempids r)]
     (d/resolve-tempid db-after tempids user-tempid)))
 
+(defn all-usernames [dbval]
+  (->> (d/q '{:find  [?username]
+              :in    [$]
+              :where [[?e :user/jira-username ?username]]}
+            dbval)
+       (into #{} (map first))))
+
 (defn user-id-by-email [dbval email]
   (q-one '[:find ?u
            :in $ ?email
