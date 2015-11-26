@@ -48,7 +48,8 @@
 (defn user-id-by-openid-or-create [conn user-data]
   (if-let [id (user-id-by-unique-identity (db conn) (:user/google-id user-data))]
     id
-    (create-openid-user conn user-data)))
+    (do (create-openid-user conn user-data)
+        (user-id-by-unique-identity (db conn) (:user/google-id user-data)))))
 
 (defn existing-user-data [conn id]
   (def xxid id)
@@ -88,3 +89,7 @@
 (defn new-conform-schema [options]
   (map->DatomicSchema {:schema-file (:schema-file options)
                        :schema-name (:schema-name options)}))
+
+(defn existing-user-data-for-user [conn user-data]
+  (->> (user-id-by-openid-or-create conn user-data)
+       (existing-user-data conn)))
