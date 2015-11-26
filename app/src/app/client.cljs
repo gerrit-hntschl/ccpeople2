@@ -1,14 +1,15 @@
 (ns ^:figwheel-always app.client
   (:require
-              [reagent.core :as reagent]
-              [reagent.interop :refer-macros [.']]
-              [app.domain :as domain]
-              [bidi.bidi :as bidi]
-              [goog.events :as events]
-              [app.gsignin :as gs]
-              [cljs-time.core :as time]
-              [material-ui.core :as ui :include-macros true]
-              [goog.history.EventType :as EventType])
+    [reagent.core :as reagent]
+    [reagent.interop :refer-macros [.']]
+    [app.domain :as domain]
+    [bidi.bidi :as bidi]
+    [goog.events :as events]
+    [app.gsignin :as gs]
+    [cljs-time.core :as time]
+    [material-ui.core :as ui :include-macros true]
+    [goog.history.EventType :as EventType]
+    [app.days :as days])
   (:import [goog.history Html5History EventType]))
 
 (enable-console-print!)
@@ -30,7 +31,7 @@
 
 (defn latest-worklog-work-date [state]
   (if-let [worklogs (seq (:worklogs state))]
-    (apply max-key #(.getTime %) (map :worklog/work-date worklogs))
+    (days/format-simple-date (apply max-key #(.getTime %) (map :worklog/work-date worklogs)))
     "?"))
 
 (defn profile-page [_]
