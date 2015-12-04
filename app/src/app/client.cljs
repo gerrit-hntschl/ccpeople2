@@ -25,8 +25,7 @@
   (str (count (:days/workdays-till-end-of-year app-state))))
 
 (defn days-needed-to-reach-goal [app-state]
-  (str (- domain/billable-days-goal
-          (/ (reduce + (map :worklog/hours (:worklogs app-state))) 8))))
+  (str (domain/billable-days app-state)))
 
 (defn plus-one-days-left [remaining-working-days days-to-100-percent]
   (max 0 (- remaining-working-days days-to-100-percent)))
@@ -127,6 +126,7 @@
                   :text-align  "center"}}
     [gs/sign-in-component]
     [dispatcher]]])
+
 
 (defn start []
   (reagent/render-component [page]

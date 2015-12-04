@@ -4,24 +4,24 @@
   '[AppBar
     AppCanvas
     Avatar
-    Circle
+    ;Circle
     Checkbox
     DatePicker
-    DialogWindow
+    ;DialogWindow
     Dialog
     DropDownIcon
     DropDownMenu
     EnhancedButton
     FlatButton
     FloatingActionButton
-    FocusRipple
-    FontIcon
+    ;FocusRipple
+    ;FontIcon
     GridList
     GridTile
     IconButton
-    Icon
-    InkBar
-    Input
+    IconMenu
+    ;InkBar
+    ;Input
     LeftNav
     MenuItem
     Menu
@@ -30,23 +30,30 @@
     RadioButton
     RadioButtonGroup
     RaisedButton
+    SelectField
     Slider
-    SlideIn
+    ;SlideIn
     Snackbar
     SvgIcon
     Tab
-    TabTemplate
+    ;TabTemplate
     Tabs
     TableHeader
-    TableRowsItem
-    TableRows
+    TableHeaderColumn
+    ;TableRowsItem
+    ;TableRows
+    TableRow
+    TableRowColumn
     TextField
+    TimePicker
     Toggle
     ToolbarGroup
+    ToolbarSeparator
+    ToolbarTitle
     Toolbar
     Tooltip
-    TouchRipple])
-
+    ;TouchRipple
+    ])
 
 (defn material-ui-react-import [tname]
   `(def ~tname (reagent.core/adapt-react-class (aget js/MaterialUI ~(name tname)))))

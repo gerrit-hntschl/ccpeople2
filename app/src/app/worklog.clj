@@ -15,16 +15,19 @@
             [schema.utils :as s-util]
             [cheshire.core :as json]
             [clojure.set :as set]
+            [app.retry :as retry]
             [app.storage :as storage]
             [com.stuartsierra.component :as component]
             [app.days :as days])
   (:import (java.io StringReader)
-           (java.util Date)))
+           (java.util Date)
+           (io.netty.channel ConnectTimeoutException)))
 
 (def datetime-regex #"\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?")
 
 (def timestamp-formatter (format/formatter time/utc "yyyy-MM-dd HH:mm:ss" "yyyy-MM-dd"))
 
+(def ^:const jira-timesheet-project-key "TIMXIII")
 
 (defn matches [r]
   (fn [s]
@@ -36,35 +39,47 @@
 
 (s/defschema EmailAddress (s/constrained NonEmptyString (matches #"[^@]+@[^@]+") "Email address"))
 
+(def jira-invoicing-types->datomic-invoicing {"Nicht abrechenbar" :invoicing/not-billable
+                      "Monatl. nach Zeit" :invoicing/time-monthly
+                      "Abschlag nach Vertrag" :invoicing/part-payment-by-contract
+                      "Individuell nach Vertrag" :invoicing/individual-by-contract
+                      "Kein Support-Vertrag" :invoicing/no-support-contract
+                      "Produkt-Support" :invoicing/product-support})
+
+(s/defschema InvoicingType (apply s/enum (keys jira-invoicing-types->datomic-invoicing)))
+
+(def jira-project-types->datomic-project-type
+  {"Festpreis" :project-type/fixed-price
+   "Zeit und Material" :project-type/time-and-material})
+
+(s/defschema ProjectType (apply s/enum (keys jira-project-types->datomic-project-type)))
+
 (s/defschema JiraWorkLog
   "The schema of Jira worklog tags as returned by the Tempo Plugin"
-  {:billing_key                        (s/maybe NonEmptyString)
+  {; :billing_key                        (s/maybe NonEmptyString)
    :issue_id                           JiraId
    :issue_key                          NonEmptyString
-   :hash_value                         s/Str
+   ; :hash_value                         s/Str
    :username                           NonEmptyString
    ;; daily rate
    (s/optional-key :customField_10084) Double
    ;; date format "2015-10-23 00:00:00"
-   :work_date_time                     Date
+   ; :work_date_time                     Date
    :work_description                   (s/maybe s/Str)
-   :reporter                           NonEmptyString
+   ; :reporter                           NonEmptyString
    ;; date "2015-10-23"
    :work_date                          Date
    :hours                              Double
    ;; remaining hours?
-   (s/optional-key :customField_10406) Double
-   ;; contract type? "Monatl. nach Zeit"
-   (s/optional-key :customField_10100) NonEmptyString
-   ;; todo: not all worklogs are associated with an activity. is that okay?
-   :activity_id                        (s/maybe NonEmptyString)
-   :activity_name                      (s/maybe NonEmptyString)
-   ;; unique over all worklogs? identity of entry
+   ; (s/optional-key :customField_10406) Double
+   ; :activity_id                        (s/maybe NonEmptyString)
+   ; :activity_name                      (s/maybe NonEmptyString)
+   ;; unique over all worklogs -> identity of entry
    :worklog_id                         JiraId
    ;; same as username
-   :staff_id                           NonEmptyString
+   ; :staff_id                           NonEmptyString
    ;; some date? "2014-08-01 00:00:00.0"
-   (s/optional-key :customField_10501) NonEmptyString
+   ; (s/optional-key :customField_10501) NonEmptyString
    ; :external_hours                     Double
    ; :billing_attributes
    ; :external_tstamp
@@ -74,7 +89,6 @@
    ;; allow other fields
    s/Keyword                           s/Any})
 
-(s/defschema InvoicingType (s/enum "Festpreis" "Zeit und Material" "nicht abrechenbar"))
 
 (s/defschema JiraIssue
   "Represents a Jira issue"
@@ -86,27 +100,37 @@
                                                     s/Keyword s/Any}]
               ;; invoicing information
               (s/optional-key :customfield_10085) (s/maybe {:id       JiraId
+                                                            :value    ProjectType
+                                                            s/Keyword s/Any})
+              (s/optional-key :customfield_10100) (s/maybe {:id       JiraId
                                                             :value    InvoicingType
                                                             s/Keyword s/Any})
               s/Keyword                           s/Any}
    s/Keyword s/Any})
 
-(defn get-jira-invoicing-type [jira-issue]
+(defn get-jira-project-type [jira-issue]
   (get-in jira-issue [:fields :customfield_10085 :value]))
 
-(def jira-invoicing->domain-invoicing-type {"Festpreis" :invoicing/fixed-price
-                                            "Zeit und Material" :invoicing/time-and-material
-                                            "nicht abrechenbar" :invoicing/not-billable})
+(defn get-jira-invoicing-type [jira-issue]
+  (get-in jira-issue [:fields :customfield_10100 :value]))
+
+(defn get-jira-customer [jira-issue]
+  (get-in jira-issue [:fields :components 0 :id]))
 
 (defn jira-issue-to-datomic-ticket [jira-issue]
   (cond-> {:db/id (storage/people-tempid)
            :ticket/id (:id jira-issue)
-           :ticket/key (:key jira-issue)
-           :ticket/customer [:customer/id (get-in jira-issue [:fields :components 0 :id])]}
+           :ticket/key (:key jira-issue)}
+          (get-jira-customer jira-issue)
+          (assoc :ticket/customer [:customer/id (get-jira-customer jira-issue)])
           (get-in jira-issue [:fields :summary])
           (assoc :ticket/title (get-in jira-issue [:fields :summary]))
+          (get-jira-project-type jira-issue)
+          (assoc :ticket/project-type (safe-get jira-project-types->datomic-project-type
+                                                (get-jira-project-type jira-issue)))
           (get-jira-invoicing-type jira-issue)
-          (assoc :ticket/invoicing (safe-get jira-invoicing->domain-invoicing-type (get-jira-invoicing-type jira-issue)))))
+          (assoc :ticket/invoicing (safe-get jira-invoicing-types->datomic-invoicing
+                                             (get-jira-invoicing-type jira-issue)))))
 
 (defn extract-customer-from-jira-issue [jira-issue]
   (get-in jira-issue [:fields :components 0]))
@@ -154,8 +178,15 @@
       :body
       bs/to-string))
 
-(defn fetch-worklogs [jira-tempo-uri]
+(defn fetch-worklogs-raw [jira-tempo-uri]
+  (println "requesting tempo:" jira-tempo-uri)
   (get-body jira-tempo-uri))
+
+(def fetch-worklogs (retry/retryable fetch-worklogs-raw
+                                      (some-fn
+                                        (fn [ex]
+                                          (= (.getMessage ex) "connection was closed"))
+                                        (partial instance? ConnectTimeoutException))))
 
 (defn simple-worklog [worklog-node]
   (->> worklog-node
@@ -207,13 +238,6 @@
       (lookup-user-reference)
       (update :worklog/ticket (fn [issue-id] [:ticket/id issue-id]))))
 
-(defn worklog-import [conn jira-worklogs]
-  (->> jira-worklogs
-       (map (partial jira-data-to-datomic worklog-attributes))
-       (map lookup-user-reference)
-       (d/transact conn)
-       (deref)))
-
 (s/defschema JiraUser
   {:name NonEmptyString
    :emailAddress EmailAddress
@@ -235,15 +259,23 @@
 (defn issue-details-uri [issue-id]
   (format "/rest/api/2/issue/%d" issue-id))
 
-(defn fetch-jira
+(defn fetch-jira-raw
   ([uri-suffix]
-   (fetch-jira (env :jira-base-url) uri-suffix (env :jira-username) (env :jira-password)))
+   (fetch-jira-raw (env :jira-base-url) uri-suffix (env :jira-username) (env :jira-password)))
   ([jira-base-uri uri-suffix username password]
+   (println "requesting jira:" uri-suffix)
    (-> @(http/get (str jira-base-uri uri-suffix) {:basic-auth [username password]
-                                                  :middleware mw/wrap-basic-auth})
+                                                  :middleware mw/wrap-basic-auth
+                                                  :connection-timeout 10000
+                                                  :request-timeout 30000})
        :body
        bs/to-string
        (json/parse-string keyword))))
+
+(def fetch-jira (retry/retryable fetch-jira-raw (some-fn
+                                                  (fn [ex]
+                                                    (= (.getMessage ex) "connection was closed"))
+                                                  (partial instance? ConnectTimeoutException))))
 
 (defn fetch-users [jira-base-url jira-username jira-password l]
   (Thread/sleep 100)
@@ -288,7 +320,9 @@
        "&dateTo="
        to-yyyy-MM-dd
        "&format=xml&diffOnly=false&tempoApiToken="
-       jira-tempo-api-token))
+       jira-tempo-api-token
+       "&projectKey="
+       jira-timesheet-project-key))
 
 (defn monthly-import-urls [jira-base-url jira-tempo-api-token start-day end-day]
   (->> (days/month-start-ends start-day end-day)
@@ -354,10 +388,44 @@
   (users [this usernames]
     prefetched-users))
 
+(defn work-date-between [from-date to-date]
+  (fn [jira-worklog]
+    (let [work-date (time-coerce/from-date (:work_date jira-worklog))]
+      (and (time/after? work-date
+                        from-date)
+           (time/before? work-date
+                         to-date)))))
+
+(defrecord JiraDownloadedWorklogsClient [jira-client worklog-file-paths]
+  Jira
+  (worklogs [this from-date to-date]
+    {:worklogs
+     (filter (work-date-between from-date to-date)
+             (mapcat extract-data
+                     (map slurp worklog-file-paths)))})
+  (issues [this issue-ids]
+    (issues jira-client issue-ids))
+  (users [this usernames]
+    (users jira-client usernames)))
+
+(defn new-downloaded-worklogs-jira-client [paths]
+  (map->JiraDownloadedWorklogsClient {:worklog-file-paths paths}))
+
+(comment
+  ;; useful for storing worklog xmls. allows the usage of the JiraDownloadedWorklogsClient
+  (defn download-worklogs []
+    (dorun
+      (map-indexed (fn [n uri]
+                     (spit (str "worklogmonth" (inc n) ".xml")
+                           (fetch-worklogs uri)))
+                   (monthly-import-urls (env :jira-base-url) (env :jira-tempo) (time/date-time 2015 1 1) (time/today)))))
+
+  )
+
 (defn new-jira-rest-client [options]
   (->> options
-       ;(s/validate JiraRestClientOptions)
-      (map->JiraRestClient)))
+       (s/validate JiraRestClientOptions)
+       (map->JiraRestClient)))
 
 (defn max-work-date [dbval]
   (ffirst
@@ -416,10 +484,9 @@
                                        (when db-max-work-date
                                          (assert (not (time/after? db-max-work-date today))
                                                  (str "db-max-work-date is after today: " db-max-work-date)))
-                                       (time-coerce/to-date
-                                         (if db-max-work-date
-                                           (time/first-day-of-the-month db-max-work-date)
-                                           (time/first-day-of-the-month (time/year today) 1))))
+                                       (if db-max-work-date
+                                         (time/first-day-of-the-month db-max-work-date)
+                                         (time/first-day-of-the-month (time/year today) 1)))
    :current-period-start             (fnk [today]
                                        ;; period is closed on 5th of next month, unless in January
                                        (if (and (<= (time/day today) 5) (> (time/month today) 1))
@@ -446,7 +513,8 @@
    :worklogs-usernames-new           (fnk [worklogs-usernames-all db-usernames-all]
                                        (set/difference worklogs-usernames-all db-usernames-all))
    :jira-users-new                   (fnk [jira worklogs-usernames-new]
-                                       (users jira worklogs-usernames-new))
+                                       (when (not-empty worklogs-usernames-new)
+                                         (users jira worklogs-usernames-new)))
    :domain-users-new                 (fnk [jira-users-new]
                                        (mapv (partial jira-data-to-datomic jira-user-attributes)
                                              jira-users-new))
@@ -484,7 +552,7 @@
    :db-worklog-ids-in-import-range   (fnk [re-import? dbval import-start-date today]
                                        (when re-import?
                                          (all-domain-worklog-ids-in-range dbval
-                                                                          import-start-date
+                                                                          (time-coerce/to-date import-start-date)
                                                                           (time-coerce/to-date today))))
    :jira-worklog-ids-in-import-range (fnk [worklogs-known-usernames]
                                        (into #{} (map :worklog_id) worklogs-known-usernames))
@@ -505,7 +573,7 @@
                                                        tickets-new
                                                        domain-worklogs-transaction)))})
 
-(def jira-import (plumbing.graph/eager-compile (s/with-fn-validation jira-import-graph)))
+(def jira-import (graph/compile-cancelling jira-import-graph))
 
 (defprotocol Scheduler
   (schedule [this f] "Schedule f for periodic execution"))
@@ -514,6 +582,7 @@
   (let [import-result (jira-import {:dbval (d/db conn)
                                     :today (today-before-midnight)
                                     :jira  jira})]
+    (println "done import jira")
     (def ii import-result)
     (doseq [tx (:db-transactions import-result)]
       @(d/transact conn tx))
@@ -525,7 +594,13 @@
   (start [this]
     (if (:scheduled this)
       this
-      (do (schedule scheduler (partial sync-with-jira! conn jira-client))
+      (do (schedule scheduler (fn []
+                                (println "Starting import: " (.getName (Thread/currentThread)))
+                                (try (sync-with-jira! conn jira-client)
+                                     (catch Throwable ex
+                                       (println "import error:" (.getMessage ex))
+                                       (def impex ex)
+                                       (.printStackTrace ex)))))
           (assoc this :scheduled true)))
     this)
   (stop [this]
@@ -533,11 +608,3 @@
 
 (defn new-jira-importer []
   (map->JiraImporter {}))
-
-
-(comment
-  (def ttt (mapcat (comp extract-data slurp) (map #(str "worklogmonth" % ".xml") (range 1 13)))) (count ttt)
-  (def cc (:conn (user/system)))
-  (def aa (storage/all-usernames (d/db cc)))
-  (def wle (filter (comp aa :username) ttt))
-  (worklog-import cc wle))

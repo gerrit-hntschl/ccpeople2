@@ -51,10 +51,11 @@
     (when-let [executor (:executor this)]
       (.shutdownNow executor))
     (dissoc this :executor))
+
   worklog/Scheduler
   (schedule [this f]
     ;; todo handle exception happening in f
-    (.scheduleWithFixedDelay (:executor this) f 0 60 TimeUnit/SECONDS)))
+    (.scheduleWithFixedDelay (:executor this) f 10 60 TimeUnit/SECONDS)))
 
 (defn new-scheduler []
   (map->ExecutorScheduler {}))
@@ -92,3 +93,21 @@
            ;; endpoints
            :auth-endpoint [:conn]
            }))))
+
+(defn new-offline-worklog-system [config]
+  (-> (new-system config)
+      (assoc :jira-downloaded-worklogs-client (worklog/new-downloaded-worklogs-jira-client
+                                                (map #(str "worklogmonth" % ".xml")
+                                                     (range 1 13))))
+      (component/system-using
+        {:jira-downloaded-worklogs-client [:jira-client]
+         :jira-importer {:conn :conn
+                         :scheduler :scheduler
+                         :jira-client :jira-downloaded-worklogs-client}})))
+
+(Thread/setDefaultUncaughtExceptionHandler
+  (reify Thread$UncaughtExceptionHandler
+    (uncaughtException [_ thread ex]
+      (println "Uncaught exception on" (.getName thread) " : " (.getMessage ex))
+      (.printStackTrace ex)
+      (def exex ex))))

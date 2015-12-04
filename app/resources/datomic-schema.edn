@@ -106,23 +106,42 @@
            :db/valueType          :db.type/string
            :db/cardinality        :db.cardinality/one
            :db.install/_attribute :db.part/db}
+          ;; project enum
+          {:db/id                 #db/id [:db.part/db]
+           :db/ident              :project-type/time-and-material}
+          {:db/id                 #db/id [:db.part/db]
+           :db/ident              :project-type/fixed-price}
+
           ;; invoicing enum
           {:db/id                 #db/id [:db.part/db]
-           :db/ident              :invoicing/time-and-material}
-          {:db/id                 #db/id [:db.part/db]
-           :db/ident              :invoicing/fixed-price}
+           :db/ident              :invoicing/time-monthly}
           {:db/id                 #db/id [:db.part/db]
            :db/ident              :invoicing/not-billable}
+          {:db/id                 #db/id [:db.part/db]
+           :db/ident              :invoicing/part-payment-by-contract}
+          {:db/id                 #db/id [:db.part/db]
+           :db/ident              :invoicing/individual-by-contract}
+          {:db/id                 #db/id [:db.part/db]
+           :db/ident              :invoicing/no-support-contract}
+          {:db/id                 #db/id [:db.part/db]
+           :db/ident              :invoicing/product-support}
+
           {:db/id                 #db/id [:db.part/db]
            :db/ident              :ticket/invoicing
            ;; we are referencing the enum constants, which are entities themselves
            :db/valueType          :db.type/ref
            :db/cardinality        :db.cardinality/one
            :db.install/_attribute :db.part/db}
-
-          ]
-         [{:db/id                 #db/id [:db.part/db]
+          {:db/id                 #db/id [:db.part/db]
+           :db/ident              :ticket/project-type
+           ;; we are referencing the enum constants, which are entities themselves
+           :db/valueType          :db.type/ref
+           :db/cardinality        :db.cardinality/one
+           :db.install/_attribute :db.part/db}
+          {:db/id                 #db/id [:db.part/db]
            :db/ident              :worklog/ticket
            :db/valueType          :db.type/ref
            :db/cardinality        :db.cardinality/one
-           :db.install/_attribute :db.part/db}]]}}
+           :db.install/_attribute :db.part/db}
+          ]
+         ]}}

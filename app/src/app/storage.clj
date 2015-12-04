@@ -51,11 +51,30 @@
     (do (create-openid-user conn user-data)
         (user-id-by-unique-identity (db conn) (:user/google-id user-data)))))
 
+(def as-map
+  (comp (partial into {}) d/touch))
+
+(defn pull-without [& ks]
+  (comp #(apply dissoc % ks)
+        as-map))
+
 (defn existing-user-data [conn id]
   (def xxid id)
-  (let [user-entity (d/entity (db conn) id)]
+  (let [user-entity (d/entity (db conn) id)
+        worklogs (:worklog/_user user-entity)
+        tickets (into #{} (map :worklog/ticket) worklogs)
+        customers (into #{} (map :ticket/customer) tickets)]
     {:user     (->> user-entity (d/touch) (into {}))
-     :worklogs (->> (:worklog/_user user-entity) (map (comp #(dissoc % :worklog/user) (partial into {}) d/touch)))}))
+     :worklogs (->> worklogs
+                    (map (pull-without :worklog/user))
+                    (map (fn [wl]
+                           (update wl :worklog/ticket :ticket/id))))
+     :tickets (->> tickets
+                   (map as-map)
+                   (map (fn [ticket]
+                          (update ticket :ticket/customer :customer/id))))
+     :customers (->> customers
+                     (map as-map))}))
 
 (defrecord DatomicDatabase [uri]
   component/Lifecycle
