@@ -9,7 +9,6 @@
             [meta-merge.core :refer [meta-merge]]
             [com.stuartsierra.component :as component]
             [ring.middleware.stacktrace :refer [wrap-stacktrace]]
-            [figwheel-sidecar.repl-api :as ra]
             [eftest.runner :as eftest]
             [app.config :as config]
             [app.system :as system]
@@ -29,55 +28,26 @@
 (defn system []
   reload/system)
 
-(def figwheel-config
-  {:figwheel-options {}                                     ;; <-- figwheel server config goes here
-   :build-ids        ["dev"]                                ;; <-- a vector of build ids to start autobuilding
-   :all-builds                                              ;; <-- supply your build configs here
-                     [{:id           "dev"
-                       :figwheel     true
-                       :source-paths ["src" "dev"]
-                       :compiler     {:main            "cljs.user"
-                                      :asset-path      "js"
-                                      :output-to       "target/figwheel/public/js/main.js"
-                                      :output-dir      "target/figwheel/public/js"
-                                      :source-map      true
-                                      :source-map-path "js"
-                                      ;    :verbose    true
-                                      }}]})
-
 (def dev-config
   {:app {:middleware [wrap-stacktrace
-                      wrap-last-request]}
-   :figwheel
-        figwheel-config})
+                      wrap-last-request]}})
 
 (def config
   (meta-merge config/defaults
 ;              config/environ
               dev-config))
 
-(defrecord Figwheel []
-  component/Lifecycle
-  (start [config]
-    (ra/start-figwheel! config)
-    config)
-  (stop [config]
-    (ra/stop-figwheel!)
-    config))
-
-
 
 (defn new-system []
-   (into (system/new-system config)
-        {:figwheel (map->Figwheel (:figwheel config))}))
+  (system/new-system config))
+
+(defn in-memory-system [config]
+  (assoc-in config [:datomic :connect-url] "datomic:mem://ccpeople123"))
 
 (ns-unmap *ns* 'test)
 
 (defn test []
   (eftest/run-tests (eftest/find-tests "test") {:multithread? false}))
-
-(defn cljs-repl []
- (ra/cljs-repl))
 
 (defn reset []
   (reload/reset))

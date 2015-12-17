@@ -6,6 +6,7 @@
             [plumbing.core :refer [safe-get fnk]]
             [environ.core :refer [env]]
             [app.graph :as graph]
+            [app.consultant :as consultant]
             [byte-streams :as bs]
             [schema.core :as s]
             [schema.coerce :as coerce]
@@ -488,12 +489,7 @@
                                          (time/first-day-of-the-month db-max-work-date)
                                          (time/first-day-of-the-month (time/year today) 1)))
    :current-period-start             (fnk [today]
-                                       ;; period is closed on 5th of next month, unless in January
-                                       (if (and (<= (time/day today) 5) (> (time/month today) 1))
-                                         (-> today
-                                             (time/minus (-> 1 (time/months)))
-                                             (time/first-day-of-the-month))
-                                         (time/first-day-of-the-month today)))
+                                       (consultant/current-period-start today))
    :re-import?                       (fnk [db-max-work-date current-period-start]
                                        ;; todo correctly handle db-date == period-start
                                        (boolean (and db-max-work-date

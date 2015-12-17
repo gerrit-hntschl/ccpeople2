@@ -36,3 +36,7 @@
     color: #000;
     font-weight: bold;
 }
+
+body {
+    margin: 0px;
+}

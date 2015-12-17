@@ -41,23 +41,24 @@
                  [com.andrewmcveigh/cljs-time "0.3.14"]
                  [buddy/buddy-auth "0.6.2"]
                  ;[sudharsh/clj-oauth2 "0.5.3"]
+
                  ]
 
   :profiles
-  {:dev           {:source-paths     ["dev"]
-                   :repl-options     {:init-ns user
-                                      :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
-                   :dependencies     [[alembic "0.3.2"]
-                                      [com.cemerick/piggieback "0.2.1"]
-                                      [figwheel-sidecar "0.5.0-2"]
-                                      [reloaded.repl "0.2.0"]
-                                      [eftest "0.1.0"]
-                                      [kerodon "0.7.0"]
-                                      [figwheel "0.5.0-2"]]
-                   :plugins          [[lein-cljsbuild "1.1.1"]
-                                      [lein-figwheel "0.5.0-2"]]
-                   :jvm-opts         ^:replace ["-Dfile.encoding=UTF-8" "-Xmx1G" "-Xms512m" ;"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
-                                                ]}
+  {:dev           {:source-paths ["dev"]
+                   :repl-options {:init-ns user
+                                  ;                                      :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]
+                                  }
+                   :dependencies [[alembic "0.3.2"]
+                                  ;[com.cemerick/piggieback "0.2.1"]
+                                  [figwheel-sidecar "0.5.0-2"]
+                                  [reloaded.repl "0.2.0"]
+                                  [eftest "0.1.0"]
+                                  [kerodon "0.7.0"]
+                                  [figwheel "0.5.0-2"]]
+                   :plugins      [[lein-cljsbuild "1.1.1"]]
+                   :jvm-opts     ^:replace ["-Dfile.encoding=UTF-8" "-Xmx1G" "-Xms512m" ;"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
+                                            ]}
    :test          [:project/test :profiles/test]
    :uberjar       {:aot          :all
                    :uberjar-name "app.jar"
@@ -97,7 +98,8 @@
                           :compiler     {:output-to     "resources/public/js/compiled/app.js"
                                          :main          app.core
                                          :optimizations :advanced
-                                         :pretty-print  false}}]}
+                                         :pseudo-names true
+                                         :pretty-print  true}}]}
 
   :repositories {"my.datomic.com" {:url      "https://my.datomic.com/repo"
                                    :username [:env/datomic_user]
