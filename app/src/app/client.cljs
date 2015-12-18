@@ -6,8 +6,9 @@
     [bidi.bidi :as bidi]
     [goog.events :as events]
     [app.gsignin :as gs]
+    cljsjs.react
     [app.donut-service :as donut-service]
-    [material-ui.core :as ui :include-macros true]
+    ;    [material-ui.core :as ui :include-macros true]
     [goog.history.EventType :as EventType]
     [app.days :as days]
     [cljs.pprint :as pprint])
@@ -24,7 +25,7 @@
     (days/format-simple-date (apply max-key #(.getTime %) (map :worklog/work-date worklogs)))
     "?"))
 
-(def colors {:primary1Color      (.' js/MaterialUI :Styles.Colors.cyan300)
+#_(def colors {:primary1Color      (.' js/MaterialUI :Styles.Colors.cyan300)
              :primary2Color      (.' js/MaterialUI :Styles.Colors.cyan700),
              :primary3Color      (.' js/MaterialUI :Styles.Colors.cyan100),
              :accent1Color       (.' js/MaterialUI :Styles.Colors.limeA200),
@@ -37,10 +38,7 @@
              :disabledColor      (.' js/MaterialUI :Styles.Colors.darkBlack)})
 
 (defn metric-style [text]
-  [:p {:style {:font-size 60
-                  :margin-top "auto"
-                  :margin-bottom "auto"}}
-   text])
+  [:span {:style {:font-size 60}} text])
 
 
 (defn profile-page [_]
@@ -57,60 +55,25 @@
     [:div {:style {:margin-left "auto"
                    :margin-right "auto"
                    :width 700}}
-     [:h2 {:style {:color (:alternateTextColor colors)}} "This Month"]
+     [:h2 {:style {:color "white"}} "This Month"]
 ;     [:pre (str state)]
-     [ui/GridList {:cols       3
-                   :cellHeight 130
-                   :padding    1
-                   :style {:width 700}}
-      [ui/GridTile {:title "today"}
-       [ui/Paper {:zDepth 2
-                  :style  {:height          80
-                           :backgroundColor (:primary3Color colors)
-                           :color           (:accent1Color colors)}}
-        (metric-style today-str)]]
-      [ui/GridTile {:title "percent of goal"}
-       [ui/Paper {:zDepth 2
-                  :style  {:height          80
-                           :backgroundColor (:primary3Color colors)
-                           :color           (:accent1Color colors)}}
-        (metric-style billed-days)]]
-      [ui/GridTile {:title "days balance"}
-       [ui/Paper {:zDepth 2
-                  :style {:height 80
-                          :backgroundColor (:primary3Color colors)
-                          :color (:accent1Color colors)}}
-        (metric-style balance)]]
-      [ui/GridTile {:title "days w/o booked hours"}
-       [ui/Paper {:zDepth 2
-                  :style  {:height          80
-                           :backgroundColor (:primary3Color colors)
-                           :color           (:accent1Color colors)}}
-        (metric-style unbooked-days-count)]]
-      [ui/GridTile {:title "your workdays left"}
-       [ui/Paper {:zDepth 2
-                  :style  {:height          80
-                           :backgroundColor (:primary3Color colors)
-                           :color           (:accent1Color colors)}}
-        (metric-style remaining-work-days-minus-vacation)]]
-      [ui/GridTile {:title "days needed to reach 100%"}
-       [ui/Paper {:zDepth 2
-                  :style {:height 80
-                          :backgroundColor (:primary3Color colors)
-                          :color (:accent1Color colors)}}
-        (metric-style days-to-100-percent)]]
-      [ui/GridTile {:title "remaining leave"}
-       [ui/Paper {:zDepth 2
-                  :style  {:height          80
-                           :backgroundColor (:primary3Color colors)
-                           :color           (:accent1Color colors)}}
-        (metric-style rem-holidays)]]
-      [ui/GridTile {:title "sick leave"}
-       [ui/Paper {:zDepth 2
-                  :style  {:height          80
-                           :backgroundColor (:primary3Color colors)
-                           :color           (:accent1Color colors)}}
-        (metric-style num-sick-leave-days)]]]
+     [:ul {:padding    1
+           :style {:width 700}}
+      [:li "today" (metric-style today-str)]
+      [:li "percent of goal"
+       (metric-style billed-days)]
+      [:li "days balance"
+       (metric-style balance)]
+      [:li "days w/o booked hours"
+       (metric-style unbooked-days-count)]
+      [:li "your workdays left"
+       (metric-style remaining-work-days-minus-vacation)]
+      [:li "days needed to reach 100%"
+       (metric-style days-to-100-percent)]
+      [:li "remaining leave"
+       (metric-style rem-holidays)]
+      [:li "sick leave"
+       (metric-style num-sick-leave-days)]]
      [:div (str "Latest workdate considered: " (latest-worklog-work-date state))]]))
 
 (defn bye-world [_]
@@ -144,50 +107,16 @@
   (let [{page-params :route-params :as route-state} (:page @domain/app-state)]
     ((handlers route-state) page-params)))
 
-(def theme
-  #js {:fontFamily "Roboto, sans-serif"
-       :spacing    (.' js/MaterialUI :Styles.Spacing)
-       :palette    (clj->js colors)})
-
-(def ^:dynamic *mui-theme*
-  (.getMuiTheme (.' js/MaterialUI :Styles.ThemeManager) theme))
-
 (defn page []
-  [ui/AppCanvas
-   [ui/AppBar {:title                    "ccHours"
-               :zDepth                   0
-               :onMenuIconButtonTouchTap (fn []
-                                           (println "touchtap")
-
-                                           )
-               :iconElementRight         (reagent/as-element [gs/signed-in-component])
-               }
-    [:div.action-icons
-     [ui/IconButton {:iconClassName "mdfi_navigation_more_vert"}]
-     [ui/IconButton {:iconClassName "mdfi_action_favorite_outline"}]
-     [ui/IconButton {:iconClassName "mdfi_action_search"}]]
-    ]
-   [:div {:style {:padding-top (.' js/MaterialUI :Styles.Spacing.desktopKeylineIncrement)
-                  :text-align  "center"}}
+  [:div
+   [:h3 "ccHours"]
+   [:div {:style {:text-align "center"}}
     [gs/sign-in-component]
     [dispatcher]]])
 
-(defn main-panel []
-  (reagent/create-class
-    {:display-name "Root Panel"
-
-     :child-context-types
-                   #js {:muiTheme js/React.PropTypes.object}
-
-     :get-child-context
-                   (fn [this]
-                     #js {:muiTheme *mui-theme*})
-     :reagent-render
-                   page}))
-
 
 (defn start []
-  (reagent/render-component [main-panel]
+  (reagent/render-component [page]
                             (.getElementById js/document "app")))
 
 

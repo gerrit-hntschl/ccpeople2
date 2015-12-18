@@ -16,7 +16,7 @@
                  [enlive "1.1.6"]
                  [meta-merge "0.1.1"]
                  [ring-middleware-format "0.7.0"]
-                 [org.clojure/clojurescript "1.7.170"]
+                 [org.clojure/clojurescript "1.7.189"]
                  [org.clojure/tools.reader "0.10.0"]
                  [cljs-ajax "0.3.14"]
                  [prismatic/schema "1.0.3"]
@@ -36,8 +36,7 @@
                  [ring/ring-defaults "0.1.5"]
                  [clj-time "0.11.0"]
                  [hiccup "1.0.5"]
-                 ;; currently we use the react packaged with material-ui
-                 [reagent "0.5.1" :exclusions [cljsjs/react]]
+                 [reagent "0.5.1"]
                  [com.andrewmcveigh/cljs-time "0.3.14"]
                  [buddy/buddy-auth "0.6.2"]
                  ;[sudharsh/clj-oauth2 "0.5.3"]
@@ -87,8 +86,7 @@
                           :source-paths ["src" "dev"]
                           :figwheel     {:on-jsload "app.client/on-js-reload"}
 
-                          :compiler     {:preamble ["resources/material.js"]
-                                         :main                 app.client
+                          :compiler     {:main                 app.client
                                          :asset-path           "js/compiled/out"
                                          :output-to            "resources/public/js/compiled/app.js"
                                          :output-dir           "resources/public/js/compiled/out"
@@ -96,7 +94,7 @@
                        {:id           "min"
                           :source-paths ["src"]
                           :compiler     {:output-to     "resources/public/js/compiled/app.js"
-                                         :main          app.core
+                                         :main app.client
                                          :optimizations :advanced
                                          :pseudo-names true
                                          :pretty-print  true}}]}

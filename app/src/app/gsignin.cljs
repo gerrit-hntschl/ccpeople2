@@ -2,7 +2,7 @@
   (:require-macros [cljs.core.async.macros :refer [go go-loop]])
   (:require [reagent.core :as r]
             [app.domain :as domain]
-            [material-ui.core :as ui :include-macros true]
+    ;            [material-ui.core :as ui :include-macros true]
             [cljs.core.async :refer [put! chan <! >! buffer]]
             [clojure.string :as str]))
 
@@ -56,7 +56,7 @@
         user (:user state)
         image-url (-> user :user/image-url)]
     (when (signed-in? state)
-      [ui/Avatar
+      [:button
       (cond-> {:on-click #(.signOut (auth-instance))
                :style {:cursor "pointer"}} image-url (assoc :src image-url))
       (when-not image-url (initials user))])))
@@ -65,9 +65,9 @@
   (let [state @domain/app-state]
     (when-not (signed-in? state)
       [:div
-       [ui/RaisedButton {:label    "Sign in"
-                         :on-click #(.signIn (auth-instance))
-                         :style    {:margin "16px 32px 0px 32px"}}]]
+       [:button {:label    "Sign in"
+                 :on-click #(.signIn (auth-instance))
+                 :style    {:margin "16px 32px 0px 32px"}}]]
       )))
 
 
