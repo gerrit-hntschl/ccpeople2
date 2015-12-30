@@ -16,8 +16,6 @@
 
 (enable-console-print!)
 
-;(donut-service/create-donut "data.json" #js["red" "green" "blue", "grey"])
-
 ;; define your app data so that it doesn't get over-written on reload
 
 (defn latest-worklog-work-date [state]
@@ -40,6 +38,34 @@
 (defn metric-style [text]
   [:span {:style {:font-size 60}} text])
 
+(defn current-stats-did-mount []
+  #_(donut-service/progress 730 250)
+  (let [state @domain/app-state
+        actual-hours (domain/billed-hours state)
+        todays-goal-hours (domain/todays-hour-goal state)]
+    (donut-service/balance-view todays-goal-hours actual-hours))
+  #_(donut-service/create-donut #js["blue" "green" "grey"] 144))
+
+(defn current-stats-update [this old-argv]
+  (let [state @domain/app-state
+        actual-hours (domain/billed-hours state)
+        todays-goal-hours (domain/todays-hour-goal state)]
+    (donut-service/update-balance-view-transitioned todays-goal-hours actual-hours)))
+
+(defn current-stats []
+  ;; is it really necessary to deref app-state here just to trigger an invocation of component-did-update??
+  (let [_ @domain/app-state]
+    [:div#current-stats {:style {:width        "500"
+                                 :height       "300"
+                                 :margin-left  "auto"
+                                 :margin-right "auto"}}
+     [:svg]]))
+
+(defn current-stats-component []
+  (reagent/create-class {:reagent-render current-stats
+                         :component-did-mount current-stats-did-mount
+                         :component-did-update current-stats-update}))
+
 
 (defn profile-page [_]
   (let [state @domain/app-state
@@ -51,12 +77,12 @@
         balance (pprint/cl-format nil "~,2@f" (domain/days-balance state))
         num-sick-leave-days (str (domain/number-sick-leave-days state))
         today-str (days/month-day-today)]
-    (println "rerender" (:user state))
     [:div {:style {:margin-left "auto"
                    :margin-right "auto"
                    :width 700}}
-     [:h2 {:style {:color "white"}} "This Month"]
+     [:h2 {:style {:color "white"}} "Now"]
 ;     [:pre (str state)]
+     [current-stats-component]
      [:ul {:padding    1
            :style {:width 700}}
       [:li "today" (metric-style today-str)]

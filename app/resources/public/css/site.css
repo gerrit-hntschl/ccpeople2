@@ -37,6 +37,10 @@
     font-weight: bold;
 }
 
+ul {
+  list-style-type: none;
+}
+
 body {
     margin: 0px;
 }

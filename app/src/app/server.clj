@@ -65,13 +65,13 @@
     [:conn]))
 
 (defn index-endpoint []
-  (map->Endpoint {:route "/"
+  (map->Endpoint {:route   "/"
                   ;; no component dependencies, so create handler directly
                   :handler (fn [req]
-                             (-> (io/resource "public/index.html")
-                                 (io/input-stream)
-                                 (response)
-                                 (content-type "text/html")))
-                  :tag :index}))
+                             (time (-> (io/resource "public/index.html")
+                                  (io/input-stream)
+                                  (response)
+                                  (content-type "text/html"))))
+                  :tag     :index}))
 
 

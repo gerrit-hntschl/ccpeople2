@@ -40,7 +40,8 @@
                  [com.andrewmcveigh/cljs-time "0.3.14"]
                  [buddy/buddy-auth "0.6.2"]
                  ;[sudharsh/clj-oauth2 "0.5.3"]
-
+                 [cljsjs/d3 "3.5.7-1"]
+                 [cljsjs/nvd3 "1.8.1-0"]
                  ]
 
   :profiles
@@ -83,21 +84,23 @@
                         :compiler     {:output-to     "target/cljsbuild/public/js/main.js"
                                        :optimizations :advanced}}
                        {:id           "dev"
-                          :source-paths ["src" "dev"]
-                          :figwheel     {:on-jsload "app.client/on-js-reload"}
+                        :source-paths ["src" "dev"]
+                        :figwheel     {:on-jsload "app.client/on-js-reload"}
 
-                          :compiler     {:main                 app.client
-                                         :asset-path           "js/compiled/out"
-                                         :output-to            "resources/public/js/compiled/app.js"
-                                         :output-dir           "resources/public/js/compiled/out"
-                                         :source-map-timestamp true}}
+                        :compiler     {:main                 app.client
+                                       :asset-path           "js/compiled/out"
+                                       :output-to            "resources/public/js/compiled/app.js"
+                                       :output-dir           "resources/public/js/compiled/out"
+                                       :source-map-timestamp true}}
                        {:id           "min"
-                          :source-paths ["src"]
-                          :compiler     {:output-to     "resources/public/js/compiled/app.js"
-                                         :main app.client
-                                         :optimizations :advanced
-                                         :pseudo-names true
-                                         :pretty-print  true}}]}
+                        :source-paths ["src"]
+                        :compiler     {:output-to     "resources/public/js/compiled/app.js"
+                                       :main          app.start
+                                       :optimizations :advanced
+                                       :externs       ["externs/gapi_externs.js"]
+                                       ;                                         :pseudo-names true
+                                       ;:pretty-print  true
+                                       }}]}
 
   :repositories {"my.datomic.com" {:url      "https://my.datomic.com/repo"
                                    :username [:env/datomic_user]

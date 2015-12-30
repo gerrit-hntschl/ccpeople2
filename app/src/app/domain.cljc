@@ -176,7 +176,7 @@
 (defn actual-work-days-left [app-state]
   (let [remaining-working-days (working-days-left app-state)
         remaining-vacation-days (number-remaining-holidays app-state)]
-    (- remaining-working-days remaining-vacation-days)))
+    (max 0 (- remaining-working-days remaining-vacation-days))))
 
 (def total-working-days
   (- (count (days/workdays-till-end-of-year (time/local-date 2015 1 1)))
