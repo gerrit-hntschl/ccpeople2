@@ -28,7 +28,7 @@
 
 (def timestamp-formatter (format/formatter time/utc "yyyy-MM-dd HH:mm:ss" "yyyy-MM-dd"))
 
-(def ^:const jira-timesheet-project-key "TIMXIII")
+(def ^:const jira-timesheet-project-key "TS")
 
 (defn matches [r]
   (fn [s]

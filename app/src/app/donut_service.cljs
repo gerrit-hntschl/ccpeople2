@@ -58,18 +58,18 @@
       (.style "text-anchor" "middle")
       (.text label-text)))
 
-(defn create-balance-view []
-  (let [width 500
-        height 300
-        x-padding (* width 0.2)
+(defn create-balance-view [width height]
+  (let [x-padding (* width 0.2)
         x-line-padding (* width 0.15)
         balance-width (- width (* 2 x-padding))
         balance-line-color "blue"
         goal-line-color "grey"
         svg (-> js/d3
                 (.select "#current-stats svg")
-                (.attr "width" width)
-                (.attr "height" height)
+                (.attr "width" "92%")
+                (.attr "height" "92%")
+                (.attr "viewBox" (str "0 0 " width " " height))
+                (.attr "preserveAspectRatio" "xMidYMid meet")
                 (.append "g"))]
     (-> svg
         (.append "rect")
@@ -78,6 +78,24 @@
         (.attr "y" (/ height 2))
         (.attr "height" 0)
         (.attr "width" balance-width))
+
+    (append-label svg "actual-hours-label" balance-line-color "Your booked time" width)
+    (append-line svg
+                 "goal-line"
+                 goal-line-color
+                 width
+                 (/ height 2)
+                 x-line-padding)
+
+    ;; goal stats
+    (append-right-side-text svg "goal-percent-text" goal-line-color (- width x-line-padding))
+    (append-left-side-text svg "goal-hours-text" goal-line-color x-line-padding)
+    (append-label svg "goal-label" goal-line-color "Today's goal" width)
+
+    ;; balance stats
+    (append-line svg "actual-hours-line" balance-line-color width (/ height 2) x-line-padding)
+    (append-right-side-text svg "actual-hours-percent-text" balance-line-color (- width x-line-padding))
+    (append-left-side-text svg "actual-hours-hours-text" balance-line-color x-line-padding)
     (-> svg
         (.append "text")
         (.classed "balance-in-days-text" true)
@@ -85,28 +103,7 @@
         (.attr "transform" (str "translate(" (/ width 2) "," (/ height 2) ")"))
         (.attr "dy" ".15em")
         (.style "text-anchor" "middle")
-        (.text "?"))
-    ;; balance stats
-    (append-line svg "actual-hours-line" balance-line-color width (/ height 2) x-line-padding)
-    (append-right-side-text svg "actual-hours-percent-text" balance-line-color (- width x-line-padding))
-    (append-left-side-text svg "actual-hours-hours-text" balance-line-color x-line-padding)
-    (append-label svg "actual-hours-label" balance-line-color "Your booked time" width)
-
-    ;; goal stats
-    (append-line svg
-                 "goal-line"
-                 goal-line-color
-                 width
-                 (/ height 2)
-                 x-line-padding)
-    (append-right-side-text svg "goal-percent-text" goal-line-color (- width x-line-padding))
-    (append-left-side-text svg "goal-hours-text" goal-line-color x-line-padding)
-    (append-label svg "goal-label" goal-line-color "Today's goal" width)))
-
-(defn set-text-content! [text-content]
-  (this-as dom-element
-    (set! (.-textContent dom-element)
-          text-content)))
+        (.text "?"))))
 
 (defn format-percent [percent]
   (pprint/cl-format nil
@@ -233,35 +230,6 @@
       (.attr "height" height)
       (.style "fill" color-interpolator)))
 
-(defn update-area-transitioned [d3-area y height color-interpolator]
-  (-> d3-area
-      ;  (.transition)
-      ;  (.ease "linear")
-      ;        (.duration start-duration)
-      (.attr "y" (+ y (/ height 2)))
-      (.attr "height" 0)
-      #_(.styleTween "fill" (fn [_ _ _]
-                              color-interpolator))
-      )
-  #_(let [start-y (.attr d3-area "y")
-        center-y (+ y (/ height 2))
-        center-dist-start (js/Math.abs (- center-y start-y))
-        center-dist-end (js/Math.abs (- center-y y))
-        total-dist (+ center-dist-start center-dist-end)
-        start-fraction (/ center-dist-start total-dist)
-        end-fraction (/ center-dist-end total-dist)
-        start-duration (* start-fraction transition-duration)
-        end-duration (* end-fraction transition-duration)]
-    ))
-
-(comment
-  (.transition)
-  (.ease "linear")
-  (.duration end-duration)
-  (.attr "y" y)
-  (.attr "height" height)
-         (.styleTween "fill" color-interpolator))
-
 (defn update-y-transitioned [d3-element center-y new-y end-duration]
   (-> d3-element
       (.attr "y" center-y)
@@ -272,7 +240,6 @@
 
 (defn update-balance-view-transitioned [todays-target-hours actual-hours-today]
   (let [height 300
-        target-percentage (* 100 (/ todays-target-hours max-value))
         actual-percentage (* 100 (/ actual-hours-today max-value))
         balance-hours (- actual-hours-today todays-target-hours)
         balance-height (-> (js/Math.abs balance-hours) (* 4) (min 250))
@@ -325,13 +292,11 @@
         (.duration end-duration)
         (.ease "cubic-out")
         (.attr "y" balance-y-upper)
-        (.attr "height" balance-height))
+        (.attr "height" balance-height)
+        (.styleTween "fill" (fn [_ _ current-color]
+                              (-> js/d3
+                                  (.interpolateLab current-color (rect-color-interpolator normalized-balance-ratio))))))
 
-    #_(update-area-transitioned
-      d3-balance-area balance-y-upper balance-height (rect-color-interpolator normalized-balance-ratio))
-
-
-    (update-line-y-transitioned d3-actual-hours-line center-y actual-hours-y end-duration)
     (update-line-y-transitioned d3-goal-line center-y goal-y end-duration)
     (update-hours-and-y-transitioned d3-actual-hours-hours-text
                                      center-y
@@ -363,9 +328,8 @@
                          balance-hours
                          format-days-and-hours)))))
 
-(defn update-balance-view [todays-target-hours actual-hours-today]
-  (let [height 300
-        target-percentage (* 100 (/ todays-target-hours max-value))
+(defn update-balance-view [height todays-target-hours actual-hours-today]
+  (let [target-percentage (* 100 (/ todays-target-hours max-value))
         actual-percentage (* 100 (/ actual-hours-today max-value))
         balance-hours (- actual-hours-today todays-target-hours)
         balance-height (-> (js/Math.abs balance-hours) (* 4) (min 250))
@@ -407,9 +371,12 @@
     (-> d3-balance-in-days-text
         (.text (format-days-and-hours balance-hours)))))
 
-(defn balance-view [todays-target-hours actual-hours-today]
-  (create-balance-view)
-  (update-balance-view todays-target-hours actual-hours-today))
+(defn balance-view [viewport-size todays-target-hours actual-hours-today]
+  (let [{total-width :width} viewport-size
+        balance-view-width (min (* 0.85 total-width) 500)
+        balance-view-height (* 0.6 balance-view-width)]
+    (create-balance-view balance-view-width balance-view-height)
+    (update-balance-view balance-view-height todays-target-hours actual-hours-today)))
 
 (defn progress [todays-target-hours actual-hours-today]
   (let [width 250

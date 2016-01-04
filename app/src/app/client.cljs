@@ -23,18 +23,6 @@
     (days/format-simple-date (apply max-key #(.getTime %) (map :worklog/work-date worklogs)))
     "?"))
 
-#_(def colors {:primary1Color      (.' js/MaterialUI :Styles.Colors.cyan300)
-             :primary2Color      (.' js/MaterialUI :Styles.Colors.cyan700),
-             :primary3Color      (.' js/MaterialUI :Styles.Colors.cyan100),
-             :accent1Color       (.' js/MaterialUI :Styles.Colors.limeA200),
-             :accent2Color       (.' js/MaterialUI :Styles.Colors.pinkA100),
-             :accent3Color       (.' js/MaterialUI :Styles.Colors.tealA400),
-             :textColor          (.' js/MaterialUI :Styles.Colors.darkBlack),
-             :alternateTextColor (.' js/MaterialUI :Styles.Colors.white),
-             :canvasColor        (.' js/MaterialUI :Styles.Colors.cyan200),
-             :borderColor        (.' js/MaterialUI :Styles.Colors.tealA700),
-             :disabledColor      (.' js/MaterialUI :Styles.Colors.darkBlack)})
-
 (defn metric-style [text]
   [:span {:style {:font-size 60}} text])
 
@@ -42,9 +30,9 @@
   #_(donut-service/progress 730 250)
   (let [state @domain/app-state
         actual-hours (domain/billed-hours state)
-        todays-goal-hours (domain/todays-hour-goal state)]
-    (donut-service/balance-view todays-goal-hours actual-hours))
-  #_(donut-service/create-donut #js["blue" "green" "grey"] 144))
+        todays-goal-hours (domain/todays-hour-goal state)
+        viewport-size (:viewport/size state)]
+    (donut-service/balance-view viewport-size todays-goal-hours actual-hours)))
 
 (defn current-stats-update [this old-argv]
   (let [state @domain/app-state
@@ -55,9 +43,7 @@
 (defn current-stats []
   ;; is it really necessary to deref app-state here just to trigger an invocation of component-did-update??
   (let [_ @domain/app-state]
-    [:div#current-stats {:style {:width        "500"
-                                 :height       "300"
-                                 :margin-left  "auto"
+    [:div#current-stats {:style {:margin-left  "auto"
                                  :margin-right "auto"}}
      [:svg]]))
 
@@ -74,22 +60,15 @@
         days-to-100-percent (pprint/cl-format nil "~,2f" (domain/days-needed-to-reach-goal state))
         unbooked-days-count (str (count (domain/unbooked-days state)))
         billed-days (pprint/cl-format nil "~,1f%" (* 100 (/ (domain/billed-hours state) 8 domain/billable-days-goal)))
-        balance (pprint/cl-format nil "~,2@f" (domain/days-balance state))
         num-sick-leave-days (str (domain/number-sick-leave-days state))
         today-str (days/month-day-today)]
     [:div {:style {:margin-left "auto"
                    :margin-right "auto"
-                   :width 700}}
-     [:h2 {:style {:color "white"}} "Now"]
-;     [:pre (str state)]
+                   :width "100%"}}
+     [:h2 {:style {:color "white"}} "Today " (metric-style today-str)]
      [current-stats-component]
      [:ul {:padding    1
-           :style {:width 700}}
-      [:li "today" (metric-style today-str)]
-      [:li "percent of goal"
-       (metric-style billed-days)]
-      [:li "days balance"
-       (metric-style balance)]
+           :style {:width "100%"}}
       [:li "days w/o booked hours"
        (metric-style unbooked-days-count)]
       [:li "your workdays left"

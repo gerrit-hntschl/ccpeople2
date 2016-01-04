@@ -8,6 +8,7 @@
                [goog.array :as garray]
                [cljs-time.core :as time]
                [cljs-time.coerce :as time-coerce]
+               [goog.dom :as dom]
                cljs-time.extend]
         :clj [[clj-time.core :as time]
               [clj-time.coerce :as time-coerce]])))
@@ -16,8 +17,20 @@
 
 (def billable-days-goal 180)
 
+#?(:cljs
+   (defn get-viewport-size []
+     (let [window (dom/getWindow)
+           viewport-size (dom/getViewportSize window)]
+       {:width (.-width viewport-size)
+        :height (.-height viewport-size)}))
+   :clj
+   (defn get-viewport-size []
+     {:width 500
+      :height 300}))
+
 (def initial-state {:days/workdays-till-end-of-year (days/workdays-till-end-of-year (time/today))
-                    :today (time/today)})
+                    :today (time/today)
+                    :viewport/size (get-viewport-size)})
 
 (defonce app-state (atom initial-state))
 
@@ -87,14 +100,14 @@
        (group-by (comp time/month time-coerce/to-date-time :worklog/work-date))
        (map-vals (sum-of :worklog/hours))))
 
-(defn working-days-left [app-state]
-  (count (:days/workdays-till-end-of-year app-state)))
+(defn working-days-left-without-today [app-state]
+  (dec (count (:days/workdays-till-end-of-year app-state))))
 
 ;; vacation ticket TIMXIII-1592
-(def ^:const vacation-ticket-id 56623)
+(def vacation-ticket-id 56623)
 
 ;; illness TIMXIII-1588
-(def ^:const sick-leave-ticket-id 56617)
+(def sick-leave-ticket-id 56617)
 
 (defn ticket-days [ticket-id worklogs]
   (into #{}
@@ -152,7 +165,7 @@
          (garray/defaultCompare (.valueOf this) (.valueOf other))
          (throw (js/Error. (str "Cannot compare " this " to " other)))))))
 
-(def ^:const min-hours-per-day 4)
+(def min-hours-per-day 4)
 
 (defn unbooked-days [app-state]
   (let [today (time/today)
@@ -174,12 +187,12 @@
     (remove days-with-work-hours-above-min-threshold period-days)))
 
 (defn actual-work-days-left [app-state]
-  (let [remaining-working-days (working-days-left app-state)
+  (let [remaining-working-days (working-days-left-without-today app-state)
         remaining-vacation-days (number-remaining-holidays app-state)]
     (max 0 (- remaining-working-days remaining-vacation-days))))
 
 (def total-working-days
-  (- (count (days/workdays-till-end-of-year (time/local-date 2015 1 1)))
+  (- (count (days/workdays-till-end-of-year (time/local-date 2016 1 1)))
      vacation-per-year))
 
 (def daily-burndown-hours

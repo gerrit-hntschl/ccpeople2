@@ -42,7 +42,18 @@
                       (time/local-date 2015 10 3)
                       (time/local-date 2015 11 1)
                       (time/local-date 2015 12 25)
-                      (time/local-date 2015 12 26)}})
+                      (time/local-date 2015 12 26)}
+               2016 #{(time/local-date 2016 1 1)
+                      (time/local-date 2016 3 25)
+                      (time/local-date 2016 3 28)
+                      (time/local-date 2016 5 1)
+                      (time/local-date 2016 5 5)
+                      (time/local-date 2016 5 16)
+                      (time/local-date 2016 5 26)
+                      (time/local-date 2016 10 3)
+                      (time/local-date 2016 11 1)
+                      (time/local-date 2016 12 25)
+                      (time/local-date 2016 12 26)}})
 
 
 (def yyyy-MM-dd-formatter (format/formatter "yyyy-MM-dd"))
