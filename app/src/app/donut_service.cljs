@@ -66,8 +66,8 @@
         goal-line-color "grey"
         svg (-> js/d3
                 (.select "#current-stats svg")
-                (.attr "width" "92%")
-                (.attr "height" "92%")
+                (.attr "width" width)
+                (.attr "height" height)
                 (.attr "viewBox" (str "0 0 " width " " height))
                 (.attr "preserveAspectRatio" "xMidYMid meet")
                 (.append "g"))]
@@ -239,7 +239,9 @@
       (.attr "y" new-y)))
 
 (defn update-balance-view-transitioned [todays-target-hours actual-hours-today]
-  (let [height 300
+  (let [svg (-> js/d3
+                (.select "#current-stats svg"))
+        height (.attr svg "height")
         actual-percentage (* 100 (/ actual-hours-today max-value))
         balance-hours (- actual-hours-today todays-target-hours)
         balance-height (-> (js/Math.abs balance-hours) (* 4) (min 250))
@@ -256,8 +258,7 @@
                                      (max balance-lower-bound)
                                      (+ balance-cap)
                                      (/ (* 2 balance-cap)))
-        svg (-> js/d3
-                (.select "#current-stats svg"))
+
 
         start-y (.attr (.select js/d3 "#current-stats .balance-area") "y")
         center-y (/ height 2)
@@ -298,6 +299,7 @@
                                   (.interpolateLab current-color (rect-color-interpolator normalized-balance-ratio))))))
 
     (update-line-y-transitioned d3-goal-line center-y goal-y end-duration)
+    (update-line-y-transitioned d3-actual-hours-line center-y actual-hours-y end-duration)
     (update-hours-and-y-transitioned d3-actual-hours-hours-text
                                      center-y
                                      actual-hours-y
