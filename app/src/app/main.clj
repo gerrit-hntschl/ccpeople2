@@ -5,7 +5,12 @@
             [duct.middleware.errors :refer [wrap-hide-errors]]
             [meta-merge.core :refer [meta-merge]]
             [app.system :as system]
-            [app.config :as config]))
+            [app.config :as config]
+            [app.log :as log])
+  (:import (java.lang.invoke MethodHandles)
+           (org.slf4j LoggerFactory)))
+
+(def logger ^ch.qos.logback.classic.Logger (LoggerFactory/getLogger (.lookupClass (MethodHandles/lookup))))
 
 (def prod-config
   {:app {:middleware     [[wrap-hide-errors :internal-error]]
@@ -18,5 +23,5 @@
 
 (defn -main [& args]
   (let [system (system/new-system config)]
-    (println "Starting HTTP server on port" (-> system :http :port))
+    (log/info logger "Starting HTTP server on port" (-> system :http :port))
     (component/start system)))

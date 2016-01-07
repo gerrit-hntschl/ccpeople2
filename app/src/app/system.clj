@@ -10,17 +10,31 @@
             [app.middlewared-handler :refer [handler-component router-component]]
             [app.storage :as storage]
             [app.worklog :as worklog]
-            [ring.middleware.format :as ring-format])
+            [ring.middleware.format :as ring-format]
+    ;; to load data reader
+            app.date
+            [cognitect.transit :as transit]
+            [app.log :as log])
   (:import (com.stuartsierra.component Lifecycle)
            (java.io Closeable)
-           (java.util.concurrent Executors TimeUnit)))
+           (java.util.concurrent Executors TimeUnit)
+           (java.lang.invoke MethodHandles)
+           (org.slf4j LoggerFactory)))
 
 (def base-config
-  {:app {:middleware [[wrap-not-found :not-found]
-                      ring-format/wrap-restful-format
-                      [wrap-defaults :defaults]]
-         :not-found  (io/resource "errors/404.html")
-         :defaults   (meta-merge site-defaults {:static {:resources "public"}})}})
+  {:app {:middleware     [[wrap-not-found :not-found]
+                          [ring-format/wrap-restful-format :transit-custom]
+                          [wrap-defaults :defaults]]
+         :not-found      (io/resource "errors/404.html")
+         :defaults       (meta-merge site-defaults {:static {:resources "public"}})
+         :transit-custom {:response-options
+                          {:transit-json
+                           {:handlers
+                            {org.joda.time.LocalDate
+                             (transit/write-handler "date/local"
+                                                    (fn [local-date] [(.getYear local-date)
+                                                                      (.getMonthOfYear local-date)
+                                                                      (.getDayOfMonth local-date)]))}}}}}})
 
 (defrecord Webserver [app]
   Lifecycle
@@ -105,9 +119,10 @@
                          :scheduler :scheduler
                          :jira-client :jira-downloaded-worklogs-client}})))
 
+(def logger ^ch.qos.logback.classic.Logger (LoggerFactory/getLogger (.lookupClass (MethodHandles/lookup))))
+
 (Thread/setDefaultUncaughtExceptionHandler
   (reify Thread$UncaughtExceptionHandler
     (uncaughtException [_ thread ex]
-      (println "Uncaught exception on" (.getName thread) " : " (.getMessage ex))
-      (.printStackTrace ex)
+      (log/error logger ex "Uncaught exception on" (.getName thread) " : " (.getMessage ex))
       (def exex ex))))

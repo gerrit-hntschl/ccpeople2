@@ -7,6 +7,7 @@
             [clj-time.coerce :as time-coerce]
             [app.system :as system]
             [app.config :as config]
+            [app.data-model :as model]
             [com.stuartsierra.component :as component]
             [app.storage :as storage]))
 
@@ -44,7 +45,7 @@
                                                     :hours 7.
                                                     :work_date (time-coerce/to-date (time/date-time 2015 1 20))
                                                     :worklog_id 3)]
-                                                 (mapv (complete-non-nil JiraWorkLog)))
+                                                 (mapv (complete-non-nil model/JiraWorkLog)))
                        :prefetched-issues   (->> [{:id     bau-issue-id
                                                    :fields {:components        [{:id   100
                                                                                  :name bau-company}]
@@ -52,10 +53,10 @@
                                                   {:id     cc-plus-one-id
                                                    :fields {:components [{:id   99
                                                                           :name "codecentric"}]}}]
-                                                 (mapv (complete-non-nil JiraIssue)))
+                                                 (mapv (complete-non-nil model/JiraIssue)))
                        :prefetched-users    (->> [{:name         bob-baumeister
                                                    :emailAddress bob-email}]
-                                                 (mapv (complete-non-nil JiraUser)))}
+                                                 (mapv (complete-non-nil model/JiraUser)))}
    :result-after-sync {:worklogs #{{:worklog/id        1
                                     :worklog/hours     8.
                                     :worklog/work-date (time/date-time 2015 1 18)
@@ -114,7 +115,7 @@
                                                            :work_date (time-coerce/to-date (time/date-time 2015 11 19))
                                                            :worklog_id 333
                                                            :issue_id 222)
-                                                         JiraWorkLog)]
+                                                         model/JiraWorkLog)]
                        :prefetched-issues   []
                        :prefetched-users    []}
    :result-after-sync {:worklogs #{{:worklog/id        333

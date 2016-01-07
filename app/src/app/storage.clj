@@ -3,7 +3,9 @@
             [io.rkn.conformity :as c]
             [clojure.java.io :as io]
             [environ.core :refer [env]]
-            [com.stuartsierra.component :as component]))
+            [com.stuartsierra.component :as component]
+            app.date
+            [app.data-model :as model]))
 
 (def people-tempid
   (partial d/tempid :partition/people))
@@ -58,23 +60,37 @@
   (comp #(apply dissoc % ks)
         as-map))
 
+(defn domain-worklog [db-worklog]
+  (-> db-worklog
+      (as-map)
+      ;; for now keep the user implicit
+      (dissoc :db/id :worklog/user)
+      (update :worklog/ticket :ticket/id)
+      (model/to-domain-worklog)))
+
+(defn domain-ticket [db-ticket]
+  (-> db-ticket
+      (as-map)
+      (dissoc :db/id)
+      (update :ticket/customer :customer/id)
+      (model/to-domain-ticket)))
+
+(defn domain-customer [db-customer]
+  (-> db-customer
+      (as-map)
+      (dissoc :db/id)
+      (model/to-domain-customer)))
+
 (defn existing-user-data [conn id]
   (def xxid id)
   (let [user-entity (d/entity (db conn) id)
-        worklogs (:worklog/_user user-entity)
-        tickets (into #{} (map :worklog/ticket) worklogs)
+        db-worklogs (:worklog/_user user-entity)
+        tickets (into #{} (map :worklog/ticket) db-worklogs)
         customers (into #{} (map :ticket/customer) tickets)]
-    {:user     (->> user-entity (d/touch) (into {}))
-     :worklogs (->> worklogs
-                    (map (pull-without :worklog/user))
-                    (map (fn [wl]
-                           (update wl :worklog/ticket :ticket/id))))
-     :tickets (->> tickets
-                   (map as-map)
-                   (map (fn [ticket]
-                          (update ticket :ticket/customer :customer/id))))
-     :customers (->> customers
-                     (map as-map))}))
+    {:user      (->> user-entity (d/touch) (into {}))
+     :worklogs  (mapv domain-worklog db-worklogs)
+     :tickets   (mapv domain-ticket tickets)
+     :customers (mapv domain-customer customers)}))
 
 (defrecord DatomicDatabase [uri]
   component/Lifecycle

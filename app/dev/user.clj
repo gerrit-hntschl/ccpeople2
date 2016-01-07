@@ -59,7 +59,7 @@
   (-> system :router :routes))
 
 (defn reset-database []
-  (d/delete-database (:uri (:database (system)))))
+  (d/delete-database (:connect-url (:datomic config))))
 
 (defn route-handler-for [uri]
   (bidi/match-route (routes) uri))

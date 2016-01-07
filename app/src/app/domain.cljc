@@ -5,15 +5,12 @@
 
     #?@(:cljs [[reagent.core :refer [atom]]
                [ajax.core :as ajax]
+               [cognitect.transit :as transit]
                [goog.array :as garray]
                [cljs-time.core :as time]
-               [cljs-time.coerce :as time-coerce]
                [goog.dom :as dom]
                cljs-time.extend]
-        :clj [[clj-time.core :as time]
-              [clj-time.coerce :as time-coerce]])))
-
-(def average-working-days-2015 253)
+        :clj [[clj-time.core :as time]])))
 
 (def billable-days-goal 180)
 
@@ -38,8 +35,8 @@
   (println (str "something bad happened: " status " " status-text)))
 
 (defn handle-api-response [data]
-  (println "server data" (pr-str data))
   (swap! app-state (partial merge-with merge) data))
+
 
 (add-watch app-state :user-watch (fn [_ _ old new]
                                    (cond (and (not (:user old))
@@ -49,8 +46,12 @@
                                                             {:params          {:token (-> new :user :user/token)}
                                                              :handler         handle-api-response
                                                              :error-handler   error-handler-fn
-                                                             :response-format :edn
-                                                             :keywords?       true}))
+                                                             :response-format :transit
+                                                             :keywords?       true
+                                                             :reader (transit/reader :json
+                                                                                     {:handlers
+                                                                                      {"date/local" (fn [date-fields]
+                                                                                                      (apply time/local-date date-fields))}})}))
                                          #?(:clj (println "todo"))
                                          (and (not (:user new))
                                               (:user old))
@@ -97,14 +98,14 @@
 
 (defn billed-hours-by-month [app-state]
   (->> (billable-worklogs app-state)
-       (group-by (comp time/month time-coerce/to-date-time :worklog/work-date))
+       (group-by (comp time/month :worklog/work-date))
        (map-vals (sum-of :worklog/hours))))
 
 (defn working-days-left-without-today [app-state]
   (dec (count (:days/workdays-till-end-of-year app-state))))
 
-;; vacation ticket TIMXIII-1592
-(def vacation-ticket-id 56623)
+;; vacation ticket TS-2
+(def vacation-ticket-id 68000)
 
 ;; illness TIMXIII-1588
 (def sick-leave-ticket-id 56617)
@@ -112,8 +113,7 @@
 (defn ticket-days [ticket-id worklogs]
   (into #{}
         (comp (filter (matching :worklog/ticket ticket-id))
-              (map :worklog/work-date)
-              (map time-coerce/to-local-date))
+              (map :worklog/work-date))
         worklogs))
 
 (defn vacation-days [{:keys [worklogs]}]
@@ -133,9 +133,8 @@
        (filter (every-pred
                  (matching :worklog/ticket vacation-ticket-id)
                  (fn [{:keys [worklog/work-date]}]
-                   (let [work-date (time-coerce/to-local-date work-date)]
-                     (or (= work-date today)
-                         (time/before? work-date today))))))
+                   (or (= work-date today)
+                       (time/before? work-date today)))))
        (map :worklog/hours)
        (apply +)))
 
@@ -182,7 +181,7 @@
         days-with-work-hours-above-min-threshold (->> day->worked-hours
                                                       (filter (fn [[_ worked-hours]]
                                                                 (>= worked-hours min-hours-per-day)))
-                                                      (map (comp time-coerce/to-local-date first))
+                                                      (map (comp first))
                                                       (into #{}))]
     (remove days-with-work-hours-above-min-threshold period-days)))
 

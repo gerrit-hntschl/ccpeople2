@@ -18,7 +18,7 @@
                  [ring-middleware-format "0.7.0"]
                  [org.clojure/clojurescript "1.7.189"]
                  [org.clojure/tools.reader "0.10.0"]
-                 [cljs-ajax "0.3.14"]
+                 [cljs-ajax "0.5.2"]
                  [prismatic/schema "1.0.3"]
                  [prismatic/plumbing "0.5.2"]
                  [com.stuartsierra/component "0.3.1"]
