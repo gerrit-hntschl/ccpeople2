@@ -8,3 +8,4 @@ transactor/config/dev-transactor.properties
 .idea/
 .lein-env
 /app/profiles.clj
+.DS_Store
