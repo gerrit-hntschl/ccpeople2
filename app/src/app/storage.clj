@@ -3,6 +3,7 @@
             [io.rkn.conformity :as c]
             [clojure.java.io :as io]
             [environ.core :refer [env]]
+            [plumbing.core :refer [update-in-when]]
             [com.stuartsierra.component :as component]
             app.date
             [app.data-model :as model]))
@@ -72,7 +73,7 @@
   (-> db-ticket
       (as-map)
       (dissoc :db/id)
-      (update :ticket/customer :customer/id)
+      (update-in-when [:ticket/customer] :customer/id)
       (model/to-domain-ticket)))
 
 (defn domain-customer [db-customer]
@@ -86,7 +87,7 @@
   (let [user-entity (d/entity (db conn) id)
         db-worklogs (:worklog/_user user-entity)
         tickets (into #{} (map :worklog/ticket) db-worklogs)
-        customers (into #{} (map :ticket/customer) tickets)]
+        customers (into #{} (keep :ticket/customer) tickets)]
     {:user      (->> user-entity (d/touch) (into {}))
      :worklogs  (mapv domain-worklog db-worklogs)
      :tickets   (mapv domain-ticket tickets)

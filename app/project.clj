@@ -38,8 +38,9 @@
                  [hiccup "1.0.5"]
                  [reagent "0.5.1"]
                  [com.andrewmcveigh/cljs-time "0.3.14"]
+                 [net.oauth.core/oauth "20090617"]
+                 [net.oauth.core/oauth-httpclient4 "20090617"]
                  [buddy/buddy-auth "0.6.2"]
-                 ;[sudharsh/clj-oauth2 "0.5.3"]
                  [cljsjs/d3 "3.5.7-1"]
                  [cljsjs/nvd3 "1.8.1-0"]
                  ]
@@ -50,7 +51,6 @@
                                   ;                                      :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]
                                   }
                    :dependencies [[alembic "0.3.2"]
-                                  ;[com.cemerick/piggieback "0.2.1"]
                                   [figwheel-sidecar "0.5.0-2"]
                                   [reloaded.repl "0.2.0"]
                                   [eftest "0.1.0"]
@@ -73,17 +73,12 @@
   :source-paths ["src"]
   :test-paths ["test"]
   :resource-paths ["resources" "target/cljsbuild"]
-  :prep-tasks [["cljsbuild" "once"] ["compile"]]
+  :prep-tasks [["cljsbuild" "once" "min"] ["compile"]]
   :jvm-opts ^:replace ["-Dfile.encoding=UTF-8"]
   :clean-targets ^{:protect false} ["resources/public/js/compiled" "target"]
 
   :cljsbuild {
-              :builds [{:id           "main"
-                        :jar          true
-                        :source-paths ["src"]
-                        :compiler     {:output-to     "target/cljsbuild/public/js/main.js"
-                                       :optimizations :advanced}}
-                       {:id           "dev"
+              :builds [{:id           "dev"
                         :source-paths ["src" "dev"]
                         :figwheel     {:on-jsload "app.client/on-js-reload"}
 
@@ -104,7 +99,10 @@
 
   :repositories {"my.datomic.com" {:url      "https://my.datomic.com/repo"
                                    :username [:env/datomic_user]
-                                   :password [:env/datomic_password]}}
+                                   :password [:env/datomic_password]}
+                 "artifactory.codecentric.de" {:url "https://artifactory.codecentric.de/artifactory/repo"
+                                               :username [:env/ccartuser]
+                                               :password [:env/ccartpass]}}
 
 
 )

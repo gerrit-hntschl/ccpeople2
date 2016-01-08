@@ -2,7 +2,23 @@
   (:require [aleph.http :as http]
             [byte-streams :as bs]
             [clojure.set :as set]
-            [clojure.data.json :as json]))
+            [clojure.data.json :as json]
+            [environ.core :refer [env]])
+  (:import (java.util Collections)
+           (net.oauth OAuthServiceProvider OAuthConsumer OAuthAccessor OAuth)
+           [net.oauth.client OAuthClient]
+           [net.oauth.client.httpclient4 HttpClient4]
+           [net.oauth.signature RSA_SHA1]))
+
+(def request-token-url (str (env :jira-base-url) "/plugins/servlet/oauth/request-token"))
+
+(def authorize-url (str (env :jira-base-url) "/plugins/servlet/oauth/authorize"))
+
+(def access-token-url (str (env :jira-base-url) "/plugins/servlet/oauth/access-token"))
+
+(def consumer-key "ccdashboard_consumer_key")
+
+(def callback-uri "https://ccDashboard.callback")
 
 (def ^:const tokeninfo-endpoint "https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=")
 
@@ -22,3 +38,14 @@
     (when (= (:aud token-data) "493824973703-h2ambsalvru64vmegfnebmobp3sel4c7.apps.googleusercontent.com")
       (-> (set/rename-keys token-data oauth->domain-keys)
           (select-keys (vals oauth->domain-keys))))))
+
+
+(defn get-req [url access-token jira-consumer-private-key]
+  (let [service-provider (OAuthServiceProvider. request-token-url authorize-url access-token-url)
+        consumer (doto (OAuthConsumer. callback-uri consumer-key nil service-provider)
+                   (.setProperty RSA_SHA1/PRIVATE_KEY jira-consumer-private-key)
+                   (.setProperty OAuth/OAUTH_SIGNATURE_METHOD OAuth/RSA_SHA1))
+        accessor (OAuthAccessor. consumer)
+        client (OAuthClient. (HttpClient4.))]
+    (set! (.-accessToken accessor) access-token)
+    (.readBodyAsString (.invoke client accessor url (Collections/emptySet)))))

@@ -107,8 +107,8 @@
 ;; vacation ticket TS-2
 (def vacation-ticket-id 68000)
 
-;; illness TIMXIII-1588
-(def sick-leave-ticket-id 56617)
+;; illness ticket TS-5
+(def sick-leave-ticket-id 68003)
 
 (defn ticket-days [ticket-id worklogs]
   (into #{}

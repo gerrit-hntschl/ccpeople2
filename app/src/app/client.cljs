@@ -62,24 +62,27 @@
         billed-days (pprint/cl-format nil "~,1f%" (* 100 (/ (domain/billed-hours state) 8 domain/billable-days-goal)))
         num-sick-leave-days (str (domain/number-sick-leave-days state))
         today-str (days/month-day-today)]
-    [:div {:style {:margin-left "auto"
-                   :margin-right "auto"
-                   :width "100%"}}
-     [:h2 {:style {:color "white"}} "Today " (metric-style today-str)]
-     [current-stats-component]
-     [:ul {:padding    1
-           :style {:width "100%"}}
-      [:li "days w/o booked hours"
-       (metric-style unbooked-days-count)]
-      [:li "your workdays left"
-       (metric-style remaining-work-days-minus-vacation)]
-      [:li "days needed to reach 100%"
-       (metric-style days-to-100-percent)]
-      [:li "remaining leave"
-       (metric-style rem-holidays)]
-      [:li "sick leave"
-       (metric-style num-sick-leave-days)]]
-     [:div (str "Latest workdate considered: " (latest-worklog-work-date state))]]))
+    (if (:user state)
+      [:div {:style {:margin-left  "auto"
+                     :margin-right "auto"
+                     :width        "100%"
+                     :color "white"}}
+       [:h2 "Today " (metric-style today-str)]
+       [current-stats-component]
+       [:ul {:padding 1
+             :style   {:width "100%"}}
+        [:li "days w/o booked hours"
+         (metric-style unbooked-days-count)]
+        [:li "your workdays left"
+         (metric-style remaining-work-days-minus-vacation)]
+        [:li "days needed to reach 100%"
+         (metric-style days-to-100-percent)]
+        [:li "remaining leave"
+         (metric-style rem-holidays)]
+        [:li "sick leave"
+         (metric-style num-sick-leave-days)]]
+       [:div (str "Latest workdate considered: " (latest-worklog-work-date state))]]
+      [:h2 {:style {:color "white"}} "Please sign in"])))
 
 (defn bye-world [_]
   [:h1 (:bye/text @domain/app-state)])

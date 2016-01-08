@@ -13,7 +13,7 @@
 (defn handle-exi [exi m k im]
   (let [data (-> (ex-data exi)
                  (assoc :exception-during k)
-                 (assoc :input-params im)
+                 (assoc :input-params (dissoc im :jira))
                  (assoc :graph (dissoc m :jira)))]
     (def bb data)
     (throw (ex-info (.getMessage exi)

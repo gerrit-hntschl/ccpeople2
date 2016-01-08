@@ -63,11 +63,15 @@
 
 (defn sign-in-component []
   (let [state @domain/app-state]
-    (when-not (signed-in? state)
+    (if-not (signed-in? state)
       [:div
-       [:button {:label    "Sign in"
-                 :on-click #(.signIn (auth-instance))
-                 :style    {:margin "16px 32px 0px 32px"}}]]
+       [:button {:on-click #(.signIn (auth-instance))
+                 :style    {:margin "16px 32px 0px 32px"}}
+        "Sign in"]]
+      [:div
+       [:button {:label    "Logout"
+                 :on-click #(.signOut (auth-instance))}
+        "Logout " (:user/full-name (:user state))]]
       )))
 
 

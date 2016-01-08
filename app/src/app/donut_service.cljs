@@ -79,7 +79,7 @@
         (.attr "height" 0)
         (.attr "width" balance-width))
 
-    (append-label svg "actual-hours-label" balance-line-color "Your booked time" width)
+    (append-label svg "actual-hours-label" balance-line-color "Your billable hours" width)
     (append-line svg
                  "goal-line"
                  goal-line-color

@@ -7,9 +7,9 @@
               :schema-name :ccpeople2/schema1
               :connect-url (get env :datomic-connect-url)}
     :jira {:jira-base-url (get env :jira-base-url)
-           :jira-username (get env :jira-username)
-           :jira-password (get env :jira-password)
-           :jira-tempo-api-token (get env :jira-tempo)}})
+           :jira-access-token (get env :jira-access-token)
+           :jira-tempo-api-token (get env :jira-tempo)
+           :jira-consumer-private-key (get env :jira-consumer-private-key)}})
 
 (def environ
   {:http {:port (some-> env :port (Integer.))}

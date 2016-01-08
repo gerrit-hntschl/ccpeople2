@@ -2,18 +2,18 @@
   (:require [net.cgrand.enlive-html :as html]
             [aleph.http :as http]
             [aleph.http.client-middleware :as mw]
+            [clojure.string :as str]
             [datomic.api :as d]
             [plumbing.core :refer [safe-get fnk]]
             [environ.core :refer [env]]
             [app.graph :as graph]
             [app.log :as log]
+            [app.oauth :as oauth]
             [app.consultant :as consultant]
             [byte-streams :as bs]
             [schema.core :as s]
-            [schema.coerce :as coerce]
             [clj-time.core :as time]
             [clj-time.coerce :as time-coerce]
-            [schema.utils :as s-util]
             [cheshire.core :as json]
             [clojure.set :as set]
             [app.retry :as retry]
@@ -29,14 +29,17 @@
 
 (def ^:const jira-timesheet-project-key "TS")
 
-(defn get-jira-project-type [jira-issue]
-  (get-in jira-issue [:fields :customfield_10085 :value]))
+(defn get-jira-issue-type [jira-issue]
+  (get-in jira-issue [:fields :issuetype :name]))
 
 (defn get-jira-invoicing-type [jira-issue]
-  (get-in jira-issue [:fields :customfield_10100 :value]))
+  (get-in jira-issue [:fields :customfield_12300 :value]))
 
 (defn get-jira-customer [jira-issue]
   (get-in jira-issue [:fields :components 0 :id]))
+
+(defn get-daily-rate [jira-issue]
+  (get-in jira-issue [:fields :customfield_10084]))
 
 (defn jira-issue-to-datomic-ticket [jira-issue]
   (cond-> {:db/id (storage/people-tempid)
@@ -46,12 +49,14 @@
           (assoc :ticket/customer [:customer/id (get-jira-customer jira-issue)])
           (get-in jira-issue [:fields :summary])
           (assoc :ticket/title (get-in jira-issue [:fields :summary]))
-          (get-jira-project-type jira-issue)
-          (assoc :ticket/project-type (safe-get model/jira-project-types->datomic-project-type
-                                                (get-jira-project-type jira-issue)))
+          (get-jira-issue-type jira-issue)
+          (assoc :ticket/type (safe-get model/jira-issue-type->datomic-issue-type
+                                        (get-jira-issue-type jira-issue)))
           (get-jira-invoicing-type jira-issue)
           (assoc :ticket/invoicing (safe-get model/jira-invoicing-types->datomic-invoicing
-                                             (get-jira-invoicing-type jira-issue)))))
+                                             (get-jira-invoicing-type jira-issue)))
+          (get-daily-rate jira-issue)
+          (assoc :ticket/daily-rate (get-daily-rate jira-issue))))
 
 (defn extract-customer-from-jira-issue [jira-issue]
   (get-in jira-issue [:fields :components 0]))
@@ -69,7 +74,8 @@
       bs/to-string))
 
 (defn fetch-worklogs-raw [jira-tempo-uri]
-  (log/info logger "requesting tempo:" jira-tempo-uri)
+  ;; todo pass token around separately
+  (log/info logger "requesting tempo:" (str/replace jira-tempo-uri #"tempoApiToken=[^&]+&" "tempoApiToken=%s&"))
   (get-body jira-tempo-uri))
 
 (def fetch-worklogs (retry/retryable fetch-worklogs-raw
@@ -128,15 +134,10 @@
 
 (defn fetch-jira-raw
   ([uri-suffix]
-   (fetch-jira-raw (env :jira-base-url) uri-suffix (env :jira-username) (env :jira-password)))
-  ([jira-base-uri uri-suffix username password]
+   (fetch-jira-raw (env :jira-base-url) uri-suffix (env :jira-access-token) (env :jira-consumer-private-key)))
+  ([jira-base-uri uri-suffix jira-token jira-consumer-private-key]
    (log/info logger "requesting jira:" uri-suffix)
-   (-> @(http/get (str jira-base-uri uri-suffix) {:basic-auth [username password]
-                                                  :middleware mw/wrap-basic-auth
-                                                  :connection-timeout 10000
-                                                  :request-timeout 30000})
-       :body
-       bs/to-string
+   (-> (oauth/get-req (str jira-base-uri uri-suffix) jira-token jira-consumer-private-key)
        (json/parse-string keyword))))
 
 (def fetch-jira (retry/retryable fetch-jira-raw (some-fn
@@ -144,13 +145,13 @@
                                                     (= (.getMessage ex) "connection was closed"))
                                                   (partial instance? ConnectTimeoutException))))
 
-(defn fetch-users [jira-base-url jira-username jira-password l]
+(defn fetch-users [jira-base-url jira-token jira-consumer-private-key l]
   (Thread/sleep 100)
   (fetch-jira
     jira-base-url
     (format "/rest/api/2/user/search?username=%s&maxResults=1000" l)
-    jira-username
-    jira-password))
+    jira-token
+    jira-consumer-private-key))
 
 (def ignored-users #{"CoDiRadiator"
                      "jiraapi"
@@ -160,9 +161,9 @@
                      "ui-test"
                      "eai-monitor"})
 
-(defn fetch-all-jira-users [jira-base-url jira-username jira-password]
+(defn fetch-all-jira-users [jira-base-url jira-token jira-consumer-private-key]
   (->> (seq "abcdefghijklmnopqrstuvwxyz")
-       (mapcat (partial fetch-users jira-base-url jira-username jira-password))
+       (mapcat (partial fetch-users jira-base-url jira-token jira-consumer-private-key))
        (map (fn [user] (s/validate model/JiraUser user)))
        (filter (fn [user] (.endsWith (:emailAddress user) "@codecentric.de")))
        ;; remove duplicate email user
@@ -195,19 +196,19 @@
   (issues [this issue-ids] "Read all issues with the given ids. Returns seq of JiraIssues.")
   (users [this user-names] "Read all users with the given names. Returns seq of JiraUsers."))
 
-(defn fetch-issues [jira-base-uri jira-username jira-password issue-ids]
+(defn fetch-issues [jira-base-uri issue-ids jira-token jira-consumer-private-key]
   (mapv (fn [issue-id]
           (Thread/sleep 20)
           (fetch-jira jira-base-uri
                       (issue-details-uri issue-id)
-                      jira-username
-                      jira-password))
+                      jira-token
+                      jira-consumer-private-key))
         issue-ids))
 
 (s/defschema JiraRestClientOptions {:jira-base-url model/NonEmptyString
-                                    :jira-username model/NonEmptyString
-                                    :jira-password model/NonEmptyString
-                                    :jira-tempo-api-token model/NonEmptyString})
+                                    :jira-access-token model/NonEmptyString
+                                    :jira-tempo-api-token model/NonEmptyString
+                                    :jira-consumer-private-key model/NonEmptyString})
 
 (def worklog-graph
   {:monthly-import-urls
@@ -222,17 +223,17 @@
 
 (def worklogs-from-to (plumbing.graph/eager-compile worklog-graph))
 
-(defrecord JiraRestClient [jira-base-url jira-username jira-password jira-tempo-api-token]
+(defrecord JiraRestClient [jira-base-url jira-tempo-api-token jira-access-token jira-consumer-private-key]
   Jira
   (worklogs [this from-date to-date]
     (worklogs-from-to (assoc this
                         :from-date from-date
                         :to-date to-date)))
   (issues [this issue-ids]
-    (fetch-issues jira-base-url jira-username jira-password issue-ids))
+    (fetch-issues jira-base-url issue-ids jira-access-token jira-consumer-private-key))
   (users [this usernames]
     ;; todo if less than 26 usernames, fetch directly
-    (->> (fetch-all-jira-users jira-base-url jira-username jira-password)
+    (->> (fetch-all-jira-users jira-base-url jira-access-token jira-consumer-private-key)
          (filter (fn [jira-user] (contains? usernames (:name jira-user)))))))
 
 (defrecord JiraFakeClient [prefetched-worklogs prefetched-issues prefetched-users]

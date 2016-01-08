@@ -25,7 +25,9 @@
   #?(:clj java.lang.Double
      :cljs js/Number))
 
-(s/defschema PositiveNumber (s/constrained s/Int pos? "Positive number"))
+(s/defschema PositiveInt (s/constrained s/Int pos? "Positive number"))
+
+(s/defschema NonNegativeNumber (s/constrained s/Num (fn [n] (>= n 0)) "Non-negative number"))
 
 (s/defschema NonEmptyString (s/constrained s/Str seq "Non-empty string"))
 
@@ -40,15 +42,14 @@
 
 ;;;;;;;;;;; JIRA -> DB ;;;;;;;;;;;;;;;
 (def jira-invoicing-types->datomic-invoicing {"Nicht abrechenbar" :invoicing/not-billable
-                                              "Monatl. nach Zeit" :invoicing/time-monthly
-                                              "Abschlag nach Vertrag" :invoicing/part-payment-by-contract
+                                              "Nach Aufwand (T&M)" :invoicing/time-monthly
+                                              "Festpreis einmalig" :invoicing/fixed-price
                                               "Individuell nach Vertrag" :invoicing/individual-by-contract
-                                              "Kein Support-Vertrag" :invoicing/no-support-contract
-                                              "Produkt-Support" :invoicing/product-support})
+                                              "Support" :invoicing/support})
 
-(def jira-project-types->datomic-project-type
-  {"Festpreis" :project-type/fixed-price
-   "Zeit und Material" :project-type/time-and-material})
+(def jira-issue-type->datomic-issue-type {"Quote" :ticket.type/quote
+                                          "Administrative Time" :ticket.type/admin
+                                          "Quote item" :ticket.type/quote-item})
 
 (def jira-worklog-attributes->db-attributes {:worklog_id       :worklog/id
                                              :work_description :worklog/description
@@ -65,30 +66,30 @@
 
 (s/defschema JiraInvoicingType (apply s/enum (keys jira-invoicing-types->datomic-invoicing)))
 
-(s/defschema JiraProjectType (apply s/enum (keys jira-project-types->datomic-project-type)))
+(s/defschema JiraIssueType (apply s/enum (keys jira-issue-type->datomic-issue-type)))
 
 (s/defschema JiraWorkLog
   "The schema of Jira worklog tags as returned by the Tempo Plugin"
   {; :billing_key                        (s/maybe NonEmptyString)
-   :issue_id                           PositiveNumber
-   :issue_key                          NonEmptyString
+   :issue_id         PositiveInt
+   :issue_key        NonEmptyString
    ; :hash_value                         s/Str
-   :username                           NonEmptyString
+   :username         NonEmptyString
    ;; daily rate
-   (s/optional-key :customField_10084) IDouble
+   ; (s/optional-key :customField_10084) IDouble
    ;; date format "2015-10-23 00:00:00"
    ; :work_date_time                     Date
-   :work_description                   (s/maybe s/Str)
+   :work_description (s/maybe s/Str)
    ; :reporter                           NonEmptyString
    ;; date "2015-10-23"
-   :work_date                          IDate
-   :hours                              IDouble
+   :work_date        IDate
+   :hours            IDouble
    ;; remaining hours?
    ; (s/optional-key :customField_10406) Double
    ; :activity_id                        (s/maybe NonEmptyString)
    ; :activity_name                      (s/maybe NonEmptyString)
    ;; unique over all worklogs -> identity of entry
-   :worklog_id                         PositiveNumber
+   :worklog_id       PositiveInt
    ;; same as username
    ; :staff_id                           NonEmptyString
    ;; some date? "2014-08-01 00:00:00.0"
@@ -100,25 +101,26 @@
    ; :external_result
    ; :external_id
    ;; allow other fields
-   s/Keyword                           s/Any})
+   s/Keyword         s/Any})
 
 
 (s/defschema JiraIssue
   "Represents a Jira issue"
-  {:id       PositiveNumber
+  {:id       PositiveInt
    :key      NonEmptyString
-   :fields   {:summary                            (s/maybe NonEmptyString)
-              :components                         [{:id       PositiveNumber
-                                                    :name     NonEmptyString
-                                                    s/Keyword s/Any}]
-              ;; invoicing information
-              (s/optional-key :customfield_10085) (s/maybe {:id       PositiveNumber
-                                                            :value    JiraProjectType
-                                                            s/Keyword s/Any})
-              (s/optional-key :customfield_10100) (s/maybe {:id       PositiveNumber
-                                                            :value    JiraInvoicingType
-                                                            s/Keyword s/Any})
-              s/Keyword                           s/Any}
+   :fields   {:summary           (s/maybe NonEmptyString)
+              :components        [{:id       PositiveInt
+                                   :name     NonEmptyString
+                                   s/Keyword s/Any}]
+              :customfield_12300 {:value    JiraInvoicingType
+                                  :id       PositiveInt
+                                  s/Keyword s/Any}
+              ;; daily rate
+              (s/optional-key :customField_10084) NonNegativeNumber
+              :issuetype         {:name     JiraIssueType
+                                  :id       PositiveInt
+                                  s/Keyword s/Any}
+              s/Keyword          s/Any}
    s/Keyword s/Any})
 
 (s/defschema JiraUser
@@ -127,32 +129,32 @@
    s/Keyword s/Any})
 
 (s/defschema JiraCustomer "Actually a Jira component, but represents as a customer."
-  {:id PositiveNumber
+  {:id   PositiveInt
    :name NonEmptyString})
 
 (s/defschema DbInvoicingType (apply s/enum (vals jira-invoicing-types->datomic-invoicing)))
 
-(s/defschema DbProjectType (apply s/enum (vals jira-project-types->datomic-project-type)))
+(s/defschema DbIssueType (apply s/enum (vals jira-issue-type->datomic-issue-type)))
 
-(s/defschema DomainWorklog {:worklog/id            PositiveNumber
+(s/defschema DomainWorklog {:worklog/id                           PositiveInt
                             (s/optional-key :worklog/description) s/Str
                             ;                            :worklog/user
-                            :worklog/hours         NumberHoursWorkedPerDay
-                            :worklog/work-date     LocalDate
-                            :worklog/ticket        PositiveNumber
-                            s/Keyword              s/Any})
+                            :worklog/hours                        NumberHoursWorkedPerDay
+                            :worklog/work-date                    LocalDate
+                            :worklog/ticket                       PositiveInt
+                            s/Keyword                             s/Any})
 
-(s/defschema DomainTicket {:ticket/id                            PositiveNumber
-                           :ticket/key                           NonEmptyString
-                           :ticket/title                         NonEmptyString
-                           :ticket/customer                      PositiveNumber
-                           (s/optional-key :ticket/invoicing)    DbInvoicingType
-                           (s/optional-key :ticket/project-type) DbProjectType
-                           s/Keyword                             s/Any})
+(s/defschema DomainTicket {:ticket/id                         PositiveInt
+                           :ticket/key                        NonEmptyString
+                           (s/optional-key :ticket/title)     NonEmptyString
+                           (s/optional-key :ticket/customer)  PositiveInt
+                           (s/optional-key :ticket/type)      DbIssueType
+                           (s/optional-key :ticket/invoicing) DbInvoicingType
+                           s/Keyword                          s/Any})
 
-(s/defschema DomainCustomer {:customer/id PositiveNumber
+(s/defschema DomainCustomer {:customer/id   PositiveInt
                              :customer/name NonEmptyString
-                             s/Keyword s/Any})
+                             s/Keyword      s/Any})
 
 
 ;;;;;;;;;;;; transformations

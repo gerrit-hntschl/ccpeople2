@@ -106,11 +106,13 @@
            :db/valueType          :db.type/string
            :db/cardinality        :db.cardinality/one
            :db.install/_attribute :db.part/db}
-          ;; project enum
+          ;; ticket type enum
           {:db/id                 #db/id [:db.part/db]
-           :db/ident              :project-type/time-and-material}
+           :db/ident              :ticket.type/quote}
           {:db/id                 #db/id [:db.part/db]
-           :db/ident              :project-type/fixed-price}
+           :db/ident              :ticket.type/admin}
+          {:db/id                 #db/id [:db.part/db]
+           :db/ident              :ticket.type/quote-item}
 
           ;; invoicing enum
           {:db/id                 #db/id [:db.part/db]
@@ -118,13 +120,11 @@
           {:db/id                 #db/id [:db.part/db]
            :db/ident              :invoicing/not-billable}
           {:db/id                 #db/id [:db.part/db]
-           :db/ident              :invoicing/part-payment-by-contract}
+           :db/ident              :invoicing/fixed-price}
           {:db/id                 #db/id [:db.part/db]
            :db/ident              :invoicing/individual-by-contract}
           {:db/id                 #db/id [:db.part/db]
-           :db/ident              :invoicing/no-support-contract}
-          {:db/id                 #db/id [:db.part/db]
-           :db/ident              :invoicing/product-support}
+           :db/ident              :invoicing/support}
 
           {:db/id                 #db/id [:db.part/db]
            :db/ident              :ticket/invoicing
@@ -133,7 +133,7 @@
            :db/cardinality        :db.cardinality/one
            :db.install/_attribute :db.part/db}
           {:db/id                 #db/id [:db.part/db]
-           :db/ident              :ticket/project-type
+           :db/ident              :ticket/type
            ;; we are referencing the enum constants, which are entities themselves
            :db/valueType          :db.type/ref
            :db/cardinality        :db.cardinality/one
@@ -141,6 +141,11 @@
           {:db/id                 #db/id [:db.part/db]
            :db/ident              :worklog/ticket
            :db/valueType          :db.type/ref
+           :db/cardinality        :db.cardinality/one
+           :db.install/_attribute :db.part/db}
+          {:db/id                 #db/id [:db.part/db]
+           :db/ident              :ticket/daily-rate
+           :db/valueType          :db.type/double
            :db/cardinality        :db.cardinality/one
            :db.install/_attribute :db.part/db}
           ]
