@@ -24,7 +24,7 @@
                  [com.stuartsierra/component "0.3.1"]
                  [io.rkn/conformity "0.3.5"]
                  [org.postgresql/postgresql "9.3-1102-jdbc41"]
-                 [com.datomic/datomic-pro "0.9.5327"
+                 [com.datomic/datomic-pro "0.9.5344"
                   :exclusions [org.slf4j/slf4j-nop
                                joda-time org.slf4j/slf4j-log4j12
                                org.slf4j/slf4j-api]]

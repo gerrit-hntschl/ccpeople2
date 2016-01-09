@@ -3,6 +3,21 @@
 
 require 'fileutils'
 
+# Cross-platform way of finding an executable in the $PATH.
+def which(cmd)
+  exts = ENV['PATHEXT'] ? ENV['PATHEXT'].split(';') : ['']
+  ENV['PATH'].split(File::PATH_SEPARATOR).each do |path|
+    exts.each { |ext|
+      exe = File.join(path, "#{cmd}#{ext}")
+      return exe if File.executable?(exe) && !File.directory?(exe)
+    }
+  end
+  return nil
+end
+
+
+dir = File.dirname(File.expand_path(__FILE__))
+
 Vagrant.require_version ">= 1.6.0"
 
 CLOUD_CONFIG_PATH = File.join(File.dirname(__FILE__), "user-data")
@@ -59,23 +74,6 @@ end
 def vm_cpus
   $vb_cpus.nil? ? $vm_cpus : $vb_cpus
 end
-
-$install_user_vars = <<SCRIPT
-    rm /home/core/.bashrc
-
-    cp /usr/share/skel/.bashrc /home/core
-
-    mkdir /home/core/bin
-    echo "export PATH=/home/core/bin:$PATH" >> /home/core/.bashrc
-    echo "cd share" >> /home/core/.bashrc
-
-    mkdir /home/core/data
-
-    curl -L https://github.com/docker/compose/releases/download/1.3.3/docker-compose-$(uname -s)-$(uname -m) > /home/core/bin/docker-compose
-    chmod +x /home/core/bin/docker-compose
-
-SCRIPT
-
 
 Vagrant.configure("2") do |config|
   # always use Vagrants insecure key
@@ -158,11 +156,38 @@ Vagrant.configure("2") do |config|
 
       # Uncomment below to enable NFS for sharing the host machine into the coreos-vagrant VM.
       config.vm.synced_folder ".", "/home/core/share", id: "core", :nfs => true, :mount_options => ['nolock,vers=3,udp']
+      config.vm.synced_folder "~/.m2", "/home/core/.m2", id: "maven", :nfs => true, :mount_options => ['nolock,vers=3,udp']
       $shared_folders.each_with_index do |(host_folder, guest_folder), index|
         config.vm.synced_folder host_folder.to_s, guest_folder.to_s, id: "core-share%02d" % index, nfs: true, mount_options: ['nolock,vers=3,udp']
       end
 
-      config.vm.provision "shell", inline: $install_user_vars
+      # From https://github.com/geerlingguy/drupal-vm/blob/master/Vagrantfile
+      # Use ansible provisioner if it's installed on host, ansible_local if not.
+      if which('ansible-playbook')
+        config.vm.provision "ansible" do |ansible|
+          ansible.playbook = "#{dir}/provision/provision.yml"
+          ansible.galaxy_role_file = "#{dir}/provision/requirements.yml"
+          ansible.extra_vars = "#{dir}/provision/private_vars/env.yml"
+          ansible.groups = {
+            "coreos" => ["core-01"],
+            "coreos:vars" => {"ansible_ssh_user" => "core",
+                              "ansible_python_interpreter" => "PATH=/home/core/bin:$PATH python"}}
+
+        end
+      else
+        raise 'Please install ansible first'
+        # unfortunately ansible_local doesn't seem to work with coreOS
+#        config.vm.provision "ansible_local" do |ansible|
+#          ansible.groups = {
+#            "coreos" => ["core-01"],
+#            "coreos:vars" => {"ansible_ssh_user" => "core",
+#                              "ansible_python_interpreter" => "PATH=/home/core/bin:$PATH python"}
+#          }
+#          ansible.provisioning_path = "/home/core/share/"
+#          ansible.playbook = "provision.yml"
+#          ansible.galaxy_role_file = "requirements.yml"
+#        end
+      end
          
       if $share_home
         config.vm.synced_folder ENV['HOME'], ENV['HOME'], id: "home", :nfs => true, :mount_options => ['nolock,vers=3,udp']

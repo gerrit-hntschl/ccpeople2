@@ -1,5 +1,4 @@
-
 -- DROP ROLE :datomic
 
-CREATE ROLE datomic LOGIN PASSWORD 'datomic';
+CREATE ROLE datomic LOGIN PASSWORD :'datomicpass';
 

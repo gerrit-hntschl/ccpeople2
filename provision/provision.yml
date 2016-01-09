@@ -1,0 +1,41 @@
+---
+- hosts: all
+  gather_facts: no
+  roles:
+    # bootstraps a python interpreter as coreOS doesn't bundle one, but ansible depends on it
+    - defunctzombie.coreos-bootstrap
+  tasks:
+    - name: delete standard bashrc
+      file: path=/home/core/.bashrc state=absent
+    - name: initialize bashrc
+      shell: cp /usr/share/skel/.bashrc /home/core
+    - name: create bin folder
+      file: path=/home/core/bin state=directory
+    - name: create data folder
+      file: path=/home/core/data state=directory
+    - name: create docker-compose download url
+      shell: echo "https://github.com/docker/compose/releases/download/1.5.2/docker-compose-`uname -s`-`uname -m`"
+      register: docker_compose_download_url
+    - name: download docker-compose
+      get_url: url={{docker_compose_download_url.stdout}} dest=/home/core/bin/docker-compose mode="a+x"
+    - name: add bin folder to path
+      lineinfile: dest=/home/core/.bashrc line="export PATH=/home/core/bin:$PATH"
+    - name: start in share folder
+      lineinfile: dest=/home/core/.bashrc line="cd share"
+    - name: setup environment variables
+      template: src=env.sh.template dest=/home/core/.env
+    - name: add env to bashrc
+      lineinfile: dest=/home/core/.bashrc line="source /home/core/.env"
+    - name: add docker-compose up alias
+      lineinfile: dest=/home/core/.bashrc line="alias u='docker-compose up'"
+    - name: add docker-compose build alias
+      lineinfile: dest=/home/core/.bashrc line="alias b='docker-compose build'"
+      # todo this will go away as soon as docker-compose supports build-args
+    - name: add transactor .credentials file
+      lineinfile: dest=/home/core/share/transactor/.credentials line="{{env.DATOMIC_USER}}:{{env.DATOMIC_PASSWORD}}" create=yes
+    - name: add datomic console .credentials file
+      lineinfile: dest=/home/core/share/datomic-console/.credentials line="{{env.DATOMIC_USER}}:{{env.DATOMIC_PASSWORD}}" create=yes
+    - name: add transactor .credentials file
+      lineinfile: dest=/home/core/share/app/.credentials line="{{env.DATOMIC_USER}}:{{env.DATOMIC_PASSWORD}}" create=yes
+    - name: add artifactory .artcreds file
+      lineinfile: dest=/home/core/share/app/.artcreds line="{{env.CCARTUSER}}:{{env.CCARTPASS}}" create=yes

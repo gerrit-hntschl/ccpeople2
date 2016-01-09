@@ -6,8 +6,10 @@ postgres:
     - "/home/core/data:/var/lib/postgresql/data"
   environment:
     - POSTGRES_PASSWORD=mysecretpassword
+    - DATOMIC_POSTGRES_PASSWORD
 datomicdb:
   build: transactor
+  command: -Ddatomic.sqlPassword=${DATOMIC_POSTGRES_PASSWORD} config/dev-transactor.properties
   ports:
     - "4334:4334"
   links:
@@ -21,6 +23,7 @@ waiter:
     - postgres
 console:
   build: datomic-console
+  command: app datomic:sql://?jdbc:postgresql://postgres:5432/datomic?user=datomic&password=${DATOMIC_POSTGRES_PASSWORD}
   ports:
     - "9000:9000"
   links:
@@ -36,10 +39,17 @@ devapp:
     - "3449:3449"
   volumes:
     - "/home/core/share/app:/usr/src/app"
+    - "/home/core/.m2:/root/.m2"
   environment:
-    - DATOMIC_CONNECT_URL=datomic:sql://people?jdbc:postgresql://postgres:5432/datomic?user=datomic&password=datomic
+    - DATOMIC_CONNECT_URL=datomic:sql://people?jdbc:postgresql://postgres:5432/datomic?user=datomic&password=${DATOMIC_POSTGRES_PASSWORD}
     - CCARTUSER
     - CCARTPASS
+    - DATOMIC_USER
+    - DATOMIC_PASSWORD
+    - JIRA_BASE_URL
+    - JIRA_TEMPO
+    - JIRA_ACCESS_TOKEN
+    - JIRA_CONSUMER_PRIVATE_KEY
   links:
     - waiter
     - datomicdb

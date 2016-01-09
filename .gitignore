@@ -9,3 +9,7 @@ transactor/config/dev-transactor.properties
 .lein-env
 /app/profiles.clj
 .DS_Store
+/roles/
+/app/.artcreds
+/provision/private_vars/env.yml
+/provision/roles/
