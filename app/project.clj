@@ -77,8 +77,7 @@
   :jvm-opts ^:replace ["-Dfile.encoding=UTF-8"]
   :clean-targets ^{:protect false} ["resources/public/js/compiled" "target"]
 
-  :cljsbuild {
-              :builds [{:id           "dev"
+  :cljsbuild {:builds [{:id           "dev"
                         :source-paths ["src" "dev"]
                         :figwheel     {:on-jsload "app.client/on-js-reload"}
 
@@ -89,7 +88,7 @@
                                        :source-map-timestamp true}}
                        {:id           "min"
                         :source-paths ["src"]
-                        :compiler     {:output-to     "resources/public/js/compiled/app.js"
+                        :compiler     {:output-to     "resources/public/js/main.js"
                                        :main          app.start
                                        :optimizations :advanced
                                        :externs       ["externs/gapi_externs.js"]
