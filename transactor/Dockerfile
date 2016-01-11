@@ -17,11 +17,12 @@ RUN curl -u $(cat /tmp/.credentials) -SL https://my.datomic.com/repo/com/datomic
   && unzip /tmp/datomic.zip -d /opt \
   && rm -f /tmp/datomic.zip
 
-ADD config $DATOMIC_HOME/config
+ADD config/transactor.properties.sample $DATOMIC_HOME/config/transactor.properties.sample
+ADD start.sh $DATOMIC_HOME/start.sh
 
 WORKDIR $DATOMIC_HOME
 
-ENTRYPOINT ["bin/transactor"]
+ENTRYPOINT ["/opt/datomic-pro-0.9.5344/start.sh"]
 
 # 3. Provide a CMD argument with the relative path to the
 # transactor.properties file it will supplement the ENTRYPOINT
@@ -29,4 +30,4 @@ VOLUME $DATOMIC_DATA
 
 EXPOSE 4334
 
-CMD ["config/dev-transactor.properties"]
+CMD ["--password" "sqluserpassword" "--license" "datomic-license"]

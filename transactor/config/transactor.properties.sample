@@ -3,7 +3,6 @@
 protocol=sql
 sql-url=jdbc:postgresql://postgres:5432/datomic
 sql-user=datomic
-sql-password=datomic
 sql-driver-class=org.postgresql.Driver
 host=0.0.0.0
 port=4334

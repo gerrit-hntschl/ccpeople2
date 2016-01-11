@@ -9,7 +9,7 @@ postgres:
     - DATOMIC_POSTGRES_PASSWORD
 datomicdb:
   build: transactor
-  command: -Ddatomic.sqlPassword=${DATOMIC_POSTGRES_PASSWORD} config/dev-transactor.properties
+  command: --password ${DATOMIC_POSTGRES_PASSWORD} --license ${DATOMIC_LICENSE_KEY}
   ports:
     - "4334:4334"
   links:
