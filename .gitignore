@@ -13,3 +13,4 @@ transactor/config/dev-transactor.properties
 /app/.artcreds
 /provision/private_vars/env.yml
 /provision/roles/
+/app/resources/public/js/main.js
