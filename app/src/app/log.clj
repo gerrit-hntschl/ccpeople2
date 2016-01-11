@@ -10,6 +10,9 @@
 (defmacro info [^Logger logger & msg]
   `(.info ~logger (print-str ~@msg)))
 
+(defmacro warn [^Logger logger & msg]
+  `(.warn ~logger (print-str ~@msg)))
+
 (defmacro error [^Logger logger throwable & msg]
   `(cond (instance? ExceptionInfo ~throwable)
          (.error ~logger (print-str ~@msg "\n" (pr-str (ex-data ~throwable))) ~throwable)

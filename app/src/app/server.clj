@@ -15,7 +15,12 @@
             [buddy.auth :as auth :refer [authenticated?]]
             [buddy.auth.backends.token :refer [jws-backend]]
             [buddy.auth.middleware :as auth-middleware :refer [wrap-authentication]]
-            [com.stuartsierra.component :as component]))
+            [com.stuartsierra.component :as component]
+            [app.log :as log])
+  (:import (clojure.lang ExceptionInfo)
+           (org.slf4j LoggerFactory)))
+
+(def logger ^ch.qos.logback.classic.Logger (LoggerFactory/getLogger "app.server"))
 
 (comment
   (def token-secret (get env :token-secret "supersecrettokensecret"))
@@ -39,7 +44,11 @@
 
 (defn auth-handler [conn req]
   (if-let [user-data (oauth/extract-user-data (get-in req [:params :token]))]
-    (let [stored-data (storage/existing-user-data-for-user conn user-data)]
+    (let [stored-data (try (storage/existing-user-data-for-user conn user-data)
+                           (catch ExceptionInfo exi
+                             (when (-> exi (ex-data) (:error) (= :error/unknown-user))
+                               (log/info logger (str "unknown user login attempt: " (:user/email user-data)))
+                               (select-keys (ex-data exi) [:error]))))]
       (response stored-data))
     {:status 400
      :body "Invalid token"}))

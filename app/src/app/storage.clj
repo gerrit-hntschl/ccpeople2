@@ -6,7 +6,8 @@
             [plumbing.core :refer [update-in-when]]
             [com.stuartsierra.component :as component]
             app.date
-            [app.data-model :as model]))
+            [app.data-model :as model])
+  (:import (java.util.concurrent ExecutionException)))
 
 (def people-tempid
   (partial d/tempid :partition/people))
@@ -18,14 +19,27 @@
 
 (defn create-openid-user
   [conn user]
-  (let [user-tempid (people-tempid -1)
-        r @(d/transact conn [
-                             (assoc user
-                               :user/id (d/squuid)
-                               :db/id [:user/email (:user/email user)])])
-        db-after (:db-after r)
-        tempids (:tempids r)]
-    (d/resolve-tempid db-after tempids user-tempid)))
+  (try
+    (let [user-tempid (people-tempid -1)
+          r @(d/transact conn [
+                               (assoc user
+                                 :user/id (d/squuid)
+                                 :db/id [:user/email (:user/email user)])])
+          db-after (:db-after r)
+          tempids (:tempids r)]
+      (d/resolve-tempid db-after tempids user-tempid))
+    (catch ExecutionException ex
+      (def lexex ex)
+      (when (= (:db/error (ex-data (.getCause ex)))
+               :db.error/not-an-entity)
+        (throw (ex-info (str "unknown user: " (:user/email user))
+                        (assoc (ex-data (.getCause ex))
+                          :error :error/unknown-user
+                          :user user))))
+      (throw ex)
+      #_(let [c (.getCause ex)]
+        (if (and (instance? IllegalArgumentException c)
+                 ))))))
 
 (defn all-usernames [dbval]
   (->> (d/q '{:find  [?username]
