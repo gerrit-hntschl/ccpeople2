@@ -5,7 +5,7 @@
             [clojure.data.json :as json]
             [environ.core :refer [env]])
   (:import (java.util Collections)
-           (net.oauth OAuthServiceProvider OAuthConsumer OAuthAccessor OAuth)
+           (net.oauth OAuthServiceProvider OAuthConsumer OAuthAccessor OAuth OAuth$Parameter)
            [net.oauth.client OAuthClient]
            [net.oauth.client.httpclient4 HttpClient4]
            [net.oauth.signature RSA_SHA1]))
@@ -39,13 +39,39 @@
       (-> (set/rename-keys token-data oauth->domain-keys)
           (select-keys (vals oauth->domain-keys))))))
 
+(defn- create-accessor
+  ([]
+    (create-accessor (env :jira-consumer-private-key)))
+  ([jira-consumer-private-key]
+   (let [service-provider (OAuthServiceProvider. request-token-url authorize-url access-token-url)
+         consumer (doto (OAuthConsumer. callback-uri consumer-key nil service-provider)
+                    (.setProperty RSA_SHA1/PRIVATE_KEY jira-consumer-private-key)
+                    (.setProperty OAuth/OAUTH_SIGNATURE_METHOD OAuth/RSA_SHA1))]
+     (OAuthAccessor. consumer))))
+
+(defn create-client []
+  (OAuthClient. (HttpClient4.)))
+
+(defn request-token []
+  (let [accessor (create-accessor)
+        client (create-client)
+        callback-object [(OAuth$Parameter. OAuth/OAUTH_CALLBACK "oob")]
+        message (.getRequestTokenResponse client accessor "POST" callback-object)]
+    {:request-token (.-requestToken accessor)
+     :token-secret (.-tokenSecret accessor)
+     :authorize-url (str authorize-url "?oauth_token=" (.-requestToken accessor))}))
+
+(defn access-token [{:keys [request-token token-secret]} verifier]
+  (let [accessor (create-accessor)
+        client (create-client)]
+    (set! (.-requestToken accessor) request-token)
+    (set! (.-tokenSecret accessor) token-secret)
+    (-> client
+        (.getAccessToken accessor "POST" [(OAuth$Parameter. OAuth/OAUTH_VERIFIER verifier)])
+        (.getToken))))
 
 (defn get-req [url access-token jira-consumer-private-key]
-  (let [service-provider (OAuthServiceProvider. request-token-url authorize-url access-token-url)
-        consumer (doto (OAuthConsumer. callback-uri consumer-key nil service-provider)
-                   (.setProperty RSA_SHA1/PRIVATE_KEY jira-consumer-private-key)
-                   (.setProperty OAuth/OAUTH_SIGNATURE_METHOD OAuth/RSA_SHA1))
-        accessor (OAuthAccessor. consumer)
-        client (OAuthClient. (HttpClient4.))]
+  (let [accessor (create-accessor jira-consumer-private-key)
+        client (create-client)]
     (set! (.-accessToken accessor) access-token)
     (.readBodyAsString (.invoke client accessor url (Collections/emptySet)))))
