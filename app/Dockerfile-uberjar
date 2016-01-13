@@ -1,0 +1,7 @@
+FROM java:8
+
+ADD target/app.jar /pipeline/source/app.jar
+
+EXPOSE 8000
+
+CMD ["java", "-jar", "/pipeline/source/app.jar"]
