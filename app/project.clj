@@ -59,21 +59,19 @@
                    :plugins      [[lein-cljsbuild "1.1.1"]]
                    :jvm-opts     ^:replace ["-Dfile.encoding=UTF-8" "-Xmx1G" "-Xms512m" ;"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
                                             ]}
-   :test          [:project/test :profiles/test]
+   :test          {}
    :uberjar       {:aot          :all
                    :uberjar-name "app.jar"
+                   :prep-tasks [["cljsbuild" "once" "min"] ["compile"]]
                    :omit-source  true}
    :repl          {:resource-paths ^:replace ["resources" "target/figwheel"]
-                   :prep-tasks     ^:replace [["compile"]]}
-   :profiles/test {}
-   :project/test  {}}
+                   :prep-tasks     ^:replace [["compile"]]} }
 
   :main app.main
 
   :source-paths ["src"]
   :test-paths ["test"]
   :resource-paths ["resources" "target/cljsbuild"]
-  :prep-tasks [["cljsbuild" "once" "min"] ["compile"]]
   :jvm-opts ^:replace ["-Dfile.encoding=UTF-8"]
   :clean-targets ^{:protect false} ["resources/public/js/compiled" "target"]
 

@@ -39,7 +39,7 @@
 
 
 (defn new-system []
-  (system/new-system config))
+  (system/new-live-system config))
 
 (defn in-memory-system [config]
   (assoc-in config [:datomic :connect-url] "datomic:mem://ccpeople123"))

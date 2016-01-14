@@ -9,7 +9,9 @@
             [app.config :as config]
             [app.data-model :as model]
             [com.stuartsierra.component :as component]
-            [app.storage :as storage]))
+            [app.storage :as storage]
+            [clojure.test :refer [is deftest run-tests]])
+  (:import (java.util UUID)))
 
 (def ^:const bob-baumeister "bob.baumeister")
 
@@ -59,98 +61,122 @@
                        :prefetched-users    (->> [{:name         bob-baumeister
                                                    :emailAddress bob-email}]
                                                  (mapv (complete-non-nil model/JiraUser)))}
-   :result-after-sync [{:key :worklogs
-                        :id-key :worklog/id
-                        :expected #{{:worklog/id        1
-                                      :worklog/hours     8.
-                                      :worklog/work-date (time/local-date 2015 1 18)
-                                      :worklog/ticket    bau-issue-id}
-                                     {:worklog/id        2
-                                      :worklog/hours     5.
-                                      :worklog/work-date (time/local-date 2015 1 19)
-                                      :worklog/ticket    bau-issue-id}
-                                     {:worklog/id        3
-                                      :worklog/hours     7.
-                                      :worklog/work-date (time/local-date 2015 1 20)
-                                      :worklog/ticket    cc-plus-one-id}}}
-                       {:key :tickets
-                        :id-key :ticket/id
-                        :expected #{{:ticket/id        bau-issue-id
-                                      :ticket/customer  100,
-                                      :ticket/invoicing :invoicing/time-monthly,
-                                      :ticket/type      :ticket.type/quote}
-                                     {:ticket/id       cc-plus-one-id
-                                      :ticket/customer 99,
-                                      :ticket/type     :ticket.type/admin}}}
-                       {:key :customers
-                        :id-key :customer/id
-                        :expected #{{:customer/id 100, :customer/name "BAU"}
-                                     {:customer/id 99, :customer/name "codecentric"}}}]})
+   :expected-result [{:entity-key :worklogs
+                      :id-key :worklog/id
+                      :expected #{{:worklog/id        1
+                                   :worklog/hours     8.
+                                   :worklog/work-date (time/local-date 2015 1 18)
+                                   :worklog/ticket    bau-issue-id}
+                                  {:worklog/id        2
+                                   :worklog/hours     5.
+                                   :worklog/work-date (time/local-date 2015 1 19)
+                                   :worklog/ticket    bau-issue-id}
+                                  {:worklog/id        3
+                                   :worklog/hours     7.
+                                   :worklog/work-date (time/local-date 2015 1 20)
+                                   :worklog/ticket    cc-plus-one-id}}}
+                     {:entity-key :tickets
+                      :id-key :ticket/id
+                      :expected #{{:ticket/id        bau-issue-id
+                                   :ticket/customer  100,
+                                   :ticket/invoicing :invoicing/time-monthly,
+                                   :ticket/type      :ticket.type/quote}
+                                  {:ticket/id       cc-plus-one-id
+                                   :ticket/customer 99,
+                                   :ticket/type     :ticket.type/admin}}}
+                     {:entity-key :customers
+                      :id-key :customer/id
+                      :expected #{{:customer/id 100, :customer/name "BAU"}
+                                  {:customer/id 99, :customer/name "codecentric"}}}]})
 
 (def delete-scenario
-  {:fixture           [[{:db/id              (storage/people-tempid)
-                         :user/email         bob-email
-                         :user/jira-username bob-baumeister
-                         :user/google-id     bob-google-id}]
-                       [{:db/id            (storage/people-tempid)
-                         :ticket/id        222
-                         :ticket/key       "*"
-                         :ticket/title     "DO IT"
-                         :ticket/invoicing :invoicing/fixed-price}]
-                       [{:db/id (storage/people-tempid)
-                         :worklog/id          111
-                         :worklog/hours       8.
-                         :worklog/user        [:user/jira-username bob-baumeister]
-                         :worklog/work-date   #inst "2016-01-06T00:00:00.000-00:00"
-                         :worklog/description "egal"
-                         :worklog/ticket      [:ticket/id 222]}]]
-   :jira-state        {:prefetched-worklogs []
-                       :prefetched-issues   []
-                       :prefetched-users    []}
-   :result-after-sync {:worklogs #{}}})
+  {:fixture         [[{:db/id              (storage/people-tempid)
+                       :user/email         bob-email
+                       :user/jira-username bob-baumeister
+                       :user/google-id     bob-google-id}]
+                     [{:db/id            (storage/people-tempid)
+                       :ticket/id        222
+                       :ticket/key       "*"
+                       :ticket/title     "DO IT"
+                       :ticket/invoicing :invoicing/fixed-price}]
+                     [{:db/id               (storage/people-tempid)
+                       :worklog/id          111
+                       :worklog/hours       8.
+                       :worklog/user        [:user/jira-username bob-baumeister]
+                       :worklog/work-date   (java.util.Date.)
+                       :worklog/description "egal"
+                       :worklog/ticket      [:ticket/id 222]}]]
+   :jira-state      {:prefetched-worklogs []
+                     :prefetched-issues   []
+                     :prefetched-users    []}
+   :expected-result [{:entity-key :worklogs
+                      :id-key     :worklog/id
+                      :expected   #{}}
+                     {:entity-key :tickets
+                      :id-key     :ticket/id
+                      :expected   #{}}
+                     {:entity-key :customers
+                      :id-key     :customer/id
+                      :expected   #{}}]})
 
 (def update-scenario
-  {:fixture           [[{:db/id              (storage/people-tempid)
-                         :user/email         bob-email
-                         :user/jira-username bob-baumeister
-                         :user/google-id     bob-google-id}]
-                       ;; todo ignores customers
-                       [{:db/id            (storage/people-tempid)
-                         :ticket/id        222
-                         :ticket/key       "*"
-                         :ticket/title     "DO IT"
-                         :ticket/invoicing :invoicing/fixed-price}]
-                       [{:db/id (storage/people-tempid)
-                         :worklog/id          333
-                         :worklog/hours       8.
-                         :worklog/user        [:user/jira-username bob-baumeister]
-                         :worklog/work-date   #inst "2015-11-20T00:00:00.000-00:00"
-                         :worklog/description "egal"
-                         :worklog/ticket      [:ticket/id 222]}]]
-   :jira-state        {:prefetched-worklogs [(c/complete (assoc bob-bau-base-worklog
-                                                           :hours 2.
-                                                           :work_date (java.util.Date.)
-                                                           :worklog_id 333
-                                                           :issue_id 222)
-                                                         model/JiraWorkLog)]
-                       :prefetched-issues   []
-                       :prefetched-users    []}
-   :result-after-sync {:worklogs #{{:worklog/id        333
-                                    :worklog/hours     2.
-                                    :worklog/work-date (time/today)
-                                    :worklog/ticket    222}}}})
+  {:fixture         [[{:db/id              (storage/people-tempid)
+                       :user/email         bob-email
+                       :user/jira-username bob-baumeister
+                       :user/google-id     bob-google-id}]
+                     ;; todo ignores customers
+                     [{:db/id            (storage/people-tempid)
+                       :ticket/id        222
+                       :ticket/key       "*"
+                       :ticket/title     "DO IT"
+                       :ticket/invoicing :invoicing/fixed-price}]
+                     [{:db/id               (storage/people-tempid)
+                       :worklog/id          333
+                       :worklog/hours       8.
+                       :worklog/user        [:user/jira-username bob-baumeister]
+                       :worklog/work-date   (java.util.Date.)
+                       :worklog/description "egal"
+                       :worklog/ticket      [:ticket/id 222]}]]
+   :jira-state      {:prefetched-worklogs [(c/complete (assoc bob-bau-base-worklog
+                                                         :hours 2.
+                                                         :work_date (java.util.Date.)
+                                                         :worklog_id 333
+                                                         :issue_id 222)
+                                                       model/JiraWorkLog)]
+                     :prefetched-issues   []
+                     :prefetched-users    []}
+   :expected-result [{:entity-key :worklogs
+                      :id-key :worklog/id
+                      :expected #{{:worklog/id        333
+                                   :worklog/hours     2.
+                                   :worklog/work-date (time/today)
+                                   :worklog/ticket    222}}}]})
 
-(defn in-memory-system [config]
-  (assoc-in config [:datomic :connect-url] "datomic:mem://ccpeopletest7"))
+(defn new-in-memory-system [config]
+  (assoc-in config [:datomic :connect-url] (format "datomic:mem://%s" (UUID/randomUUID))))
 
 (defn new-test-system [scenario]
   (let [schedule-atom (atom nil)]
-    (-> (system/new-system (in-memory-system config/defaults))
+    (-> (system/new-system (new-in-memory-system config/defaults))
+        ;; don't need an http server for testing currently
+        (dissoc :http)
         (assoc :jira-client (map->JiraFakeClient (:jira-state scenario)))
         (assoc :scheduler (reify Scheduler
                             (schedule [this f]
                               (reset! schedule-atom f))))
-        (assoc :schedule-atom schedule-atom))))
+        (assoc :schedule-atom schedule-atom)
+        (component/system-using {:jira-importer [:conn :jira-client :scheduler]}))))
+
+(defn assert-result-matches [expected-spec actual]
+  (doseq [{:keys [entity-key id-key expected]} expected-spec]
+    (let [actual-ents (get actual entity-key)
+          id->actual-ent (into {} (map (juxt id-key identity)) actual-ents)]
+      (if (empty? expected)
+        (is (empty? (get actual entity-key)) "No results expected.")
+        (doseq [expected-ent expected]
+          (is (= expected-ent
+                 (select-keys (get id->actual-ent (get expected-ent id-key))
+                              (keys expected-ent)))))))))
 
 (defn test-scenario [scenario]
   (let [sys (component/start (new-test-system scenario))
@@ -163,8 +189,15 @@
       (def impres (@(:schedule-atom sys)))
       (def rr (storage/existing-user-data-for-user conn {:user/email     bob-email
                                                          :user/google-id bob-google-id}))
-
+      (assert-result-matches (:expected-result scenario) rr)
       (finally
         (component/stop sys)))))
 
+(deftest should-handle-creates-correctly
+  (test-scenario create-scenario))
 
+(deftest should-handle-deletes-correctly
+  (test-scenario delete-scenario))
+
+(deftest should-handle-update-correctly
+  (test-scenario update-scenario))

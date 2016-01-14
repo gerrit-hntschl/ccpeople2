@@ -22,6 +22,6 @@
               prod-config))
 
 (defn -main [& args]
-  (let [system (system/new-system config)]
+  (let [system (system/new-live-system config)]
     (log/info logger "Starting HTTP server on port" (-> system :http :port))
     (component/start system)))

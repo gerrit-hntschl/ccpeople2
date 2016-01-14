@@ -82,7 +82,6 @@
           :schema (storage/new-conform-schema (:datomic config))
 
           :scheduler (new-scheduler)
-          :jira-client (worklog/new-jira-rest-client (:jira config))
           :jira-importer (worklog/new-jira-importer)
           :app (handler-component (:app config))
           :http (aleph-server (:http config))
@@ -101,12 +100,15 @@
            :conn [:database]
            :schema [:conn]
 
-           ;; jira imports
-           :jira-importer [:conn :jira-client :scheduler]
-
            ;; endpoints
            :auth-endpoint [:conn]
            }))))
+
+(defn new-live-system [config]
+  (let [config (meta-merge base-config config)]
+    (-> (new-system config)
+        (assoc :jira-client (worklog/new-jira-rest-client (:jira config)))
+        (component/system-using {:jira-importer [:conn :jira-client :scheduler]}))))
 
 (defn new-offline-worklog-system [config]
   (-> (new-system config)
