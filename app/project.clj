@@ -36,7 +36,8 @@
                  [ring/ring-defaults "0.1.5"]
                  [clj-time "0.11.0"]
                  [hiccup "1.0.5"]
-                 [reagent "0.5.1"]
+                 [reagent "0.6.0-alpha"]
+                 [cljsjs/react "0.14.3-0"]
                  [com.andrewmcveigh/cljs-time "0.3.14"]
                  [net.oauth.core/oauth "20090617"]
                  [net.oauth.core/oauth-httpclient4 "20090617"]
@@ -51,11 +52,12 @@
                                   ;                                      :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]
                                   }
                    :dependencies [[alembic "0.3.2"]
-                                  [figwheel-sidecar "0.5.0-2"]
+                                  [figwheel-sidecar "0.5.0-3"]
+                                  [devcards "0.2.1-4"]
                                   [reloaded.repl "0.2.0"]
                                   [eftest "0.1.0"]
                                   [kerodon "0.7.0"]
-                                  [figwheel "0.5.0-2"]]
+                                  [figwheel "0.5.0-3"]]
                    :plugins      [[lein-cljsbuild "1.1.1"]]
                    :jvm-opts     ^:replace ["-Dfile.encoding=UTF-8" "-Xmx1G" "-Xms512m" ;"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
                                             ]}

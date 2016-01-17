@@ -1,7 +1,7 @@
 (ns ^:figwheel-always app.client
   (:require
     [reagent.core :as reagent]
-    [reagent.interop :refer-macros [.']]
+    [reagent.interop :refer-macros [$]]
     [app.domain :as domain]
     [bidi.bidi :as bidi]
     [goog.events :as events]
