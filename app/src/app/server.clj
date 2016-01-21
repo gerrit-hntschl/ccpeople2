@@ -43,7 +43,7 @@
         (redirect "/login")))))
 
 (defn auth-handler [conn req]
-  (if-let [user-data (oauth/extract-user-data (get-in req [:params :token]))]
+  (if-let [user-data (oauth/extract-user-data (get req :params))]
     (let [stored-data (try (storage/existing-user-data-for-user conn user-data)
                            (catch ExceptionInfo exi
                              (when (-> exi (ex-data) (:error) (= :error/unknown-user))

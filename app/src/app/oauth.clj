@@ -20,6 +20,8 @@
 
 (def callback-uri "https://ccDashboard.callback")
 
+(def ^:const aliases-endpoint "https://www.googleapis.com/admin/directory/v1/users/%s/aliases")
+
 (def ^:const tokeninfo-endpoint "https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=")
 
 (def oauth->domain-keys {:given_name :user/first-name
@@ -28,9 +30,10 @@
                          ;; sub is a unique immutable identifier for google accounts
                          :sub :user/google-id})
 
-(defn extract-user-data [token]
+(defn extract-user-data [{:keys [id-token access-token] :as xx}]
+  (def paramparam xx)
   (let [;; todo check response code
-        token-data (-> @(http/get (str tokeninfo-endpoint token))
+        token-data (-> @(http/get (str tokeninfo-endpoint id-token))
                        :body
                        bs/to-string
                        (json/read-str :key-fn keyword))
@@ -38,6 +41,9 @@
     (when (= (:aud token-data) "493824973703-h2ambsalvru64vmegfnebmobp3sel4c7.apps.googleusercontent.com")
       (-> (set/rename-keys token-data oauth->domain-keys)
           (select-keys (vals oauth->domain-keys))))))
+
+(defn get-aliases [user-key access-token]
+  @(http/get (format aliases-endpoint user-key) {:headers {"Authorization" (str "Bearer " access-token)}}))
 
 (defn- create-accessor
   ([]

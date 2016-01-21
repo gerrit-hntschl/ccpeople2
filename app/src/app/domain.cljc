@@ -43,15 +43,16 @@
                                               (:user new))
                                          ;; todo post + CSRF protection
                                          #?(:cljs (ajax/GET "/auth"
-                                                            {:params          {:token (-> new :user :user/token)}
+                                                            {:params          {:id-token (-> new :user :user/id-token)
+                                                                               :access-token (-> new :user :user/access-token)}
                                                              :handler         handle-api-response
                                                              :error-handler   error-handler-fn
                                                              :response-format :transit
                                                              :keywords?       true
-                                                             :reader (transit/reader :json
-                                                                                     {:handlers
-                                                                                      {"date/local" (fn [date-fields]
-                                                                                                      (apply time/local-date date-fields))}})}))
+                                                             :reader          (transit/reader :json
+                                                                                              {:handlers
+                                                                                               {"date/local" (fn [date-fields]
+                                                                                                               (apply time/local-date date-fields))}})}))
                                          #?(:clj (println "todo"))
                                          (and (not (:user new))
                                               (:user old))
@@ -197,10 +198,10 @@
 (def daily-burndown-hours
   (/ (* billable-days-goal 8) total-working-days))
 
-(defn todays-hour-goal [app-state]
-  (let [actual-work-days-remaining (actual-work-days-left app-state)]
-    (* (- 1 (/ actual-work-days-remaining total-working-days))
-       total-working-days
+(defn todays-hour-goal [state]
+  (let [workdays-till-today (count (days/workdays-till-today (:today state)))
+        vacation-days-till-today (/ (sum-past-vacation-hours state (:today state)) 8)]
+    (* (-  workdays-till-today vacation-days-till-today)
        daily-burndown-hours)))
 
 (defn days-balance

@@ -16,8 +16,11 @@
 (defn auth-instance []
   (.getAuthInstance js/gapi.auth2))
 
-(defn get-google-token []
+(defn get-google-id-token []
   (-> (auth-instance) .-currentUser .get .getAuthResponse .-id_token))
+
+(defn get-auth-token []
+  (-> (auth-instance) .-currentUser .get .getAuthResponse .-access_token))
 
 (defn handle-user-change
   [u]
@@ -28,7 +31,8 @@
              {:user
               {:user/full-name  (.getName profile)
                :user/image-url  (.getImageUrl profile)
-               :user/token      (get-google-token)
+               :user/id-token   (get-google-id-token)
+               :user/access-token (get-auth-token)
                :user/signed-in? (.isSignedIn u)}})
       (swap! domain/app-state
              dissoc
@@ -38,7 +42,7 @@
              (<! (load-gapi-auth2))
              (.init js/gapi.auth2
                     #js {"client_id" "493824973703-h2ambsalvru64vmegfnebmobp3sel4c7.apps.googleusercontent.com"
-                         "scope"     "profile email openid"})
+                         "scope"     "profile email openid https://www.googleapis.com/auth/admin.directory.user.alias.readonly"})
              (let [current-user (.-currentUser (auth-instance))]
                (.listen current-user handle-user-change))))
 

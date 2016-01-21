@@ -104,5 +104,8 @@
 (defn workdays-till-end-of-year [today]
   (workdays-between today (last-day-of-year (time/year today))))
 
+(defn workdays-till-today [today]
+  (workdays-between (time/local-date (time/year today) 1 1) today))
+
 (defn as-yyyy-MM-dd [date]
   (format/unparse yyyy-MM-dd-formatter date))
