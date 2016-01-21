@@ -12,6 +12,7 @@
                  [com.cognitect/transit-clj "0.8.285"]
                  [environ "1.0.1"]
                  [org.clojure/tools.namespace "0.2.11"]
+                 [org.apache.httpcomponents/httpclient "4.5.1"]
                  [duct "0.4.2"]
                  [enlive "1.1.6"]
                  [meta-merge "0.1.1"]
