@@ -243,6 +243,7 @@
                 (.select "#current-stats svg"))
         height (.attr svg "height")
         actual-percentage (* 100 (/ actual-hours-today max-value))
+        goal-percentage (* 100 (/ todays-target-hours max-value))
         balance-hours (- actual-hours-today todays-target-hours)
         balance-height (-> (js/Math.abs balance-hours) (* 4) (min 250))
         balance-y-upper (- (/ height 2) (/ balance-height 2))
@@ -272,7 +273,14 @@
 
         d3-balance-in-days-text (-> js/d3 (.select "#current-stats .balance-in-days-text"))
         current-balance-text (.text d3-balance-in-days-text)
-
+        prev-goal-hours (-> js/d3
+                            (.select "#current-stats .goal-hours-text")
+                            (.text)
+                            (to-int-or-zero))
+        prev-goal-percent (-> js/d3
+                              (.select "#current-stats .goal-percent-text")
+                              (.text)
+                              (to-int-or-zero))
         transition1 (-> svg
                         (.transition)
                         (.ease "cubic-in")
@@ -314,10 +322,20 @@
                                        actual-percentage
                                        end-duration
                                        start-fraction)
-    (update-y-transitioned
-      d3-goal-percent-text center-y goal-y end-duration)
-    (update-y-transitioned
-      d3-goal-hours-text center-y goal-y end-duration)
+    (update-percent-and-y-transitioned d3-goal-percent-text
+                                       center-y
+                                       goal-y
+                                       prev-goal-percent
+                                       goal-percentage
+                                       end-duration
+                                       start-fraction)
+    (update-hours-and-y-transitioned d3-goal-hours-text
+                                     center-y
+                                     goal-y
+                                     prev-goal-hours
+                                     todays-target-hours
+                                     end-duration
+                                     start-fraction)
     (update-y-transitioned
       d3-actual-hours-label center-y (actual-hours-label-offset-fn actual-hours-y) end-duration)
     (update-y-transitioned
