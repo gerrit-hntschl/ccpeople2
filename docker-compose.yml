@@ -8,8 +8,7 @@ postgres:
     - POSTGRES_PASSWORD=mysecretpassword
     - DATOMIC_POSTGRES_PASSWORD
 datomicdb:
-  build: transactor
-  command: --password ${DATOMIC_POSTGRES_PASSWORD} --license ${DATOMIC_LICENSE_KEY}
+  image: dockerhub.codecentric.de/ccdashboard-datomic
   ports:
     - "4334:4334"
   links:

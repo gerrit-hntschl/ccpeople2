@@ -2,6 +2,8 @@ FROM pointslope/clojure:lein-2.5.0
 
 MAINTAINER Christian Romney "cromney@pointslope.com"
 
+
+ARG LICENSE
 ENV DATOMIC_VERSION 0.9.5344
 ENV DATOMIC_HOME /opt/datomic-pro-$DATOMIC_VERSION
 ENV DATOMIC_DATA /data
@@ -17,12 +19,13 @@ RUN curl -u $(cat /tmp/.credentials) -SL https://my.datomic.com/repo/com/datomic
   && unzip /tmp/datomic.zip -d /opt \
   && rm -f /tmp/datomic.zip
 
-ADD config/transactor.properties.sample $DATOMIC_HOME/config/transactor.properties.sample
+ADD config/transactor.properties.sample /tmp/datomic/config/transactor.properties.sample
 ADD start.sh $DATOMIC_HOME/start.sh
+RUN cat /tmp/datomic/config/transactor.properties.sample | sed "s|^license-key=.*|license-key=${LICENSE}|" > $DATOMIC_HOME/config/transactor.properties
 
 WORKDIR $DATOMIC_HOME
 
-ENTRYPOINT ["/opt/datomic-pro-0.9.5344/start.sh"]
+ENTRYPOINT ["/opt/datomic-pro-0.9.5344/bin/transactor"]
 
 # 3. Provide a CMD argument with the relative path to the
 # transactor.properties file it will supplement the ENTRYPOINT
@@ -30,4 +33,4 @@ VOLUME $DATOMIC_DATA
 
 EXPOSE 4334
 
-CMD ["--password" "sqluserpassword" "--license" "datomic-license"]
+CMD ["config/transactor.properties"]
