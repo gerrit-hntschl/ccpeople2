@@ -14,7 +14,7 @@
     - name: create data folder
       file: path=/home/core/data state=directory
     - name: create docker-compose download url
-      shell: echo "https://github.com/docker/compose/releases/download/1.5.2/docker-compose-`uname -s`-`uname -m`"
+      shell: echo "https://github.com/docker/compose/releases/download/1.6.0-rc1/docker-compose-`uname -s`-`uname -m`"
       register: docker_compose_download_url
     - name: download docker-compose
       get_url: url={{docker_compose_download_url.stdout}} dest=/home/core/bin/docker-compose mode="a+x"
