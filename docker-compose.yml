@@ -42,8 +42,6 @@ devapp:
     - "/home/core/.m2:/root/.m2"
   environment:
     - DATOMIC_CONNECT_URL=datomic:sql://people?jdbc:postgresql://postgres:5432/datomic?user=datomic&password=${DATOMIC_POSTGRES_PASSWORD}
-    - CCARTUSER
-    - CCARTPASS
     - DATOMIC_USER
     - DATOMIC_PASSWORD
     - JIRA_BASE_URL

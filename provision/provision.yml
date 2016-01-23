@@ -37,5 +37,3 @@
       lineinfile: dest=/home/core/share/datomic-console/.credentials line="{{env.DATOMIC_USER}}:{{env.DATOMIC_PASSWORD}}" create=yes
     - name: add transactor .credentials file
       lineinfile: dest=/home/core/share/app/.credentials line="{{env.DATOMIC_USER}}:{{env.DATOMIC_PASSWORD}}" create=yes
-    - name: add artifactory .artcreds file
-      lineinfile: dest=/home/core/share/app/.artcreds line="{{env.CCARTUSER}}:{{env.CCARTPASS}}" create=yes
