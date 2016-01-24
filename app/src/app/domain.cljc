@@ -2,10 +2,9 @@
   (:require [app.days :as days]
             [app.consultant :as consultant]
             [plumbing.core :refer [map-vals]]
-
+            [ajax.core :as ajax]
+            [cognitect.transit :as transit]
     #?@(:cljs [[reagent.core :refer [atom]]
-               [ajax.core :as ajax]
-               [cognitect.transit :as transit]
                [goog.array :as garray]
                [cljs-time.core :as time]
                [goog.dom :as dom]
@@ -32,31 +31,23 @@
 (defonce app-state (atom initial-state))
 
 (defn error-handler-fn [{:keys [status status-text]}]
-  (println (str "something bad happened: " status " " status-text)))
+  (reset! app-state (assoc-in initial-state [:user :user/signed-in?] false))
+  (println (str "api response: " status " " status-text)))
 
 (defn handle-api-response [data]
-  (swap! app-state (partial merge-with merge) data))
+  (swap! app-state merge (assoc-in data [:user :user/signed-in?] true)))
 
 
-(add-watch app-state :user-watch (fn [_ _ old new]
-                                   (cond (and (not (:user old))
-                                              (:user new))
-                                         ;; todo post + CSRF protection
-                                         #?(:cljs (ajax/GET "/auth"
-                                                            {:params          {:id-token (-> new :user :user/id-token)
-                                                                               :access-token (-> new :user :user/access-token)}
-                                                             :handler         handle-api-response
-                                                             :error-handler   error-handler-fn
-                                                             :response-format :transit
-                                                             :keywords?       true
-                                                             :reader          (transit/reader :json
-                                                                                              {:handlers
-                                                                                               {"date/local" (fn [date-fields]
-                                                                                                               (apply time/local-date date-fields))}})}))
-                                         #?(:clj (println "todo"))
-                                         (and (not (:user new))
-                                              (:user old))
-                                         (reset! app-state initial-state))))
+(defn call-api []
+  (ajax/GET "/api"
+     {:handler         handle-api-response
+      :error-handler   error-handler-fn
+      :response-format :transit
+      :keywords?       true
+      :reader          (transit/reader :json
+                                       {:handlers
+                                        {"date/local" (fn [date-fields]
+                                                        (apply time/local-date date-fields))}})}))
 
 (defn matching [k v]
   (fn [m]
@@ -212,3 +203,6 @@
 
 (defn number-sick-leave-days [app-state]
   (/ (sick-leave-hours app-state) 8))
+
+(defn user-sign-in-state [state]
+  (get-in state [:user :user/signed-in?]))

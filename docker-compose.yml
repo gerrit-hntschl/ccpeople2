@@ -48,6 +48,8 @@ devapp:
     - JIRA_TEMPO
     - JIRA_ACCESS_TOKEN
     - JIRA_CONSUMER_PRIVATE_KEY
+    - JWS_TOKEN_SECRET
+    - APP_HOSTNAME
   links:
     - waiter
     - datomicdb

@@ -132,22 +132,9 @@
 (defn issue-details-uri [issue-id]
   (format "/rest/api/2/issue/%d" issue-id))
 
-(defn fetch-jira-raw
-  ([uri-suffix]
-   (fetch-jira-raw (env :jira-base-url) uri-suffix (env :jira-access-token) (env :jira-consumer-private-key)))
-  ([jira-base-uri uri-suffix jira-token jira-consumer-private-key]
-   (log/info logger "requesting jira:" uri-suffix)
-   (-> (oauth/get-req (str jira-base-uri uri-suffix) jira-token jira-consumer-private-key)
-       (json/parse-string keyword))))
-
-(def fetch-jira (retry/retryable fetch-jira-raw (some-fn
-                                                  (fn [ex]
-                                                    (= (.getMessage ex) "connection was closed"))
-                                                  (partial instance? ConnectTimeoutException))))
-
 (defn fetch-users [jira-base-url jira-token jira-consumer-private-key l]
   (Thread/sleep 100)
-  (fetch-jira
+  (oauth/fetch-jira
     jira-base-url
     (format "/rest/api/2/user/search?username=%s&maxResults=1000" l)
     jira-token
@@ -199,7 +186,7 @@
 (defn fetch-issues [jira-base-uri issue-ids jira-token jira-consumer-private-key]
   (mapv (fn [issue-id]
           (Thread/sleep 20)
-          (fetch-jira jira-base-uri
+          (oauth/fetch-jira jira-base-uri
                       (issue-details-uri issue-id)
                       jira-token
                       jira-consumer-private-key))

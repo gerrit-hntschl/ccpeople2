@@ -3,12 +3,14 @@
             [schema.coerce :as coerce]
             [schema.utils :as s-util]
             [plumbing.core :refer [safe-get]]
-    #?@(:clj [[clj-time.core :as time]
-              [clj-time.format :as format]
-              [clj-time.coerce :as time-coerce]]
+    #?@(:clj  [
+            [clj-time.core :as time]
+            [clj-time.format :as format]
+            [clj-time.coerce :as time-coerce]]
         :cljs [[cljs-time.core :as time]
                [cljs-time.format :as format]
-               [cljs-time.coerce :as time-coerce]]))
+               [cljs-time.coerce :as time-coerce]])
+            [clojure.set :as set])
   )
 
 (def IDate "Cross-platform Date" #?(:clj java.util.Date
@@ -59,7 +61,8 @@
                                              :issue_id         :worklog/ticket})
 
 (def jira-user-attributes {:name          :user/jira-username
-                           :emailAddress :user/email})
+                           :emailAddress :user/email
+                           :displayName :user/display-name})
 
 
 ;;;;;;;;;;;; JIRA MODEL ;;;;;;;;;;;;;;;;;;
@@ -126,6 +129,7 @@
 (s/defschema JiraUser
   {:name NonEmptyString
    :emailAddress EmailAddress
+   :displayName NonEmptyString
    s/Keyword s/Any})
 
 (s/defschema JiraCustomer "Actually a Jira component, but represents as a customer."
@@ -230,3 +234,8 @@
 (defn to-domain-customer [customer]
   (s/validate DomainCustomer customer)
   customer)
+
+(defn jira-user->domain-user [jira-user]
+  (-> jira-user
+      (set/rename-keys jira-user-attributes)
+      (select-keys (vals jira-user-attributes))))

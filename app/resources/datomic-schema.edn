@@ -8,17 +8,11 @@
            :db.install/_attribute :db.part/db
            :db/doc                "The global ID of a user."}
           {:db/id                 #db/id [:db.part/db]
-           :db/ident              :user/first-name
+           :db/ident              :user/display-name
            :db/valueType          :db.type/string
            :db/cardinality        :db.cardinality/one
            :db.install/_attribute :db.part/db
-           :db/doc                "The firstname of a user."}
-          {:db/id                 #db/id [:db.part/db]
-           :db/ident              :user/last-name
-           :db/valueType          :db.type/string
-           :db/cardinality        :db.cardinality/one
-           :db.install/_attribute :db.part/db
-           :db/doc                "The lastname of a user."}
+           :db/doc                "The first name and last name of a user."}
           {:db/id                 #db/id [:db.part/db]
            :db/ident              :user/email
            :db/index              true

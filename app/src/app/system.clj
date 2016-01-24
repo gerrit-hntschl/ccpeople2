@@ -14,7 +14,8 @@
     ;; to load data reader
             app.date
             [cognitect.transit :as transit]
-            [app.log :as log])
+            [app.log :as log]
+            [app.oauth :as oauth])
   (:import (com.stuartsierra.component Lifecycle)
            (java.io Closeable)
            (java.util.concurrent Executors TimeUnit)
@@ -87,13 +88,16 @@
           :http (aleph-server (:http config))
           :auth-endpoint (server/auth-endpoint)
           :index-endpoint (server/index-endpoint)
+          :login-endpoint (server/login-endpoint)
+          :logout-endpoint (server/logout-endpoint)
+          :api-endpoint (server/api-endpoint)
           :router (router-component))
 
         (component/system-using
           {;; web
            :http   [:app]
            :app    [:router]
-           :router [:index-endpoint :auth-endpoint]
+           :router [:index-endpoint :auth-endpoint :login-endpoint :api-endpoint :logout-endpoint]
 
            ;; datomic
            :database []
@@ -102,6 +106,7 @@
 
            ;; endpoints
            :auth-endpoint [:conn]
+           :api-endpoint [:conn]
            }))))
 
 (defn new-live-system [config]

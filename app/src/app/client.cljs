@@ -5,7 +5,6 @@
     [app.domain :as domain]
     [bidi.bidi :as bidi]
     [goog.events :as events]
-    [app.gsignin :as gs]
     cljsjs.react
     [app.donut-service :as donut-service]
     ;    [material-ui.core :as ui :include-macros true]
@@ -68,13 +67,14 @@
           [:div {:style {:margin-left  "auto"
                          :margin-right "auto"
                          :width        "100%"
-                         :color "white"}}
+                         :color "#121212"}}
            [:h2 "Today " (metric-style today-str)]
+           [:p "days w/o booked hours"
+            (metric-style unbooked-days-count)]
            [current-stats-component]
            [:ul {:padding 1
                  :style   {:width "100%"}}
-            [:li "days w/o booked hours"
-             (metric-style unbooked-days-count)]
+
             [:li "your workdays left"
              (metric-style remaining-work-days-minus-vacation)]
             [:li "days needed to reach 100%"
@@ -83,9 +83,7 @@
              (metric-style rem-holidays)]
             [:li "sick leave"
              (metric-style num-sick-leave-days)]]
-           [:div (str "Latest workdate considered: " (latest-worklog-work-date state))]]
-          :else
-          [:h2 {:style {:color "white"}} "Please sign in"])))
+           [:div (str "Latest workdate considered: " (latest-worklog-work-date state))]])))
 
 (defn bye-world [_]
   [:h1 (:bye/text @domain/app-state)])
@@ -98,8 +96,6 @@
                  "people" :people}])
 
 (defmulti handlers :handler :default :profile)
-
-(defmethod handlers :people [] bye-world)
 
 (defmethod handlers :profile [] profile-page)
 
@@ -118,15 +114,27 @@
   (let [{page-params :route-params :as route-state} (:page @domain/app-state)]
     ((handlers route-state) page-params)))
 
+(defn sign-in-component []
+  (let [state @domain/app-state
+        user-sign-in-state (domain/user-sign-in-state state)]
+    (cond (nil? user-sign-in-state)
+          [:p "Initializing..."]
+          user-sign-in-state
+          [:div
+           [:a.button {:href "/logout"} (str "Sign out " (:user/display-name (:user state)))]
+           [dispatcher]]
+          :else
+          [:a.button {:href "/login"} "Sign-in"])))
+
 (defn page []
   [:div
    [:h3 "ccHours"]
    [:div {:style {:text-align "center"}}
-    [gs/sign-in-component]
-    [dispatcher]]])
+    [sign-in-component]]])
 
 
 (defn start []
+  (domain/call-api)
   (reagent/render-component [page]
                             (.getElementById js/document "app")))
 
