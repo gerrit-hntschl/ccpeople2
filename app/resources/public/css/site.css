@@ -44,3 +44,13 @@ ul {
 body {
     margin: 0px;
 }
+
+a.button {
+
+    text-decoration: none;
+    color: initial;
+    background: white;
+    border: 1px solid grey;
+    border-radius: 5px;
+    padding: 10px;
+}

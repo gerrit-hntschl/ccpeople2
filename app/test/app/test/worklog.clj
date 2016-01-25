@@ -23,8 +23,6 @@
 
 (def ^:const bob-email "bob.baumeister@codecentric.de")
 
-(def ^:const bob-google-id "123")
-
 (def bob-bau-base-worklog {:username bob-baumeister
                            :issue_id bau-issue-id})
 
@@ -92,8 +90,7 @@
 (def delete-scenario
   {:fixture         [[{:db/id              (storage/people-tempid)
                        :user/email         bob-email
-                       :user/jira-username bob-baumeister
-                       :user/google-id     bob-google-id}]
+                       :user/jira-username bob-baumeister}]
                      [{:db/id            (storage/people-tempid)
                        :ticket/id        222
                        :ticket/key       "*"
@@ -122,8 +119,7 @@
 (def update-scenario
   {:fixture         [[{:db/id              (storage/people-tempid)
                        :user/email         bob-email
-                       :user/jira-username bob-baumeister
-                       :user/google-id     bob-google-id}]
+                       :user/jira-username bob-baumeister}]
                      ;; todo ignores customers
                      [{:db/id            (storage/people-tempid)
                        :ticket/id        222
@@ -187,9 +183,13 @@
         @(d/transact conn tx))
       ;; execute the scheduled import synchronously
       (def impres (@(:schedule-atom sys)))
-      (def rr (storage/existing-user-data-for-user conn {:user/email     bob-email
-                                                         :user/google-id bob-google-id}))
-      (assert-result-matches (:expected-result scenario) rr)
+      ;; simulate login
+      (let [user-id (storage/create-openid-user conn
+                                                {:user/email         bob-email
+                                                 :user/display-name  "Bob Baumeister"
+                                                 :user/jira-username bob-baumeister})]
+        (def rr (storage/existing-user-data-for-user conn user-id))
+        (assert-result-matches (:expected-result scenario) rr))
       (finally
         (component/stop sys)))))
 
