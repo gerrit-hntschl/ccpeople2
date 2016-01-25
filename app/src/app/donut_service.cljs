@@ -3,12 +3,6 @@
 
 (enable-console-print!)
 
-(def sample-data (clj->js
-            [{:age "16", :population 2704659},
-             {:age "18", :population 4499890},
-             {:age "25", :population 1499890},
-             {:age "32", :population 500000}]))
-
 (def max-value 1440)
 
 (def two-pi (* js/Math.PI 2))
@@ -62,8 +56,8 @@
   (let [x-padding (* width 0.2)
         x-line-padding (* width 0.15)
         balance-width (- width (* 2 x-padding))
-        balance-line-color "blue"
-        goal-line-color "grey"
+        balance-line-color "#121212"
+        goal-line-color "#8D98A7"
         svg (-> js/d3
                 (.select "#current-stats svg")
                 (.attr "width" width)
@@ -253,7 +247,7 @@
           [balance-y-upper balance-y-lower #(- % 15) (partial + 25)]
           [balance-y-lower balance-y-upper (partial + 25) #(- % 15)])
         rect-color-interpolator (-> js/d3
-                                    (.interpolateLab "#FFBC25" "green"))
+                                    (.interpolateLab "#1FB7D4" "#7FFBC6"))
         normalized-balance-ratio (-> balance-hours
                                      (min balance-upper-bound)
                                      (max balance-lower-bound)
@@ -360,7 +354,7 @@
           [balance-y-upper balance-y-lower #(- % 15) (partial + 25)]
           [balance-y-lower balance-y-upper (partial + 25) #(- % 15)])
         rect-color-interpolator (-> js/d3
-                                    (.interpolateLab "#FFBC25" "green"))
+                                    (.interpolateLab "#1FB7D4" "#7FFBC6"))
         normalized-balance-ratio (-> balance-hours
                                      (min balance-upper-bound)
                                      (max balance-lower-bound)
@@ -396,7 +390,8 @@
         balance-view-width (min (* 0.85 total-width) 500)
         balance-view-height (* 0.6 balance-view-width)]
     (create-balance-view balance-view-width balance-view-height)
-    (update-balance-view balance-view-height todays-target-hours actual-hours-today)))
+    (update-balance-view balance-view-height todays-target-hours 0)
+    (update-balance-view-transitioned todays-target-hours actual-hours-today)))
 
 (defn progress [todays-target-hours actual-hours-today]
   (let [width 250
@@ -442,7 +437,7 @@
         (.style "fill" "grey")
         (.attr "transform" (str "translate(" (/ width 2) "," (/ height 2) ")")))))
 
-(defn create-donut [colors billed-hours]
+#_(defn create-donut [colors billed-hours]
   (let [width 250
         height 250
         radius (/ (min width height) 2)
