@@ -158,7 +158,7 @@
   (-> (request-token callback-uri) (:authorize-url) (response/redirect)))
 
 (defn get-signed-user-id [req]
-  (let [cookie-val (get-in req [:cookies "ccdid" :value])]
+  (when-let [cookie-val (get-in req [:cookies "ccdid" :value])]
     (try (-> cookie-val (jws/unsign jws-token-secret) :sub)
          (catch Exception ex
            (def token-decode-ex ex)

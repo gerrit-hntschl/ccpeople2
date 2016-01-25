@@ -15,8 +15,6 @@
 (def logger ^ch.qos.logback.classic.Logger (LoggerFactory/getLogger "app.server"))
 
 (comment
-
-
   (defn layout [body]
     (page/html5                                             ;; {:manifest "offline.appcache"}
       [:head
@@ -24,13 +22,7 @@
        [:link {:rel "stylesheet" :href "//netdna.bootstrapcdn.com/font-awesome/3.2.0/css/font-awesome.css"}]
        [:link {:rel "stylesheet" :href "//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.1/css/bootstrap-combined.min.css"}]]
       body))
-
-
-  (defn wrap-unauthenticated-redirect-to-login [handler]
-    (fn [req]
-      (if (auth/authenticated? req)
-        (handler req)
-        (redirect "/login")))))
+  )
 
 (defrecord Endpoint [route handler-builder tag handler]
   component/Lifecycle
@@ -59,14 +51,14 @@
 (defn logout-endpoint []
   (map->Endpoint {:route   "/logout"
                   :handler (fn [req]
-                             (-> (response/redirect "/")
+                             (-> (response/redirect (env :app-hostname))
                                  (response/set-cookie ccdashboard-cookie-id "" {:max-age 0})))
                   :tag     :logout}))
 
 (defn auth-handler [conn req]
   (let [{:keys [result] :as cookie-result} (oauth/create-signed-cookie-if-auth-successful conn (:params req))]
     (cond (= :success result)
-          (-> (response/redirect "/")
+          (-> (response/redirect (env :app-hostname))
               (response/set-cookie ccdashboard-cookie-id (:token cookie-result) {:http-only true :max-age (* 1 365 24 60 60)}))
           (= :error result)
           (unauthorized-user-response (:email cookie-result))

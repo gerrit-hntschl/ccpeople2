@@ -7,7 +7,7 @@
   :dependencies [[org.clojure/clojure "1.7.0"]
                  [org.clojure/test.check "0.9.0"]
 ;                 [datascript "0.13.3"]
-                 [aleph "0.4.0"]
+                 [aleph "0.4.1-beta2"]
                  [com.cognitect/transit-cljs "0.8.232"]
                  [com.cognitect/transit-clj "0.8.285"]
                  [environ "1.0.1"]
