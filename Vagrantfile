@@ -46,7 +46,9 @@ $forwarded_ports = {
 # web
   8000 => 8000, 
 # datomic console
-  9000 => 9000, 
+  9000 => 9000,
+# nginx
+  9090 => 9090,
 # nREPL
   35001 => 35001
 }
