@@ -25,31 +25,32 @@
 (defn metric-style [text]
   [:span {:style {:font-size 60}} text])
 
-(defn current-stats-did-mount []
+(defn current-stats-did-mount [state-atom component-name]
   #_(donut-service/progress 730 250)
-  (let [state @domain/app-state
+  (let [state @state-atom
         actual-hours (domain/billed-hours state)
         todays-goal-hours (domain/todays-hour-goal state)
         viewport-size (:viewport/size state)]
-    (donut-service/balance-view viewport-size todays-goal-hours actual-hours)))
+    (donut-service/balance-view component-name viewport-size todays-goal-hours actual-hours)))
 
-(defn current-stats-update [this old-argv]
-  (let [state @domain/app-state
+(defn current-stats-update [state-atom component-name this old-argv]
+  (let [state @state-atom
         actual-hours (domain/billed-hours state)
         todays-goal-hours (domain/todays-hour-goal state)]
-    (donut-service/update-balance-view-transitioned todays-goal-hours actual-hours)))
+    (donut-service/update-balance-view-transitioned component-name todays-goal-hours actual-hours)))
 
-(defn current-stats []
+(defn current-stats [state-atom component-name]
   ;; is it really necessary to deref app-state here just to trigger an invocation of component-did-update??
-  (let [_ @domain/app-state]
-    [:div#current-stats {:style {:margin-left  "auto"
-                                 :margin-right "auto"}}
+  (let [_ @state-atom]
+    [:div {:style {:margin-left  "auto"
+                   :margin-right "auto"}
+           :id component-name}
      [:svg]]))
 
-(defn current-stats-component []
-  (reagent/create-class {:reagent-render current-stats
-                         :component-did-mount current-stats-did-mount
-                         :component-did-update current-stats-update}))
+(defn current-stats-component [state-atom component-name]
+  (reagent/create-class {:reagent-render       (partial current-stats state-atom component-name)
+                         :component-did-mount  (partial current-stats-did-mount state-atom component-name)
+                         :component-did-update (partial current-stats-update state-atom component-name)}))
 
 
 (defn profile-page [_]
@@ -60,7 +61,7 @@
         unbooked-days-count (str (count (domain/unbooked-days state)))
         billed-days (pprint/cl-format nil "~,1f%" (* 100 (/ (domain/billed-hours state) 8 domain/billable-days-goal)))
         num-sick-leave-days (str (domain/number-sick-leave-days state))
-        today-str (days/month-day-today)]
+        today-str (days/month-day-today (:today state))]
     (cond (= (:error state) :error/unknown-user)
           [:h2 {:style {:color "white"}} "Sorry, but we don't know that user."]
           (:user state)
@@ -71,7 +72,7 @@
            [:h2 "Today " (metric-style today-str)]
            [:p "days w/o booked hours"
             (metric-style unbooked-days-count)]
-           [current-stats-component]
+           [current-stats-component domain/app-state "goal-stats"]
            [:ul {:padding 1
                  :style   {:width "100%"}}
 
@@ -84,9 +85,6 @@
             [:li "sick leave"
              (metric-style num-sick-leave-days)]]
            [:div (str "Latest workdate considered: " (latest-worklog-work-date state))]])))
-
-(defn bye-world [_]
-  [:h1 (:bye/text @domain/app-state)])
 
 (defn tabs []
   [:div ""])
@@ -128,7 +126,6 @@
 
 (defn page []
   [:div
-   [:h3 "ccHours"]
    [:div {:style {:text-align "center"}}
     [sign-in-component]]])
 

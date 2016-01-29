@@ -24,8 +24,7 @@
      {:width 500
       :height 300}))
 
-(def initial-state {:days/workdays-till-end-of-year (days/workdays-till-end-of-year (time/today))
-                    :today (time/today)
+(def initial-state {:today         (time/today)
                     :viewport/size (get-viewport-size)})
 
 (defonce app-state (atom initial-state))
@@ -94,7 +93,7 @@
        (map-vals (sum-of :worklog/hours))))
 
 (defn working-days-left-without-today [app-state]
-  (dec (count (:days/workdays-till-end-of-year app-state))))
+  (dec (count (days/workdays-till-end-of-year (:today app-state)))))
 
 ;; vacation ticket TS-2
 (def vacation-ticket-id 68000)
@@ -159,7 +158,7 @@
 (def min-hours-per-day 4)
 
 (defn unbooked-days [app-state]
-  (let [today (time/today)
+  (let [today (:today app-state)
         start-date (consultant/current-period-start today)
         period-days (days/workdays-between start-date today)
         worklogs (:worklogs app-state)

@@ -52,14 +52,14 @@
       (.style "text-anchor" "middle")
       (.text label-text)))
 
-(defn create-balance-view [width height]
-  (let [x-padding (* width 0.2)
-        x-line-padding (* width 0.15)
+(defn create-balance-view [component-name width height]
+  (let [x-padding (* width 0.24)
+        x-line-padding (* width 0.21)
         balance-width (- width (* 2 x-padding))
         balance-line-color "#121212"
         goal-line-color "#8D98A7"
         svg (-> js/d3
-                (.select "#current-stats svg")
+                (.select (str "#" component-name " svg"))
                 (.attr "width" width)
                 (.attr "height" height)
                 (.attr "viewBox" (str "0 0 " width " " height))
@@ -232,14 +232,14 @@
       (.duration end-duration)
       (.attr "y" new-y)))
 
-(defn update-balance-view-transitioned [todays-target-hours actual-hours-today]
+(defn update-balance-view-transitioned [component-name todays-target-hours actual-hours-today]
   (let [svg (-> js/d3
-                (.select "#current-stats svg"))
+                (.select (str "#" component-name " svg")))
         height (.attr svg "height")
         actual-percentage (* 100 (/ actual-hours-today max-value))
         goal-percentage (* 100 (/ todays-target-hours max-value))
         balance-hours (- actual-hours-today todays-target-hours)
-        balance-height (-> (js/Math.abs balance-hours) (* 4) (min 250))
+        balance-height (-> (js/Math.abs balance-hours) (* 4) (min (* 0.7 height)))
         balance-y-upper (- (/ height 2) (/ balance-height 2))
         balance-y-lower (+ balance-y-upper balance-height)
         [actual-hours-y goal-y actual-hours-label-offset-fn goal-label-offset-fn]
@@ -254,8 +254,8 @@
                                      (+ balance-cap)
                                      (/ (* 2 balance-cap)))
 
-
-        start-y (.attr (.select js/d3 "#current-stats .balance-area") "y")
+        component-id-selector (partial str "#" component-name " ")
+        start-y (.attr (.select js/d3 (component-id-selector ".balance-area")) "y")
         center-y (/ height 2)
         center-dist-start (js/Math.abs (- center-y start-y))
         center-dist-end (js/Math.abs (- center-y balance-y-upper))
@@ -265,29 +265,29 @@
         start-duration (* start-fraction transition-duration)
         end-duration (* end-fraction transition-duration)
 
-        d3-balance-in-days-text (-> js/d3 (.select "#current-stats .balance-in-days-text"))
+        d3-balance-in-days-text (.select js/d3 (component-id-selector ".balance-in-days-text"))
         current-balance-text (.text d3-balance-in-days-text)
         prev-goal-hours (-> js/d3
-                            (.select "#current-stats .goal-hours-text")
+                            (.select (component-id-selector ".goal-hours-text"))
                             (.text)
                             (to-int-or-zero))
         prev-goal-percent (-> js/d3
-                              (.select "#current-stats .goal-percent-text")
+                              (.select (component-id-selector ".goal-percent-text"))
                               (.text)
                               (to-int-or-zero))
         transition1 (-> svg
                         (.transition)
                         (.ease "cubic-in")
                         (.duration start-duration))
-        d3-balance-area (.select transition1 "#current-stats .balance-area")
-        d3-actual-hours-line (.select transition1 "#current-stats .actual-hours-line")
-        d3-actual-hours-hours-text (.select transition1 "#current-stats .actual-hours-hours-text")
-        d3-actual-hours-percent-text (.select transition1 "#current-stats .actual-hours-percent-text")
-        d3-actual-hours-label (.select transition1 "#current-stats .actual-hours-label")
-        d3-goal-line (.select transition1 "#current-stats .goal-line")
-        d3-goal-hours-text (.select transition1 "#current-stats .goal-hours-text")
-        d3-goal-percent-text (.select transition1 "#current-stats .goal-percent-text")
-        d3-goal-label (.select transition1 "#current-stats .goal-label")]
+        d3-balance-area (.select transition1 (component-id-selector ".balance-area"))
+        d3-actual-hours-line (.select transition1 (component-id-selector ".actual-hours-line"))
+        d3-actual-hours-hours-text (.select transition1 (component-id-selector ".actual-hours-hours-text"))
+        d3-actual-hours-percent-text (.select transition1 (component-id-selector ".actual-hours-percent-text"))
+        d3-actual-hours-label (.select transition1 (component-id-selector ".actual-hours-label"))
+        d3-goal-line (.select transition1 (component-id-selector ".goal-line"))
+        d3-goal-hours-text (.select transition1 (component-id-selector ".goal-hours-text"))
+        d3-goal-percent-text (.select transition1 (component-id-selector ".goal-percent-text"))
+        d3-goal-label (.select transition1 (component-id-selector ".goal-label"))]
     (-> d3-balance-area
         (.attr "y" center-y)
         (.attr "height" 0)
@@ -342,11 +342,11 @@
                          balance-hours
                          format-days-and-hours)))))
 
-(defn update-balance-view [height todays-target-hours actual-hours-today]
+(defn update-balance-view [component-name height todays-target-hours actual-hours-today]
   (let [target-percentage (* 100 (/ todays-target-hours max-value))
         actual-percentage (* 100 (/ actual-hours-today max-value))
         balance-hours (- actual-hours-today todays-target-hours)
-        balance-height (-> (js/Math.abs balance-hours) (* 4) (min 250))
+        balance-height (-> (js/Math.abs balance-hours) (* 4) (min (* 0.4 height)))
         balance-y-upper (- (/ height 2) (/ balance-height 2))
         balance-y-lower (+ balance-y-upper balance-height)
         [actual-hours-y goal-y actual-hours-label-offset-fn goal-label-offset-fn]
@@ -360,16 +360,17 @@
                                      (max balance-lower-bound)
                                      (+ balance-cap)
                                      (/ (* 2 balance-cap)))
-        d3-balance-area (.select js/d3 "#current-stats .balance-area")
-        d3-actual-hours-line (.select js/d3 "#current-stats .actual-hours-line")
-        d3-actual-hours-hours-text (.select js/d3 "#current-stats .actual-hours-hours-text")
-        d3-actual-hours-percent-text (.select js/d3 "#current-stats .actual-hours-percent-text")
-        d3-actual-hours-label (.select js/d3 "#current-stats .actual-hours-label")
-        d3-goal-line (.select js/d3 "#current-stats .goal-line")
-        d3-goal-hours-text (.select js/d3 "#current-stats .goal-hours-text")
-        d3-goal-percent-text (.select js/d3 "#current-stats .goal-percent-text")
-        d3-goal-label (.select js/d3 "#current-stats .goal-label")
-        d3-balance-in-days-text (.select js/d3 "#current-stats .balance-in-days-text")]
+        component-id-selector (str "#" component-name " ")
+        d3-balance-area (.select js/d3 (str component-id-selector ".balance-area"))
+        d3-actual-hours-line (.select js/d3 (str component-id-selector ".actual-hours-line"))
+        d3-actual-hours-hours-text (.select js/d3 (str component-id-selector ".actual-hours-hours-text"))
+        d3-actual-hours-percent-text (.select js/d3 (str component-id-selector ".actual-hours-percent-text"))
+        d3-actual-hours-label (.select js/d3 (str component-id-selector ".actual-hours-label"))
+        d3-goal-line (.select js/d3 (str component-id-selector ".goal-line"))
+        d3-goal-hours-text (.select js/d3 (str component-id-selector ".goal-hours-text"))
+        d3-goal-percent-text (.select js/d3 (str component-id-selector ".goal-percent-text"))
+        d3-goal-label (.select js/d3 (str component-id-selector ".goal-label"))
+        d3-balance-in-days-text (.select js/d3 (str component-id-selector ".balance-in-days-text"))]
     (update-area
       d3-balance-area balance-y-upper balance-height (rect-color-interpolator normalized-balance-ratio))
     (update-line-y d3-actual-hours-line actual-hours-y)
@@ -385,13 +386,13 @@
     (-> d3-balance-in-days-text
         (.text (format-days-and-hours balance-hours)))))
 
-(defn balance-view [viewport-size todays-target-hours actual-hours-today]
+(defn balance-view [component-name viewport-size todays-target-hours actual-hours-today]
   (let [{total-width :width} viewport-size
-        balance-view-width (min (* 0.85 total-width) 500)
+        balance-view-width (min (* 0.95 total-width) 500)
         balance-view-height (* 0.6 balance-view-width)]
-    (create-balance-view balance-view-width balance-view-height)
-    (update-balance-view balance-view-height todays-target-hours 0)
-    (update-balance-view-transitioned todays-target-hours actual-hours-today)))
+    (create-balance-view component-name balance-view-width balance-view-height)
+    (update-balance-view component-name balance-view-height todays-target-hours 0)
+    (update-balance-view-transitioned component-name todays-target-hours actual-hours-today)))
 
 (defn progress [todays-target-hours actual-hours-today]
   (let [width 250
