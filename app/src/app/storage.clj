@@ -50,6 +50,13 @@
             dbval)
        (into #{} (map first))))
 
+(defn entity-id-by-username [dbval username]
+  (q-one '{:find  [?e]
+           :in    [$ ?username]
+           :where [[?e :user/jira-username ?username]]}
+         dbval
+         username))
+
 (defn user-id-by-email [dbval email]
   (q-one '{:find  [?id]
            :in    [$ ?email]

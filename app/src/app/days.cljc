@@ -60,8 +60,8 @@
 
 (def month-day-formatter (format/formatter "MMM d"))
 
-(defn month-day-today []
-  (format/unparse month-day-formatter (time/now)))
+(defn month-day-today [today]
+  (format/unparse-local-date month-day-formatter today))
 
 (defn this-year []
   (time/year (time/today)))
@@ -76,7 +76,7 @@
   (day-at-midnight (time/now)))
 
 (defn format-simple-date [date]
-  (format/unparse-local-date month-day-formatter (time-coerce/to-date-time date)))
+  (format/unparse-local-date month-day-formatter date))
 
 (defn month-start-ends [start-day end-day]
   ;; assumes start and end are in the same year
