@@ -59,7 +59,9 @@
   (let [{:keys [result] :as cookie-result} (oauth/create-signed-cookie-if-auth-successful conn (:params req))]
     (cond (= :success result)
           (-> (response/redirect (env :app-hostname))
-              (response/set-cookie ccdashboard-cookie-id (:token cookie-result) {:http-only true :max-age (* 1 365 24 60 60)}))
+              (response/set-cookie ccdashboard-cookie-id (:token cookie-result) {:http-only true
+                                                                                 :max-age (* 1 365 24 60 60)
+                                                                                 :secure true}))
           (= :error result)
           (unauthorized-user-response (:email cookie-result))
           :else
