@@ -118,11 +118,12 @@
     (cond (nil? user-sign-in-state)
           [:p "Initializing..."]
           user-sign-in-state
-          [:div
+          [:div {:style {:margin-top "20px"}}
            [:a.button {:href "/logout"} (str "Sign out " (:user/display-name (:user state)))]
            [dispatcher]]
           :else
-          [:a.button {:href "/login"} "Sign-in"])))
+          [:div {:style {:margin-top "20px"}}
+           [:a.button {:href "/login"} "Sign-in"]])))
 
 (defn page []
   [:div
