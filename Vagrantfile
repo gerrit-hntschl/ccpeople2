@@ -43,11 +43,11 @@ $forwarded_ports = {
   5005 => 5005, 
 # postgres
   5432 => 5432, 
-# web
-  8000 => 8000, 
+# web - disabled because we only allow secure cookies, thus it is impossible to login via http
+#  8000 => 8000,
 # datomic console
   9000 => 9000,
-# nginx
+# nginx - serves webpage via https
   9090 => 9090,
 # nREPL
   35001 => 35001

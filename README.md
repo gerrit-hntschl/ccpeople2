@@ -42,6 +42,7 @@ Note: Make sure that you completed the `env.yml` setup before. If you missed som
 - Connect to the vagrant REPL by using the IntelliJ run configuration or connect yourself on port 35001
 - Inside the connected REPL you start in workspace `user`. Run `(go)` to start the server.
 - The ClojureScript-client is compiled incrementally by Figwheel and instantly reloaded on code changes. To start it use the `figwheel` run-configuration which uses the approach described [here](https://github.com/bhauman/lein-figwheel/wiki/Running-figwheel-in-a-Cursive-Clojure-REPL).
+- The app is hosted at [https://localhost:9090](https://localhost:9090). (https only)
 
   
 

@@ -4,6 +4,7 @@
             [plumbing.core :refer [map-vals]]
             [ajax.core :as ajax]
             [cognitect.transit :as transit]
+            [app.mixpanel :as mixpanel]
     #?@(:cljs [[reagent.core :refer [atom]]
                [goog.array :as garray]
                [cljs-time.core :as time]
@@ -33,8 +34,13 @@
   (reset! app-state (assoc-in initial-state [:user :user/signed-in?] false))
   (println (str "api response: " status " " status-text)))
 
+(defn track-user [jira-username]
+  (mixpanel/identify jira-username)
+  (mixpanel/track "signin"))
+
 (defn handle-api-response [data]
-  (swap! app-state merge (assoc-in data [:user :user/signed-in?] true)))
+  (swap! app-state merge (assoc-in data [:user :user/signed-in?] true))
+  (track-user (get-in data [:user :user/jira-username])))
 
 
 (defn call-api []

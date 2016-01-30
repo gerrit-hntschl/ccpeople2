@@ -91,7 +91,7 @@
                         :compiler     {:output-to     "resources/public/js/main.js"
                                        :main          app.start
                                        :optimizations :advanced
-                                       :externs       ["externs/gapi_externs.js"]
+                                       :externs       ["externs/mixpanel_externs.js"]
                                        ;                                         :pseudo-names true
                                        ;:pretty-print  true
                                        }}]}
