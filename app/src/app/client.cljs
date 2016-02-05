@@ -122,8 +122,10 @@
            [:a.button {:href "/logout"} (str "Sign out " (:user/display-name (:user state)))]
            [dispatcher]]
           :else
+
           [:div {:style {:margin-top "20px"}}
-           [:a.button {:href "/login"} "Sign-in"]])))
+           [:a.button {:href "/login"} "Sign-in"]
+           [:p "Yes, it uses Duo Mobile... But you only need to log-in once, then a cookie will keep you logged in for a year."]])))
 
 (defn page []
   [:div
