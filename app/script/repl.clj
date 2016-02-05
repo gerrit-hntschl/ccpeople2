@@ -5,7 +5,7 @@
 ;;   which would be served instead of the figwheel version, which we want when starting this script
 (io/delete-file "resources/public/js/main.js" true)
 (start-figwheel!
- {:figwheel-options {}                                     ;; <-- figwheel server config goes here
+ {:figwheel-options {:css-dirs ["resources/public/css"]}                                     ;; <-- figwheel server config goes here
   :build-ids        ["dev"]                                ;; <-- a vector of build ids to start autobuilding
   :all-builds                                              ;; <-- supply your build configs here
                     [{:id           "dev"
