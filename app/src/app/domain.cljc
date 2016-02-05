@@ -32,6 +32,7 @@
 
 (defn error-handler-fn [{:keys [status status-text]}]
   (reset! app-state (assoc-in initial-state [:user :user/signed-in?] false))
+  (mixpanel/track "hit")
   (println (str "api response: " status " " status-text)))
 
 (defn track-user [jira-username]
