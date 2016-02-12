@@ -86,11 +86,6 @@
   (reduce + (map :worklog/hours
                  (billable-worklogs app-state))))
 
-(defn days-needed-to-reach-goal [app-state]
-  (- billable-days-goal
-     (/ (hours-billed app-state)
-        8)))
-
 (defn sum-of [k]
   (fn [vs]
     (reduce + (map k vs))))
@@ -114,9 +109,6 @@
         (comp (filter (matching :worklog/ticket ticket-id))
               (map :worklog/work-date))
         worklogs))
-
-(defn vacation-days [{:keys [worklogs]}]
-  (ticket-days vacation-ticket-id worklogs))
 
 (defn sick-leave-hours [{:keys [worklogs]}]
   (->> worklogs
@@ -209,11 +201,6 @@
                                                       (into #{}))]
     (remove days-with-work-hours-above-min-threshold period-days)))
 
-(defn actual-work-days-left [app-state]
-  (let [remaining-working-days (working-days-left-without-today app-state)
-        remaining-vacation-days (number-remaining-holidays app-state)]
-    (max 0 (- remaining-working-days remaining-vacation-days))))
-
 
 (defn total-working-days [state]
   (- (count (days/workdays-till-end-of-year (goal-start-date state)))
@@ -234,9 +221,6 @@
   [app-state]
   (/ (- (hours-billed app-state) (todays-hour-goal app-state))
      8))
-
-(defn number-sick-leave-days [app-state]
-  (/ (sick-leave-hours app-state) 8))
 
 (defn user-sign-in-state [state]
   (get-in state [:user :user/signed-in?]))
