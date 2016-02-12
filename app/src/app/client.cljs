@@ -28,15 +28,17 @@
 (defn current-stats-did-mount [state-atom component-name]
   #_(donut-service/progress 730 250)
   (let [state @state-atom
-        actual-hours (domain/billed-hours state)
-        todays-goal-hours (domain/todays-hour-goal state)
+        model-data (domain/app-model {:state state})
+        actual-hours (:hours-billed model-data)
+        todays-goal-hours (:hour-goal-today model-data)
         viewport-size (:viewport/size state)]
     (donut-service/balance-view component-name viewport-size todays-goal-hours actual-hours)))
 
 (defn current-stats-update [state-atom component-name this old-argv]
   (let [state @state-atom
-        actual-hours (domain/billed-hours state)
-        todays-goal-hours (domain/todays-hour-goal state)]
+        model-data (domain/app-model {:state state})
+        actual-hours (:hours-billed model-data)
+        todays-goal-hours (:hour-goal-today model-data)]
     (donut-service/update-balance-view-transitioned component-name todays-goal-hours actual-hours)))
 
 (defn current-stats [state-atom component-name]
@@ -55,12 +57,13 @@
 
 (defn profile-page [_]
   (let [state @domain/app-state
-        remaining-work-days-minus-vacation (str (domain/actual-work-days-left state))
-        rem-holidays (str (domain/number-remaining-holidays state))
-        days-to-100-percent (pprint/cl-format nil "~,2f" (domain/days-needed-to-reach-goal state))
-        unbooked-days-count (str (count (domain/unbooked-days state)))
-        billed-days (pprint/cl-format nil "~,1f%" (* 100 (/ (domain/billed-hours state) 8 domain/billable-days-goal)))
-        num-sick-leave-days (str (domain/number-sick-leave-days state))
+        model-data (domain/app-model {:state state})
+        remaining-work-days-minus-vacation (str (:workdays-left-actually model-data))
+        rem-holidays (str (:number-holidays-remaining model-data))
+        days-to-100-percent (pprint/cl-format nil "~,2f" (:days-to-reach-goal model-data))
+        unbooked-days-count (str (count (:days-without-booked-hours model-data)))                          ;(str (count (domain/unbooked-days state)))
+        ;        billed-days (pprint/cl-format nil "~,1f%" (* 100 (/ (domain/hours-billed state) 8 domain/billable-days-goal)))
+        num-sick-leave-days (str (:number-sick-leave-days model-data))
         today-str (days/month-day-today (:today state))]
     (cond (= (:error state) :error/unknown-user)
           [:h2 {:style {:color "white"}} "Sorry, but we don't know that user."]
@@ -122,7 +125,6 @@
            [:a.button {:href "/logout"} (str "Sign out " (:user/display-name (:user state)))]
            [dispatcher]]
           :else
-
           [:div {:style {:margin-top "20px"}}
            [:a.button {:href "/login"} "Sign-in"]
            [:p "Yes, it uses Duo Mobile... But you only need to log-in once, then a cookie will keep you logged in for a year."]])))

@@ -5,12 +5,17 @@
             [ajax.core :as ajax]
             [cognitect.transit :as transit]
             [app.mixpanel :as mixpanel]
+            [app.util :refer [matching]]
+
+            [app.graph :as graph]
     #?@(:cljs [[reagent.core :refer [atom]]
                [goog.array :as garray]
                [cljs-time.core :as time]
                [goog.dom :as dom]
-               cljs-time.extend]
-        :clj [[clj-time.core :as time]])))
+               cljs-time.extend
+               [plumbing.core :refer-macros [fnk]]]
+        :clj [[clj-time.core :as time]
+              [plumbing.core :refer [fnk]]])))
 
 (def billable-days-goal 180)
 
@@ -55,10 +60,6 @@
                                         {"date/local" (fn [date-fields]
                                                         (apply time/local-date date-fields))}})}))
 
-(defn matching [k v]
-  (fn [m]
-    (= v (get m k))))
-
 (defn customer-id-by-name [customer-name customers]
   (->> customers
        (filter (matching :customer/name customer-name))
@@ -81,13 +82,13 @@
          (remove (comp codecentric-ticket-ids :worklog/ticket))
          (filter (comp billable-ticket-ids :worklog/ticket)))))
 
-(defn billed-hours [app-state]
+(defn hours-billed [app-state]
   (reduce + (map :worklog/hours
                  (billable-worklogs app-state))))
 
 (defn days-needed-to-reach-goal [app-state]
   (- billable-days-goal
-     (/ (billed-hours app-state)
+     (/ (hours-billed app-state)
         8)))
 
 (defn sum-of [k]
@@ -99,8 +100,8 @@
        (group-by (comp time/month :worklog/work-date))
        (map-vals (sum-of :worklog/hours))))
 
-(defn working-days-left-without-today [app-state]
-  (dec (count (days/workdays-till-end-of-year (:today app-state)))))
+(defn working-days-left-without-today [today]
+  (dec (count (days/workdays-till-end-of-year today))))
 
 ;; vacation ticket TS-2
 (def vacation-ticket-id 68000)
@@ -136,15 +137,41 @@
        (map :worklog/hours)
        (apply +)))
 
+(defn user-start-date [state]
+  (-> state (:user) (:user/start-date)))
+
+(defn goal-start-date
+  "If a consultant starts working during the current year, then the :user/start-date is used, otherwise 1st of January."
+  [state]
+  (let [current-year (time/year (:today state))]
+    (if-let [start-date (user-start-date state)]
+      (if (= current-year (time/year start-date))
+        start-date
+        (time/local-date current-year 1 1))
+      (time/local-date current-year 1 1))))
+
+(defn goal-start-date-scaled-percentage
+  "Depending on the goal-start-date we have to scale goals and vacation days. Returns the percentage of the year the
+  consultant works for codecentric. Calculates the percentage based on months."
+  ;; TODO does it happen that people start on days other than 1st and 15th?
+  [start-date]
+  (let [start-month (time/month start-date)
+        number-of-complete-months (- 12 start-month)
+        start-month-days (time/number-of-days-in-the-month start-date)
+        number-of-worked-days-in-start-month (- start-month-days
+                                                (dec (time/day start-date)))
+        start-month-percentage (/ number-of-worked-days-in-start-month start-month-days)]
+    (/ (+ number-of-complete-months start-month-percentage) 12)))
+
 ;; TODO make user dependent
 (def vacation-per-year 30)
 
+(defn scaled-vacation-per-year [state]
+  (* vacation-per-year (goal-start-date-scaled-percentage state)))
+
 (defn number-remaining-holidays [app-state]
   (let [number-taken-vacation-days (/ (sum-past-vacation-hours app-state (:today app-state)) 8.)]
-    (- vacation-per-year number-taken-vacation-days)))
-
-(defn plus-one-days-left [remaining-working-days days-to-100-percent]
-  (max 0 (- remaining-working-days days-to-100-percent)))
+    (- (scaled-vacation-per-year app-state) number-taken-vacation-days)))
 
 #?(:cljs
    (extend-type js/goog.date.Date
@@ -164,13 +191,12 @@
 
 (def min-hours-per-day 4)
 
-(defn unbooked-days [app-state]
+(defn unbooked-days [app-state period-start-date]
   (let [today (:today app-state)
-        start-date (consultant/current-period-start today)
-        period-days (days/workdays-between start-date today)
+        period-days (days/workdays-between period-start-date today)
         worklogs (:worklogs app-state)
         worklogs-in-period (filter (fn [{:keys [worklog/work-date]}]
-                                     (time/within? start-date today work-date))
+                                     (time/within? period-start-date today work-date))
                                    worklogs)
         day->worklogs (group-by :worklog/work-date worklogs-in-period)
         day->worked-hours (map (fn [[day worklogs]]
@@ -188,23 +214,25 @@
         remaining-vacation-days (number-remaining-holidays app-state)]
     (max 0 (- remaining-working-days remaining-vacation-days))))
 
-(def total-working-days
-  (- (count (days/workdays-till-end-of-year (time/local-date 2016 1 1)))
-     vacation-per-year))
 
-(def daily-burndown-hours
-  (/ (* billable-days-goal 8) total-working-days))
+(defn total-working-days [state]
+  (- (count (days/workdays-till-end-of-year (goal-start-date state)))
+     (scaled-vacation-per-year state)))
+
+(defn daily-burndown-hours [state]
+  (/ (* billable-days-goal (goal-start-date-scaled-percentage state) 8)
+     (total-working-days state)))
 
 (defn todays-hour-goal [state]
-  (let [workdays-till-today (count (days/workdays-till-today (:today state)))
+  (let [workdays-till-today (count (days/workdays-between (goal-start-date state) (:today state)))
         vacation-days-till-today (/ (sum-past-vacation-hours state (:today state)) 8)]
     (* (-  workdays-till-today vacation-days-till-today)
-       daily-burndown-hours)))
+       (daily-burndown-hours state))))
 
-(defn days-balance
+#_(defn days-balance
   "balance with respect to today's hour goal"
   [app-state]
-  (/ (- (billed-hours app-state) (todays-hour-goal app-state))
+  (/ (- (hours-billed app-state) (todays-hour-goal app-state))
      8))
 
 (defn number-sick-leave-days [app-state]
@@ -212,3 +240,59 @@
 
 (defn user-sign-in-state [state]
   (get-in state [:user :user/signed-in?]))
+
+(def app-model-graph
+  {:worklogs-billable          (fnk [state]
+                                 (billable-worklogs state))
+   ;; the consultant specific goal start date...
+   ;; 1st of January if consultant employment did not start this year, otherwise employment start.
+   :consultant-start-date      (fnk [state]
+                                 (goal-start-date state))
+
+   ;; the current open period for booking billable hours, unless before the consultant start date
+   :current-period-start-date  (fnk [state consultant-start-date]
+                                 (let [period-start (consultant/current-period-start (:today state))]
+                                   (if (time/before? period-start consultant-start-date)
+                                     consultant-start-date
+                                     period-start)))
+
+   :hours-billed               (fnk [worklogs-billable]
+                                 (reduce + (map :worklog/hours
+                                                worklogs-billable)))
+   :work-duration-scale-factor (fnk [consultant-start-date]
+                                 (goal-start-date-scaled-percentage consultant-start-date))
+   :billable-days-goal-scaled  (fnk [work-duration-scale-factor]
+                                 (* billable-days-goal work-duration-scale-factor))
+   :days-to-reach-goal         (fnk [billable-days-goal-scaled hours-billed]
+                                 (- billable-days-goal-scaled
+                                    (/ hours-billed 8)))
+   :vacation-per-year-scaled   (fnk [work-duration-scale-factor]
+                                 (* vacation-per-year work-duration-scale-factor))
+   :number-taken-vacation-days (fnk [state]
+                                 (/ (sum-past-vacation-hours state (:today state)) 8.))
+   :number-holidays-remaining  (fnk [number-taken-vacation-days vacation-per-year-scaled]
+                                 (- vacation-per-year-scaled number-taken-vacation-days))
+   :workdays-left-except-today (fnk [state]
+                                 (working-days-left-without-today (:today state)))
+   :workdays-left-actually     (fnk [number-holidays-remaining workdays-left-except-today]
+                                 (max 0 (- workdays-left-except-today number-holidays-remaining)))
+   :number-workdays-till-today (fnk [consultant-start-date state]
+                                 (count (days/workdays-between consultant-start-date (:today state))))
+   :workdays-total             (fnk [vacation-per-year-scaled consultant-start-date]
+                                 (- (count (days/workdays-till-end-of-year consultant-start-date))
+                                    vacation-per-year-scaled))
+   :burndown-hours-per-workday (fnk [billable-days-goal-scaled workdays-total]
+                                 (/ (* billable-days-goal-scaled 8)
+                                    workdays-total))
+   :hour-goal-today            (fnk [number-workdays-till-today
+                                     number-taken-vacation-days
+                                     burndown-hours-per-workday]
+                                 (* (- number-workdays-till-today number-taken-vacation-days)
+                                    burndown-hours-per-workday))
+   :days-without-booked-hours  (fnk [state current-period-start-date]
+                                 (unbooked-days state current-period-start-date))
+   :number-sick-leave-days     (fnk [state]
+                                 (/ (sick-leave-hours state) 8))
+   })
+
+(def app-model (graph/compile-cancelling app-model-graph))
