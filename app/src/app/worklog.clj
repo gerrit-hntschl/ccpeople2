@@ -3,7 +3,8 @@
             [aleph.http :as http]
             [aleph.http.client-middleware :as mw]
             [clojure.string :as str]
-            [datomic.api :as d]
+            [app.util :refer [matching]]
+            [datomic.api :refer [db] :as d]
             [plumbing.core :refer [safe-get fnk]]
             [environ.core :refer [env]]
             [app.graph :as graph]
@@ -122,12 +123,14 @@
        (d/transact conn)
        (deref)))
 
-(def users-uri-suffix "/rest/api/2/user/assignable/search?project=TIMXIII")
-
 (def teams-uri "/rest/tempo-teams/1/team/")
 
-(defn team-members [team]
+;;(oauth/fetch-jira "/rest/tempo-core/1/holidayscheme/6/")
+
+(defn team-member-url [team]
   (format "/rest/tempo-teams/2/team/%s/member" team))
+
+(def solingen-team-id 15)
 
 (defn issue-details-uri [issue-id]
   (format "/rest/api/2/issue/%d" issue-id))
@@ -139,6 +142,33 @@
     (format "/rest/api/2/user/search?username=%s&maxResults=1000" l)
     jira-token
     jira-consumer-private-key))
+
+(defn fetch-team-member
+  ([team-id]
+    (fetch-team-member team-id (env :jira-base-url) (env :jira-access-token) (env :jira-consumer-private-key)))
+  ([team-id jira-base-url jira-token jira-consumer-private-key]
+   (oauth/fetch-jira
+     jira-base-url
+     (team-member-url team-id)
+     jira-token
+     jira-consumer-private-key )))
+
+(def codecentric-all-id 4)
+
+(defn fetch-all-teams-except-codecentric-all [jira-base-url jira-token jira-consumer-private-key]
+  (->> (oauth/fetch-jira
+         jira-base-url
+         teams-uri
+         jira-token
+         jira-consumer-private-key)
+       (remove (matching :id codecentric-all-id))
+       (s/validate [model/JiraTeam])))
+
+(defn get-team-member-start-date [jira-team-member]
+  (get-in jira-team-member [:membership :dateFromANSI]))
+
+(defn get-team-member-jira-username [team-member]
+  (get-in team-member [:member :name]))
 
 (def ignored-users #{"CoDiRadiator"
                      "jiraapi"
@@ -181,7 +211,9 @@
     "Read all worklogs from from-date until to-date (inclusive).
      Returns map containing a seq of WorkLogs mapped to the key :worklogs.")
   (issues [this issue-ids] "Read all issues with the given ids. Returns seq of JiraIssues.")
-  (users [this user-names] "Read all users with the given names. Returns seq of JiraUsers."))
+  (users [this user-names] "Read all users with the given names. Returns seq of JiraUsers.")
+  (teams [this] "Read all teams. Returns seq of JiraTeams")
+  (team-member [this team-id] "Reads the member of the given team. Returns seq of JiraTeamMemberships"))
 
 (defn fetch-issues [jira-base-uri issue-ids jira-token jira-consumer-private-key]
   (mapv (fn [issue-id]
@@ -221,7 +253,11 @@
   (users [this usernames]
     ;; todo if less than 26 usernames, fetch directly
     (->> (fetch-all-jira-users jira-base-url jira-access-token jira-consumer-private-key)
-         (filter (fn [jira-user] (contains? usernames (:name jira-user)))))))
+         (filter (fn [jira-user] (contains? usernames (:name jira-user))))))
+  (teams [this]
+    (fetch-all-teams-except-codecentric-all jira-base-url jira-access-token jira-consumer-private-key))
+  (team-member [this team-id]
+    (fetch-team-member team-id jira-base-url jira-access-token jira-consumer-private-key)))
 
 (defrecord JiraFakeClient [prefetched-worklogs prefetched-issues prefetched-users]
   Jira
@@ -317,112 +353,162 @@
 (defn worklog-retraction [worklog-id]
   [:db.fn/retractEntity [:worklog/id worklog-id]])
 
+(def to-db-user (partial jira-data-to-datomic model/jira-user-attributes))
+
+(def missing-users-graph
+  ;; input -> import-usernames-all & dbval & jira
+  {:db-usernames-all                 (fnk [dbval]
+                                       (all-usernames dbval))
+   :import-usernames-new           (fnk [import-usernames-all db-usernames-all]
+                                       (set/difference import-usernames-all db-usernames-all))
+   :jira-users-new                   (fnk [jira import-usernames-new]
+                                       (when (not-empty import-usernames-new)
+                                         (users jira import-usernames-new)))
+   :domain-users-new                 (fnk [jira-users-new]
+                                       (mapv to-db-user
+                                             jira-users-new))})
+
 (def jira-import-graph
   ;; input:
   ;; dbval :- Datomic database value,
   ;; today :- Date of today with time 1 millisecond before tomorrow
   ;; jira :- Jira Client implementation
-  {:db-max-work-date                 (fnk [dbval]
-                                       (time-coerce/from-date (max-work-date dbval)))
-   :import-start-date                (fnk [db-max-work-date today]
-                                       (when db-max-work-date
-                                         (assert (not (time/after? db-max-work-date today))
-                                                 (str "db-max-work-date is after today: " db-max-work-date)))
-                                       (if db-max-work-date
-                                         (time/first-day-of-the-month db-max-work-date)
-                                         (time/first-day-of-the-month (time/year today) 1)))
-   :current-period-start             (fnk [today]
-                                       (consultant/current-period-start today))
-   :re-import?                       (fnk [db-max-work-date current-period-start]
-                                       ;; todo correctly handle db-date == period-start
-                                       (boolean (and db-max-work-date
-                                                     (time/after? db-max-work-date current-period-start))))
-   :worklogs-retrieved               (fnk [jira import-start-date today]
-                                       ;; returns a map containing all intermediate state used to retrieve actual worklogs
-                                       ;; other entries are not used, but useful for debugging
-                                       (worklogs jira import-start-date today))
-   :worklogs-all                     (fnk worklogs-all :- [model/JiraWorkLog]
-                                       [worklogs-retrieved]
-                                       ;; simplify access to actual worklogs
-                                       (:worklogs worklogs-retrieved))
-   :worklogs-usernames-all           (fnk [worklogs-all]
-                                       (into #{} (map :username) worklogs-all))
-   :db-usernames-all                 (fnk [dbval]
-                                       (all-usernames dbval))
-   :worklogs-usernames-new           (fnk [worklogs-usernames-all db-usernames-all]
-                                       (set/difference worklogs-usernames-all db-usernames-all))
-   :jira-users-new                   (fnk [jira worklogs-usernames-new]
-                                       (when (not-empty worklogs-usernames-new)
-                                         (users jira worklogs-usernames-new)))
-   :domain-users-new                 (fnk [jira-users-new]
-                                       (mapv (partial jira-data-to-datomic model/jira-user-attributes)
-                                             jira-users-new))
-   :jira-usernames-new               (fnk [jira-users-new]
-                                       (into #{} (map :name) jira-users-new))
-   :worklogs-usernames-unknown       (fnk [jira-usernames-new worklogs-usernames-new]
-                                       (set/difference worklogs-usernames-new jira-usernames-new))
-   :issue-ids-all                    (fnk [worklogs-all]
-                                       (into #{} (map :issue_id) worklogs-all))
-   :db-ticket-ids-all                (fnk [dbval]
-                                       (all-domain-ticket-ids dbval))
-   :issue-ids-new                    (fnk [issue-ids-all db-ticket-ids-all]
-                                       (set/difference issue-ids-all db-ticket-ids-all))
-   :issues-new-parsed-json           (fnk [jira issue-ids-new]
-                                       (issues jira issue-ids-new))
-   :issues-new-coerced               (fnk [issues-new-parsed-json]
-                                       (mapv model/to-jira-issue
-                                             issues-new-parsed-json))
-   :tickets-new                      (fnk [issues-new-coerced]
-                                       (mapv jira-issue-to-datomic-ticket issues-new-coerced))
-   :db-customer-ids-all              (fnk [dbval]
-                                       (all-domain-customer-ids dbval))
-   ;; can the component of a jira issue change? here we assume that only new issues can introduce new components
-   :jira-customers-new               (fnk [issues-new-coerced]
-                                       (distinct (mapv extract-customer-from-jira-issue issues-new-coerced)))
-   :jira-customer-ids                (fnk [jira-customers-new]
-                                       (into #{} (map :id) jira-customers-new))
-   :customer-ids-new                 (fnk [db-customer-ids-all jira-customer-ids]
-                                       (set/difference jira-customer-ids db-customer-ids-all))
-   :domain-customers-new             (fnk [customer-ids-new jira-customers-new]
-                                       (mapv jira-component-to-datomic-customer
-                                             (filter (comp customer-ids-new :id) jira-customers-new)))
-   :worklogs-known-usernames         (fnk [worklogs-all worklogs-usernames-unknown]
-                                       (remove (comp worklogs-usernames-unknown :username) worklogs-all))
-   :db-worklog-ids-in-import-range   (fnk [re-import? dbval import-start-date today]
-                                       (when re-import?
-                                         (all-domain-worklog-ids-in-range dbval
-                                                                          (time-coerce/to-date import-start-date)
-                                                                          (time-coerce/to-date today))))
-   :jira-worklog-ids-in-import-range (fnk [worklogs-known-usernames]
-                                       (into #{} (map :worklog_id) worklogs-known-usernames))
-   :jira-worklog-ids-deleted         (fnk [re-import? db-worklog-ids-in-import-range jira-worklog-ids-in-import-range]
-                                       (if re-import?
-                                         (set/difference db-worklog-ids-in-import-range jira-worklog-ids-in-import-range)
-                                         #{}))
-   :domain-worklogs-new              (fnk [worklogs-known-usernames]
-                                       (mapv jira-worklog-to-datomic-worklog worklogs-known-usernames))
-   :domain-worklogs-deleted          (fnk [jira-worklog-ids-deleted]
-                                       (mapv worklog-retraction jira-worklog-ids-deleted))
-   :domain-worklogs-transaction      (fnk [domain-worklogs-new domain-worklogs-deleted]
-                                       (concat domain-worklogs-new domain-worklogs-deleted))
-   :db-transactions                  (fnk [domain-users-new domain-customers-new tickets-new domain-worklogs-transaction]
-                                       (remove empty?
-                                               (vector domain-users-new
-                                                       domain-customers-new
-                                                       tickets-new
-                                                       domain-worklogs-transaction)))
-   :db-transactions-stats (fnk [domain-users-new domain-customers-new tickets-new domain-worklogs-deleted domain-worklogs-new]
-                            (zipmap [:new-users :new-customers :new-tickets :deleted-worklogs :worklogs-in-period]
-                                    (map count
-                                         [domain-users-new domain-customers-new tickets-new domain-worklogs-deleted domain-worklogs-new])))})
+  (merge
+    {:db-max-work-date     (fnk [dbval]
+                             (time-coerce/from-date (max-work-date dbval)))
+     :import-start-date    (fnk [db-max-work-date today]
+                             (when db-max-work-date
+                               (assert (not (time/after? db-max-work-date today))
+                                       (str "db-max-work-date is after today: " db-max-work-date)))
+                             (if db-max-work-date
+                               (time/first-day-of-the-month db-max-work-date)
+                               (time/first-day-of-the-month (time/year today) 1)))
+     :current-period-start (fnk [today]
+                             (consultant/current-period-start today))
+     :re-import?           (fnk [db-max-work-date current-period-start]
+                             ;; todo correctly handle db-date == period-start
+                             (boolean (and db-max-work-date
+                                           (time/after? db-max-work-date current-period-start))))
+     :worklogs-retrieved   (fnk [jira import-start-date today]
+                             ;; returns a map containing all intermediate state used to retrieve actual worklogs
+                             ;; other entries are not used, but useful for debugging
+                             (worklogs jira import-start-date today))
+     :worklogs-all         (fnk worklogs-all :- [model/JiraWorkLog]
+                             [worklogs-retrieved]
+                             ;; simplify access to actual worklogs
+                             (:worklogs worklogs-retrieved))
+     :import-usernames-all (fnk [worklogs-all]
+                             (into #{} (map :username) worklogs-all))}
+    missing-users-graph
+    {:jira-usernames-new               (fnk [jira-users-new]
+                                         (into #{} (map :name) jira-users-new))
+     :worklogs-usernames-unknown       (fnk [jira-usernames-new import-usernames-new]
+                                         (set/difference import-usernames-new jira-usernames-new))
+     :issue-ids-all                    (fnk [worklogs-all]
+                                         (into #{} (map :issue_id) worklogs-all))
+     :db-ticket-ids-all                (fnk [dbval]
+                                         (all-domain-ticket-ids dbval))
+     :issue-ids-new                    (fnk [issue-ids-all db-ticket-ids-all]
+                                         (set/difference issue-ids-all db-ticket-ids-all))
+     :issues-new-parsed-json           (fnk [jira issue-ids-new]
+                                         (issues jira issue-ids-new))
+     :issues-new-coerced               (fnk [issues-new-parsed-json]
+                                         (mapv model/to-jira-issue
+                                               issues-new-parsed-json))
+     :tickets-new                      (fnk [issues-new-coerced]
+                                         (mapv jira-issue-to-datomic-ticket issues-new-coerced))
+     :db-customer-ids-all              (fnk [dbval]
+                                         (all-domain-customer-ids dbval))
+     ;; can the component of a jira issue change? here we assume that only new issues can introduce new components
+     :jira-customers-new               (fnk [issues-new-coerced]
+                                         (distinct (mapv extract-customer-from-jira-issue issues-new-coerced)))
+     :jira-customer-ids                (fnk [jira-customers-new]
+                                         (into #{} (map :id) jira-customers-new))
+     :customer-ids-new                 (fnk [db-customer-ids-all jira-customer-ids]
+                                         (set/difference jira-customer-ids db-customer-ids-all))
+     :domain-customers-new             (fnk [customer-ids-new jira-customers-new]
+                                         (mapv jira-component-to-datomic-customer
+                                               (filter (comp customer-ids-new :id) jira-customers-new)))
+     :worklogs-known-usernames         (fnk [worklogs-all worklogs-usernames-unknown]
+                                         (remove (comp worklogs-usernames-unknown :username) worklogs-all))
+     :db-worklog-ids-in-import-range   (fnk [re-import? dbval import-start-date today]
+                                         (when re-import?
+                                           (all-domain-worklog-ids-in-range dbval
+                                                                            (time-coerce/to-date import-start-date)
+                                                                            (time-coerce/to-date today))))
+     :jira-worklog-ids-in-import-range (fnk [worklogs-known-usernames]
+                                         (into #{} (map :worklog_id) worklogs-known-usernames))
+     :jira-worklog-ids-deleted         (fnk [re-import? db-worklog-ids-in-import-range jira-worklog-ids-in-import-range]
+                                         (if re-import?
+                                           (set/difference db-worklog-ids-in-import-range jira-worklog-ids-in-import-range)
+                                           #{}))
+     :domain-worklogs-new              (fnk [worklogs-known-usernames]
+                                         (mapv jira-worklog-to-datomic-worklog worklogs-known-usernames))
+     :domain-worklogs-deleted          (fnk [jira-worklog-ids-deleted]
+                                         (mapv worklog-retraction jira-worklog-ids-deleted))
+     :domain-worklogs-transaction      (fnk [domain-worklogs-new domain-worklogs-deleted]
+                                         (concat domain-worklogs-new domain-worklogs-deleted))
+     :db-transactions                  (fnk [domain-users-new domain-customers-new tickets-new domain-worklogs-transaction]
+                                         (remove empty?
+                                                 (vector domain-users-new
+                                                         domain-customers-new
+                                                         tickets-new
+                                                         domain-worklogs-transaction)))
+     :db-transactions-stats            (fnk [domain-users-new domain-customers-new tickets-new domain-worklogs-deleted domain-worklogs-new]
+                                         (zipmap [:new-users :new-customers :new-tickets :deleted-worklogs :worklogs-in-period]
+                                                 (map count
+                                                      [domain-users-new domain-customers-new tickets-new domain-worklogs-deleted domain-worklogs-new])))}))
 
 (def jira-import (graph/compile-cancelling jira-import-graph))
 
+
+(defn to-datomic-user-join-date [team-member]
+  {:db/id (storage/people-tempid)
+   :user/start-date (get-team-member-start-date team-member)
+   :user/jira-username (get-team-member-jira-username team-member)})
+
+(def jira-start-date-import-graph
+  ;; input: jira :- Jira Client implementation
+  ;;        dbval :- datomic database value
+  (merge missing-users-graph
+         {:teams-all                   (fnk [jira]
+                                         (teams jira))
+          :team-ids-all                (fnk [teams-all]
+                                         (into #{}
+                                               (map :id)
+                                               teams-all))
+          :team-members-all            (fnk team-members-all :- [model/JiraTeamMember]
+                                         [jira team-ids-all]
+                                         (into []
+                                               (mapcat (partial team-member jira))
+                                               team-ids-all))
+          :team-members-with-join-date (fnk [team-members-all]
+                                         (into []
+                                               (comp (filter get-team-member-start-date)
+                                                     (map model/to-jira-team-member))
+                                               team-members-all))
+          :import-usernames-all        (fnk [team-members-with-join-date]
+                                         (into #{}
+                                               (map get-team-member-jira-username)
+                                               team-members-with-join-date))
+          :db-user-with-join-date      (fnk [team-members-with-join-date]
+                                         (into []
+                                               (map to-datomic-user-join-date)
+                                               team-members-with-join-date))
+          :db-transactions             (fnk [db-user-with-join-date domain-users-new]
+                                         (vector domain-users-new
+                                                 db-user-with-join-date))
+          :import-stats                (fnk [db-user-with-join-date domain-users-new]
+                                         {:number-of-users-with-join-date         (count db-user-with-join-date)
+                                          :number-of-corresponding-new-jira-users (count domain-users-new)})}))
+
+(def jira-user-start-date-import (graph/compile-cancelling jira-start-date-import-graph))
+
 (defprotocol Scheduler
-  (schedule [this f] "Schedule f for periodic execution"))
+  (schedule [this f repeat-delay] "Schedule f for periodic execution with given repeat-delay in seconds."))
 
 (defn sync-with-jira! [conn jira]
-  (let [import-result (jira-import {:dbval (d/db conn)
+  (let [import-result (jira-import {:dbval (db conn)
                                     :today (today-before-midnight)
                                     :jira  jira})]
     (log/info logger "done import jira" (:db-transactions-stats import-result))
@@ -432,17 +518,30 @@
 
     import-result))
 
+(defn sync-start-dates! [conn jira]
+  (log/info logger "Starting user-start-date-import: " (.getName (Thread/currentThread)))
+  (let [import-graph-result (jira-user-start-date-import {:jira jira
+                                                          :dbval (db conn)})]
+    (doseq [tx (:db-transactions import-graph-result)]
+      @(d/transact conn tx))
+    (log/info logger "Finished user-start-date-import: " (:import-stats import-graph-result))))
+
 (defrecord JiraImporter [conn jira-client scheduler scheduled]
   component/Lifecycle
   (start [this]
     (if (:scheduled this)
       this
-      (do (schedule scheduler (fn []
-                                (log/info logger "Starting import: " (.getName (Thread/currentThread)))
-                                (try (sync-with-jira! conn jira-client)
-                                     (catch Throwable ex
-                                       (log/error logger ex "import error:" (.getMessage ex))
-                                       (def impex ex)))))
+      (do (schedule scheduler
+                    (fn []
+                      (log/info logger "Starting import: " (.getName (Thread/currentThread)))
+                      (try (sync-with-jira! conn jira-client)
+                           (catch Throwable ex
+                             (log/error logger ex "import error:" (.getMessage ex))
+                             (def impex ex))))
+                    60)
+          (schedule scheduler
+                    (partial sync-start-dates! conn jira-client)
+                    (* 60 60 24))
           (assoc this :scheduled true)))
     this)
   (stop [this]

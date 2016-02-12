@@ -107,13 +107,18 @@
       (dissoc :db/id)
       (model/to-domain-customer)))
 
+(defn domain-user [db-user]
+  (-> db-user
+      (as-map)
+      (model/to-domain-user)))
+
 (defn existing-user-data [dbval id]
   (def xxid id)
   (let [user-entity (d/entity dbval id)
         db-worklogs (:worklog/_user user-entity)
         tickets (into #{} (map :worklog/ticket) db-worklogs)
         customers (into #{} (keep :ticket/customer) tickets)]
-    {:user      (->> user-entity (d/touch) (into {}))
+    {:user      (domain-user user-entity)
      :worklogs  (mapv domain-worklog db-worklogs)
      :tickets   (mapv domain-ticket tickets)
      :customers (mapv domain-customer customers)}))

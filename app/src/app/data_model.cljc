@@ -136,6 +136,20 @@
   {:id   PositiveInt
    :name NonEmptyString})
 
+(s/defschema JiraTeam
+  {:id s/Int
+   :name NonEmptyString
+   ;:mission :summary :lead :leadUser
+   s/Keyword s/Any})
+
+(s/defschema JiraTeamMember
+  {:id         s/Int
+   :membership {(s/optional-key :dateFromANSI) IDate
+                s/Keyword       s/Any}
+   :member {:name NonEmptyString
+            s/Keyword s/Any}
+   s/Keyword   s/Any})
+
 (s/defschema DbInvoicingType (apply s/enum (vals jira-invoicing-types->datomic-invoicing)))
 
 (s/defschema DbIssueType (apply s/enum (vals jira-issue-type->datomic-issue-type)))
@@ -160,9 +174,16 @@
                              :customer/name NonEmptyString
                              s/Keyword      s/Any})
 
+(s/defschema DomainUser {;; :user/id is assigned on the first login -> only optional here to simplify REPLing on fresh users
+                         (s/optional-key :user/id)         s/Uuid
+                         :user/jira-username               NonEmptyString
+                         :user/email                       EmailAddress
+                         :user/display-name                NonEmptyString
+                         (s/optional-key :user/start-date) LocalDate
+                         s/Keyword                         s/Any})
 
 ;;;;;;;;;;;; transformations
-(def datetime-regex #"\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?")
+(def datetime-regex #"\d{4}-\d{2}-\d{2}")
 
 (def timestamp-formatter (format/formatter "yyyy-MM-dd"))
 
@@ -189,6 +210,10 @@
   (coerce/coercer JiraIssue
                   date-and-string-coercer))
 
+(def jira-team-member-coercer
+  (coerce/coercer JiraTeamMember
+                  date-and-string-coercer))
+
 (defn local-date-coercer [schema]
   (when (= LocalDate schema)
     (coerce/safe
@@ -199,6 +224,10 @@
 
 (def domain-worklog-coercer
   (coerce/coercer DomainWorklog
+                  local-date-coercer))
+
+(def domain-user-coercer
+  (coerce/coercer DomainUser
                   local-date-coercer))
 
 (defn throw-on-invalid-schema-error [x]
@@ -224,6 +253,9 @@
                            throw-on-invalid-schema-error
                            jira-worklog-coercer))
 
+(def to-jira-team-member (comp throw-on-invalid-schema-error
+                               jira-team-member-coercer))
+
 (def to-domain-worklog (comp throw-on-invalid-schema-error
                              domain-worklog-coercer))
 
@@ -239,3 +271,6 @@
   (-> jira-user
       (set/rename-keys jira-user-attributes)
       (select-keys (vals jira-user-attributes))))
+
+(def to-domain-user (comp throw-on-invalid-schema-error
+                          domain-user-coercer))

@@ -158,7 +158,7 @@
         (dissoc :http)
         (assoc :jira-client (map->JiraFakeClient (:jira-state scenario)))
         (assoc :scheduler (reify Scheduler
-                            (schedule [this f]
+                            (schedule [this f repeat-delay]
                               (reset! schedule-atom f))))
         (assoc :schedule-atom schedule-atom)
         (component/system-using {:jira-importer [:conn :jira-client :scheduler]}))))

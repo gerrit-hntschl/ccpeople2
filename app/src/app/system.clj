@@ -61,16 +61,16 @@
   (start [this]
     (if (:executor this)
       this
-      (assoc this :executor (Executors/newScheduledThreadPool 1))))
+      (assoc this :executor (Executors/newSingleThreadScheduledExecutor))))
   (stop [this]
     (when-let [executor (:executor this)]
       (.shutdownNow executor))
     (dissoc this :executor))
 
   worklog/Scheduler
-  (schedule [this f]
+  (schedule [this f repeat-delay]
     ;; todo handle exception happening in f
-    (.scheduleWithFixedDelay (:executor this) f 10 60 TimeUnit/SECONDS)))
+    (.scheduleWithFixedDelay (:executor this) f 10 repeat-delay TimeUnit/SECONDS)))
 
 (defn new-scheduler []
   (map->ExecutorScheduler {}))
