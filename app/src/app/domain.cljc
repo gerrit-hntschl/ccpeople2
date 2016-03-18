@@ -185,9 +185,12 @@
 
 (defn unbooked-days [app-state period-start-date]
   (let [today (:today app-state)
-        period-days (days/workdays-between period-start-date today)
+        yesterday (time/minus today (-> 1 time/days))
+        ;; ignore today
+        period-days (days/workdays-between period-start-date yesterday)
         worklogs (:worklogs app-state)
         worklogs-in-period (filter (fn [{:keys [worklog/work-date]}]
+                                     ;; the end of the period has to be today, because within excludes dates equal to end
                                      (time/within? period-start-date today work-date))
                                    worklogs)
         day->worklogs (group-by :worklog/work-date worklogs-in-period)
