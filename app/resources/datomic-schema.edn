@@ -148,4 +148,8 @@
            :db/valueType          :db.type/instant
            :db/cardinality        :db.cardinality/one
            :db.install/_attribute :db.part/db}]
+         [{:db/id #db/id [:db.part/db]
+           :db/ident :invoicing/already-paid}]
+         [{:db/id #db/id [:db.part/db]
+           :db/ident :invoicing/user-help-desk}]
          ]}}

@@ -19,7 +19,7 @@
                  [ring-middleware-format "0.7.0"]
                  [org.clojure/clojurescript "1.7.228"]
                  [cljs-ajax "0.5.3"]
-                 [prismatic/schema "1.0.4"]
+                 [prismatic/schema "1.0.5"]
                  [prismatic/plumbing "0.5.2"]
                  [com.stuartsierra/component "0.3.1"]
                  [io.rkn/conformity "0.3.5"]

@@ -47,7 +47,9 @@
                                               "Nach Aufwand (T&M)" :invoicing/time-monthly
                                               "Festpreis einmalig" :invoicing/fixed-price
                                               "Individuell nach Vertrag" :invoicing/individual-by-contract
-                                              "Support" :invoicing/support})
+                                              "Support" :invoicing/support
+                                              "Bereits abgerechnet" :invoicing/already-paid
+                                              "UHD" :invoicing/user-help-desk})
 
 (def jira-issue-type->datomic-issue-type {"Quote" :ticket.type/quote
                                           "Administrative Time" :ticket.type/admin
