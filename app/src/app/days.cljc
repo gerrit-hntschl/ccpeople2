@@ -96,6 +96,7 @@
 (defn days-between [start-day end-day-inclusive]
   (date-range start-day end-day-inclusive (time/days 1)))
 
+
 (defn workdays-between [start-day end-day-inclusive]
   (remove (some-fn time-predicates/weekend?
                    (get holidays (time/year start-day)))
@@ -109,3 +110,12 @@
 
 (defn as-yyyy-MM-dd [date]
   (format/unparse yyyy-MM-dd-formatter date))
+
+(defn in-range-pred [start-day-inclusive end-day-inclusive]
+  {:pre [(or (= start-day-inclusive end-day-inclusive)
+             (time/before? start-day-inclusive end-day-inclusive)
+             (throw (ex-info "end-day must be equal to or after start-day" {:start-day start-day-inclusive
+                                                          :end-day end-day-inclusive})))]}
+  (fn [day]
+    (or (= day end-day-inclusive)
+        (time/within? start-day-inclusive end-day-inclusive day))))

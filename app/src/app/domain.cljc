@@ -17,7 +17,7 @@
         :clj [[clj-time.core :as time]
               [plumbing.core :refer [fnk]]])))
 
-(def billable-days-goal 180)
+(def standard-billable-days-goal 180)
 
 #?(:cljs
    (defn get-viewport-size []
@@ -104,6 +104,9 @@
 ;; illness ticket TS-5
 (def sick-leave-ticket-id 68003)
 
+;; parental leave TS-345
+(def parental-leave-ticket-id 71746)
+
 (defn ticket-days [ticket-id worklogs]
   (into #{}
         (comp (filter (matching :worklog/ticket ticket-id))
@@ -158,12 +161,6 @@
 ;; TODO make user dependent
 (def vacation-per-year 30)
 
-(defn scaled-vacation-per-year [state]
-  (* vacation-per-year (goal-start-date-scaled-percentage state)))
-
-(defn number-remaining-holidays [app-state]
-  (let [number-taken-vacation-days (/ (sum-past-vacation-hours app-state (:today app-state)) 8.)]
-    (- (scaled-vacation-per-year app-state) number-taken-vacation-days)))
 
 #?(:cljs
    (extend-type js/goog.date.Date
@@ -205,81 +202,81 @@
     (remove days-with-work-hours-above-min-threshold period-days)))
 
 
-(defn total-working-days [state]
-  (- (count (days/workdays-till-end-of-year (goal-start-date state)))
-     (scaled-vacation-per-year state)))
-
-(defn daily-burndown-hours [state]
-  (/ (* billable-days-goal (goal-start-date-scaled-percentage state) 8)
-     (total-working-days state)))
-
-(defn todays-hour-goal [state]
-  (let [workdays-till-today (count (days/workdays-between (goal-start-date state) (:today state)))
-        vacation-days-till-today (/ (sum-past-vacation-hours state (:today state)) 8)]
-    (* (-  workdays-till-today vacation-days-till-today)
-       (daily-burndown-hours state))))
-
-#_(defn days-balance
-  "balance with respect to today's hour goal"
-  [app-state]
-  (/ (- (hours-billed app-state) (todays-hour-goal app-state))
-     8))
-
 (defn user-sign-in-state [state]
   (get-in state [:user :user/signed-in?]))
 
 (def app-model-graph
-  {:worklogs-billable          (fnk [state]
-                                 (billable-worklogs state))
+  {:worklogs-billable                     (fnk [state]
+                                            (billable-worklogs state))
    ;; the consultant specific goal start date...
    ;; 1st of January if consultant employment did not start this year, otherwise employment start.
-   :consultant-start-date      (fnk [state]
-                                 (goal-start-date state))
+   :consultant-start-date                 (fnk [state]
+                                            (goal-start-date state))
 
    ;; the current open period for booking billable hours, unless before the consultant start date
-   :current-period-start-date  (fnk [state consultant-start-date]
-                                 (let [period-start (consultant/current-period-start (:today state))]
-                                   (if (time/before? period-start consultant-start-date)
-                                     consultant-start-date
-                                     period-start)))
+   :current-period-start-date             (fnk [state consultant-start-date]
+                                            (let [period-start (consultant/current-period-start (:today state))]
+                                              (if (time/before? period-start consultant-start-date)
+                                                consultant-start-date
+                                                period-start)))
 
-   :hours-billed               (fnk [worklogs-billable]
-                                 (reduce + (map :worklog/hours
-                                                worklogs-billable)))
-   :work-duration-scale-factor (fnk [consultant-start-date]
-                                 (goal-start-date-scaled-percentage consultant-start-date))
-   :billable-days-goal-scaled  (fnk [work-duration-scale-factor]
-                                 (* billable-days-goal work-duration-scale-factor))
-   :days-to-reach-goal         (fnk [billable-days-goal-scaled hours-billed]
-                                 (- billable-days-goal-scaled
-                                    (/ hours-billed 8)))
-   :vacation-per-year-scaled   (fnk [work-duration-scale-factor]
-                                 (* vacation-per-year work-duration-scale-factor))
-   :number-taken-vacation-days (fnk [state]
-                                 (/ (sum-past-vacation-hours state (:today state)) 8.))
-   :number-holidays-remaining  (fnk [number-taken-vacation-days vacation-per-year-scaled]
-                                 (- vacation-per-year-scaled number-taken-vacation-days))
-   :workdays-left-except-today (fnk [state]
-                                 (working-days-left-without-today (:today state)))
-   :workdays-left-actually     (fnk [number-holidays-remaining workdays-left-except-today]
-                                 (max 0 (- workdays-left-except-today number-holidays-remaining)))
-   :number-workdays-till-today (fnk [consultant-start-date state]
-                                 (count (days/workdays-between consultant-start-date (:today state))))
-   :workdays-total             (fnk [vacation-per-year-scaled consultant-start-date]
-                                 (- (count (days/workdays-till-end-of-year consultant-start-date))
-                                    vacation-per-year-scaled))
-   :burndown-hours-per-workday (fnk [billable-days-goal-scaled workdays-total]
-                                 (/ (* billable-days-goal-scaled 8)
-                                    workdays-total))
-   :hour-goal-today            (fnk [number-workdays-till-today
-                                     number-taken-vacation-days
-                                     burndown-hours-per-workday]
-                                 (* (- number-workdays-till-today number-taken-vacation-days)
-                                    burndown-hours-per-workday))
-   :days-without-booked-hours  (fnk [state current-period-start-date]
-                                 (unbooked-days state current-period-start-date))
-   :number-sick-leave-days     (fnk [state]
-                                 (/ (sick-leave-hours state) 8))
+   :hours-billed                          (fnk [worklogs-billable]
+                                            (reduce + (map :worklog/hours
+                                                           worklogs-billable)))
+   :parental-leave-days                   (fnk [state]
+                                            (into #{}
+                                                  (comp (filter (matching :worklog/ticket parental-leave-ticket-id))
+                                                        (map :worklog/work-date))
+                                                  (:worklogs state)))
+   :number-parental-leave-days            (fnk [parental-leave-days]
+                                            (count parental-leave-days))
+   :parental-leave-days-till-today        (fnk [consultant-start-date state parental-leave-days]
+                                            (into #{}
+                                                  (filter (days/in-range-pred consultant-start-date (:today state)))
+                                                  parental-leave-days))
+   :number-parental-leave-days-till-today (fnk [parental-leave-days-till-today]
+                                            (count parental-leave-days-till-today))
+   :work-duration-scale-factor            (fnk [consultant-start-date]
+                                            (goal-start-date-scaled-percentage consultant-start-date))
+   :billable-days-goal-scaled             (fnk [number-parental-leave-days work-duration-scale-factor]
+                                            (- (* standard-billable-days-goal work-duration-scale-factor)
+                                               number-parental-leave-days))
+   :days-to-reach-goal                    (fnk [billable-days-goal-scaled hours-billed]
+                                            (- billable-days-goal-scaled
+                                               (/ hours-billed 8)))
+   ;; TODO implement vacation reduction when first of month is booked on parental leave ticket while last day of previous month is not
+   :vacation-per-year-scaled              (fnk [work-duration-scale-factor]
+                                            (* vacation-per-year work-duration-scale-factor))
+   :number-taken-vacation-days            (fnk [state]
+                                            (/ (sum-past-vacation-hours state (:today state)) 8.))
+   :number-holidays-remaining             (fnk [number-taken-vacation-days vacation-per-year-scaled]
+                                            (- vacation-per-year-scaled number-taken-vacation-days))
+   :workdays-left-except-today            (fnk [state]
+                                            (working-days-left-without-today (:today state)))
+   :workdays-left-actually                (fnk [number-holidays-remaining workdays-left-except-today]
+                                            (max 0 (- workdays-left-except-today number-holidays-remaining)))
+   :number-workdays-till-today            (fnk [consultant-start-date state]
+                                            (count (days/workdays-between consultant-start-date (:today state))))
+
+   :workdays-total                        (fnk [consultant-start-date vacation-per-year-scaled number-parental-leave-days]
+                                            (- (count (days/workdays-till-end-of-year consultant-start-date))
+                                               vacation-per-year-scaled
+                                               number-parental-leave-days))
+   :burndown-hours-per-workday            (fnk [billable-days-goal-scaled workdays-total]
+                                            (/ (* billable-days-goal-scaled 8)
+                                               workdays-total))
+   :hour-goal-today                       (fnk [number-workdays-till-today
+                                                number-taken-vacation-days
+                                                number-parental-leave-days-till-today
+                                                burndown-hours-per-workday]
+                                            (* (- number-workdays-till-today
+                                                  number-taken-vacation-days
+                                                  number-parental-leave-days-till-today)
+                                               burndown-hours-per-workday))
+   :days-without-booked-hours             (fnk [state current-period-start-date]
+                                            (unbooked-days state current-period-start-date))
+   :number-sick-leave-days                (fnk [state]
+                                            (/ (sick-leave-hours state) 8))
    })
 
 (def app-model (graph/compile-cancelling app-model-graph))
