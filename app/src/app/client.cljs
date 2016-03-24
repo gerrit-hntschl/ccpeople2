@@ -31,22 +31,28 @@
         model-data (domain/app-model {:state state})
         actual-hours (:hours-billed model-data)
         todays-goal-hours (:hour-goal-today model-data)
-        viewport-size (:viewport/size state)]
-    (donut-service/balance-view component-name viewport-size todays-goal-hours actual-hours)))
+        viewport-size (:viewport/size state)
+        billable-days-goal-scaled (:billable-days-goal-scaled model-data)]
+    (donut-service/balance-view component-name
+                                viewport-size
+                                todays-goal-hours
+                                actual-hours
+                                billable-days-goal-scaled)))
 
 (defn current-stats-update [state-atom component-name this old-argv]
   (let [state @state-atom
         model-data (domain/app-model {:state state})
         actual-hours (:hours-billed model-data)
-        todays-goal-hours (:hour-goal-today model-data)]
-    (donut-service/update-balance-view-transitioned component-name todays-goal-hours actual-hours)))
+        todays-goal-hours (:hour-goal-today model-data)
+        total-billable-hours-goal (* 8 (:billable-days-goal-scaled model-data))]
+    (donut-service/update-balance-view-transitioned component-name todays-goal-hours actual-hours total-billable-hours-goal)))
 
 (defn current-stats [state-atom component-name]
   ;; is it really necessary to deref app-state here just to trigger an invocation of component-did-update??
   (let [_ @state-atom]
     [:div {:style {:margin-left  "auto"
                    :margin-right "auto"}
-           :id component-name}
+           :id    component-name}
      [:svg]]))
 
 (defn current-stats-component [state-atom component-name]

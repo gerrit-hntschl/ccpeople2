@@ -7,8 +7,8 @@
   :all-builds                                              ;; <-- supply your build configs here
                     [{:id           "devcards"
                       :figwheel     {:devcards true}
-                      :source-paths ["src" "dev" "devcards"]
-                      :compiler     {:main            "app.cards"
+                      :source-paths ["src" "dev"]
+                      :compiler     {:main            "cards.consultant"
                                      :asset-path      "js/devcards_out"
                                      :output-to       "target/figwheel/public/js/devcards.js"
                                      :output-dir      "target/figwheel/public/js/devcards_out"

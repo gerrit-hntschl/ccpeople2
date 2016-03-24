@@ -232,12 +232,12 @@
       (.duration end-duration)
       (.attr "y" new-y)))
 
-(defn update-balance-view-transitioned [component-name todays-target-hours actual-hours-today]
+(defn update-balance-view-transitioned [component-name todays-target-hours actual-hours-today total-hours-goal]
   (let [svg (-> js/d3
                 (.select (str "#" component-name " svg")))
         height (.attr svg "height")
-        actual-percentage (* 100 (/ actual-hours-today max-value))
-        goal-percentage (* 100 (/ todays-target-hours max-value))
+        actual-percentage (* 100 (/ actual-hours-today total-hours-goal))
+        goal-percentage (* 100 (/ todays-target-hours total-hours-goal))
         balance-hours (- actual-hours-today todays-target-hours)
         balance-height (-> (js/Math.abs balance-hours) (* 4) (min (* 0.7 height)))
         balance-y-upper (- (/ height 2) (/ balance-height 2))
@@ -342,9 +342,9 @@
                          balance-hours
                          format-days-and-hours)))))
 
-(defn update-balance-view [component-name height todays-target-hours actual-hours-today]
-  (let [target-percentage (* 100 (/ todays-target-hours max-value))
-        actual-percentage (* 100 (/ actual-hours-today max-value))
+(defn update-balance-view [component-name height todays-target-hours actual-hours-today total-hours-goal]
+  (let [target-percentage (* 100 (/ todays-target-hours total-hours-goal))
+        actual-percentage (* 100 (/ actual-hours-today total-hours-goal))
         balance-hours (- actual-hours-today todays-target-hours)
         balance-height (-> (js/Math.abs balance-hours) (* 4) (min (* 0.4 height)))
         balance-y-upper (- (/ height 2) (/ balance-height 2))
@@ -386,13 +386,14 @@
     (-> d3-balance-in-days-text
         (.text (format-days-and-hours balance-hours)))))
 
-(defn balance-view [component-name viewport-size todays-target-hours actual-hours-today]
+(defn balance-view [component-name viewport-size todays-target-hours actual-hours-today total-days-goal]
   (let [{total-width :width} viewport-size
         balance-view-width (min (* 0.95 total-width) 500)
-        balance-view-height (* 0.6 balance-view-width)]
+        balance-view-height (* 0.6 balance-view-width)
+        total-hours-goal (* 8 total-days-goal)]
     (create-balance-view component-name balance-view-width balance-view-height)
-    (update-balance-view component-name balance-view-height todays-target-hours 0)
-    (update-balance-view-transitioned component-name todays-target-hours actual-hours-today)))
+    (update-balance-view component-name balance-view-height todays-target-hours 0 total-hours-goal)
+    (update-balance-view-transitioned component-name todays-target-hours actual-hours-today total-hours-goal)))
 
 (defn progress [todays-target-hours actual-hours-today]
   (let [width 250
