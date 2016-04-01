@@ -78,39 +78,100 @@
                            :component-did-mount  (partial progress-did-mount state-atom component-name stat-key total-stat-key format-fn)
                            :component-did-update (partial progress-update state-atom component-name stat-key total-stat-key)})))
 
+(defn format-days [n]
+  (if (= n 1)
+    (str "1 day")
+    (str n " days")))
+
+(defn days-rect [icon-name color background-color label number-days]
+  [:div {:style {:width "90px"
+                 :height "120px"
+                 :margin "6px"
+                 :background-color background-color
+                 :color color
+                 :display "flex"
+                 :justify-content "space-around"
+                 :flex-direction "column"}}
+   [:div
+    [:div {:class "circle"
+           :display "flex"}
+     [:i {:class icon-name}]]]
+   [:div label]
+   [:div {:style {:font-size "1.2em"}} (format-days number-days)]])
+
 (defn profile-page [_]
   (let [state @domain/app-state
         model-data (domain/app-model {:state state})
-        remaining-work-days-minus-vacation (str (:workdays-left-actually model-data))
-        rem-holidays (str (:number-holidays-remaining model-data))
-        days-to-100-percent (pprint/cl-format nil "~,2f" (:days-to-reach-goal model-data))
-        unbooked-days-count (str (count (:days-without-booked-hours model-data)))                          ;(str (count (domain/unbooked-days state)))
-        ;        billed-days (pprint/cl-format nil "~,1f%" (* 100 (/ (domain/hours-billed state) 8 domain/billable-days-goal)))
-        num-sick-leave-days (str (:number-sick-leave-days model-data))
+        rem-holidays (:number-holidays-remaining model-data)
+        unbooked-days-count (count (:days-without-booked-hours model-data))
+        num-sick-leave-days (:number-sick-leave-days model-data)
+        used-leave (:number-taken-vacation-days model-data)
+        number-parental-leave-days (:number-parental-leave-days model-data)
+        number-planned-vacation-days (:number-planned-vacation-days model-data)
         today-str (days/month-day-today (:today state))]
     (cond (= (:error state) :error/unknown-user)
           [:h2 {:style {:color "white"}} "Sorry, but we don't know that user."]
           (:user state)
-          [:div {:style {:margin-left  "auto"
-                         :margin-right "auto"
-                         :width        "100%"
-                         :color "#121212"}}
-           [:h2 "Today " (metric-style today-str)]
-           [:p "days w/o booked hours"
-            (metric-style unbooked-days-count)]
-           [current-stats-component domain/app-state "goal-stats"]
-           [:ul {:padding 1
-                 :style   {:width "100%"}}
-
-            [:li "your workdays left"
-             (metric-style remaining-work-days-minus-vacation)]
-            [:li "days needed to reach 100%"
-             (metric-style days-to-100-percent)]
-            [:li "remaining leave"
-             (metric-style rem-holidays)]
-            [:li "sick leave"
-             (metric-style num-sick-leave-days)]]
-           [:div (str "Latest workdate considered: " (latest-worklog-work-date state))]])))
+          [:div {:style {:overflow "hidden"}}
+           (when (pos? unbooked-days-count)
+             [:div {:style {:background-color "#e36588"
+                           :color            "white"
+                           :padding          "8px 15px 8px 15px"}}
+              (str "days w/o booked hours: " unbooked-days-count)])
+           [:div {:style {:margin-left  "auto"
+                          :margin-right "auto"
+                          :width        "100%"
+                          :color        "#121212"}}
+            [:div {:style {:display "flex"
+                           :flex-wrap "wrap"
+                           :justify-content "center"
+                           :border-bottom "1px solid #f3f3f3"}}
+             [:div
+              [:h2 today-str]
+              [current-stats-component domain/app-state "goal-stats"]]
+             [:div {:style {:margin-top "10px"}}
+              [:div
+               "days needed to reach 100%"
+               [progress-component
+                domain/app-state
+                "days-to-100"
+                :days-to-reach-goal
+                :billable-days-goal-scaled
+                (partial pprint/cl-format nil "~,2f")]]
+              [:div
+               "your workdays left"
+               [progress-component
+                domain/app-state
+                "workdays-left"
+                :workdays-left-actually
+                :workdays-total]]]]
+            [:div {:style {:display "flex"
+                           :justify-content "center"
+                           :flex-wrap "wrap"
+                           ;:margin-left  "auto"
+                           ;:margin-right "auto"
+                           ;:width        "100%"
+                           }}
+             [:div {:style {:display "flex"
+                            :flex-direction "column"
+                            :align-items "flex-start"
+                            :margin-right "10px"}}
+              [:h2 "Holidays"]
+              [:div {:style {:display "flex"}}
+               [days-rect "icon-flight" "black" "#f3f3f3" "Planned" number-planned-vacation-days]
+               [days-rect "icon-globe" "white" "#9eb25d" "Free" rem-holidays]
+               [days-rect "icon-cancel" "black" "#f3f3f3" "Used" used-leave]]]
+             [:div {:style {:display "flex"
+                            :flex-direction "column"
+                            :align-items "flex-start"
+                            :border-left "1px solid #f3f3f3"
+                            :padding-left "10px"}}
+              [:h2 "Absence"]
+              [:div {:style {:display "flex"}}
+               [days-rect "icon-medkit" "black" "#a5e2ed" "Sickness" num-sick-leave-days]
+               (when (pos? number-parental-leave-days)
+                 [days-rect "icon-award" "white" "#9eb25d" "Parental leave" number-parental-leave-days])]]]
+            [:div {:style {:margin-top "10px"}} (str "Latest workdate considered: " (latest-worklog-work-date state))]]])))
 
 (defn tabs []
   [:div ""])
@@ -144,16 +205,29 @@
     (cond (nil? user-sign-in-state)
           [:p "Initializing..."]
           user-sign-in-state
-          [:div {:style {:margin-top "20px"}}
-           [:a.button {:href "/logout"} (str "Sign out " (:user/display-name (:user state)))]
+          [:div                                             ;{:style {:margin-top "20px"}}
+           ;[:a.button {:href "/logout"} (str "Sign out " (:user/display-name (:user state)))]
            [dispatcher]]
           :else
-          [:div {:style {:margin-top "20px"}}
-           [:a.button {:href "/login"} "Sign-in"]
-           [:p "Yes, it uses Duo Mobile... But you only need to log-in once, then a cookie will keep you logged in for a year."]])))
+          [:div
+           [:div {:style {:margin-top "20px"}}
+            [:a.button {:href "/login"} "Sign-in"]
+            [:p "Yes, it uses Duo Mobile... But you only need to log-in once, then a cookie will keep you logged in for a year."]]])))
 
 (defn page []
   [:div
+   [:div {:class "header"
+          :style {:display         "flex"
+                  :flex-direction  "row"
+                  :justify-content "space-around"}}
+    ;; layout hack: empty divs move the title and sign-off button more to the center
+    [:div]
+    [:div {:style {:font-size "1.3em"}} "ccDashboard"]
+    (if (domain/user-sign-in-state @domain/app-state)
+      [:a#logout {:href "/logout"}
+       [:i.icon-off.large-icon]]
+      [:div])
+    [:div]]
    [:div {:style {:text-align "center"}}
     [sign-in-component]]])
 

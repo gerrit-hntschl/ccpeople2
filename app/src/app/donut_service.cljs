@@ -22,7 +22,7 @@
       (.attr "x2" (- width x-line-padding))
       (.attr "y2" half-height)
       (.attr "stroke-width" 2)
-      (.attr "stroke-dasharray" #js [6 6])
+      ; (.attr "stroke-dasharray" #js [6 6])
       (.attr "stroke" line-color)))
 
 (defn append-right-side-text [svg text-class line-color x]
@@ -56,8 +56,8 @@
   (let [x-padding (* width 0.24)
         x-line-padding (* width 0.21)
         balance-width (- width (* 2 x-padding))
-        balance-line-color "#121212"
-        goal-line-color "#8D98A7"
+        label-color "black"
+        balance-line-color "#e9e8e8"
         svg (-> js/d3
                 (.select (str "#" component-name " svg"))
                 (.attr "width" width)
@@ -67,33 +67,41 @@
                 (.append "g"))]
     (-> svg
         (.append "rect")
+        (.attr "x" x-padding)
+        (.attr "width" balance-width)
+        (.attr "y" 0)
+        (.attr "height" height)
+        (.style "fill" "#f3f3f3"))
+    (-> svg
+        (.append "rect")
         (.classed "balance-area" true)
         (.attr "x" x-padding)
         (.attr "y" (/ height 2))
         (.attr "height" 0)
         (.attr "width" balance-width))
 
-    (append-label svg "actual-hours-label" balance-line-color "Your billable hours" width)
+    (append-label svg "actual-hours-label" label-color "Your billable hours" width)
     (append-line svg
                  "goal-line"
-                 goal-line-color
+                 balance-line-color
                  width
                  (/ height 2)
                  x-line-padding)
 
     ;; goal stats
-    (append-right-side-text svg "goal-percent-text" goal-line-color (- width x-line-padding))
-    (append-left-side-text svg "goal-hours-text" goal-line-color x-line-padding)
-    (append-label svg "goal-label" goal-line-color "Today's goal" width)
+    (append-right-side-text svg "goal-percent-text" label-color (- width x-line-padding))
+    (append-left-side-text svg "goal-hours-text" label-color x-line-padding)
+    (append-label svg "goal-label" label-color "Today's goal" width)
 
     ;; balance stats
     (append-line svg "actual-hours-line" balance-line-color width (/ height 2) x-line-padding)
-    (append-right-side-text svg "actual-hours-percent-text" balance-line-color (- width x-line-padding))
-    (append-left-side-text svg "actual-hours-hours-text" balance-line-color x-line-padding)
+    (append-right-side-text svg "actual-hours-percent-text" label-color (- width x-line-padding))
+    (append-left-side-text svg "actual-hours-hours-text" label-color x-line-padding)
     (-> svg
         (.append "text")
         (.classed "balance-in-days-text" true)
         (.style "fill" "white")
+        (.style "text-shadow" "0 0 0.2em black")
         (.attr "transform" (str "translate(" (/ width 2) "," (/ height 2) ")"))
         (.attr "dy" ".15em")
         (.style "text-anchor" "middle")

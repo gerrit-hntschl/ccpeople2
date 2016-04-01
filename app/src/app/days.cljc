@@ -58,7 +58,7 @@
 
 (def yyyy-MM-dd-formatter (format/formatter "yyyy-MM-dd"))
 
-(def month-day-formatter (format/formatter "MMM d"))
+(def month-day-formatter (format/formatter "dd.MM.yyyy"))
 
 (defn month-day-today [today]
   (format/unparse-local-date month-day-formatter today))

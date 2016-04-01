@@ -120,17 +120,26 @@
                    (map :worklog/hours)))
        (reduce +)))
 
-(defn sum-past-vacation-hours
-  "vacation booked in the past including today"
-  [app-state today]
+(defn sum-vacation-hours [interval-pred app-state today]
   (->> (:worklogs app-state)
        (filter (every-pred
                  (matching :worklog/ticket vacation-ticket-id)
-                 (fn [{:keys [worklog/work-date]}]
-                   (or (= work-date today)
-                       (time/before? work-date today)))))
+                 (interval-pred today)))
        (map :worklog/hours)
        (apply +)))
+
+(def sum-past-vacation-hours
+  "vacation booked in the past including today"
+  (partial sum-vacation-hours (fn [today]
+                                (fn [{:keys [worklog/work-date]}]
+                                  (or (= work-date today)
+                                      (time/before? work-date today))))))
+
+(def sum-planned-vacation-hours
+  "vacation booked in the future, excluding today"
+  (partial sum-vacation-hours (fn [today]
+                                (fn [{:keys [worklog/work-date]}]
+                                  (time/after? work-date today)))))
 
 (defn user-start-date [state]
   (-> state (:user) (:user/start-date)))
@@ -249,6 +258,8 @@
                                             (* vacation-per-year work-duration-scale-factor))
    :number-taken-vacation-days            (fnk [state]
                                             (/ (sum-past-vacation-hours state (:today state)) 8.))
+   :number-planned-vacation-days          (fnk [state]
+                                            (/ (sum-planned-vacation-hours state (:today state)) 8.))
    :number-holidays-remaining             (fnk [number-taken-vacation-days vacation-per-year-scaled]
                                             (- vacation-per-year-scaled number-taken-vacation-days))
    :workdays-left-except-today            (fnk [state]
