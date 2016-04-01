@@ -26,7 +26,6 @@
   [:span {:style {:font-size 60}} text])
 
 (defn current-stats-did-mount [state-atom component-name]
-  #_(donut-service/progress 730 250)
   (let [state @state-atom
         model-data (domain/app-model {:state state})
         actual-hours (:hours-billed model-data)
@@ -60,6 +59,24 @@
                          :component-did-mount  (partial current-stats-did-mount state-atom component-name)
                          :component-did-update (partial current-stats-update state-atom component-name)}))
 
+(defn progress-render [state-atom component-name]
+  [:div {:id component-name
+         :style {:margin-top "10px"}}
+   [:svg]])
+
+(defn progress-did-mount [state-atom component-name stat-key total-stat-key format-fn]
+  (let [model-data (domain/app-model {:state @state-atom})
+        stat (get model-data stat-key)
+        total-stat (get model-data total-stat-key)]
+    (donut-service/progress component-name stat total-stat format-fn)))
+
+(defn progress-update [state-atom component-name stat-key total-stat-key])
+
+(defn progress-component [state-atom component-name stat-key total-stat-key & [format-fn]]
+  (let [format-fn (or format-fn str)]
+    (reagent/create-class {:reagent-render       (partial progress-render state-atom component-name)
+                           :component-did-mount  (partial progress-did-mount state-atom component-name stat-key total-stat-key format-fn)
+                           :component-did-update (partial progress-update state-atom component-name stat-key total-stat-key)})))
 
 (defn profile-page [_]
   (let [state @domain/app-state

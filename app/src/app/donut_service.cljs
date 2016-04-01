@@ -395,48 +395,49 @@
     (update-balance-view component-name balance-view-height todays-target-hours 0 total-hours-goal)
     (update-balance-view-transitioned component-name todays-target-hours actual-hours-today total-hours-goal)))
 
-(defn progress [todays-target-hours actual-hours-today]
-  (let [width 250
-        height 250
-        radius 120
-        target-percentage (/ todays-target-hours max-value)
-        actual-percentage (/ actual-hours-today max-value)
-        target-angle (* two-pi target-percentage)
-        actual-angle (* two-pi actual-percentage)
-        arc-data {:startAngle 0
-                  :endAngle target-angle}
+(defn progress [component-name current-value total-value format-fn]
+  (let [width 180
+        height 180
+        radius 85
+        current-percentage (- 1 (/ current-value total-value))
+        target-angle (* two-pi current-percentage)
+        component-id-selector (str "#" component-name " ")
+        inner-radius (- radius 10)
         target-arc (-> js/d3
                        (.-svg)
                        (.arc)
                        (.startAngle 0)
                        (.endAngle target-angle)
-                       (.outerRadius (- radius 40))
-                       (.innerRadius (- radius 80)))
-        actual-arc (-> js/d3
-                       (.-svg)
-                       (.arc)
-                       (.startAngle 0)
-                       (.endAngle actual-angle)
                        (.outerRadius radius)
-                       (.innerRadius (- radius 40)))
+                       (.innerRadius inner-radius))
         svg (-> js/d3
-                (.select "#current-stats svg")
+                (.select (str component-id-selector "svg"))
                 (.attr "width" width)
-                (.attr "height" height)
-                ;(.append "g")
-                ;(.attr "transform" (str "translate(" (/ width 2) "," (/ height 2) ")"))
-                )]
+                (.attr "height" height))]
+    (-> svg
+        (.append "circle")
+        (.style "fill" "#e9e8e8")
+        (.attr "transform" (str "translate(" (/ width 2) "," (/ height 2) ")"))
+        (.attr "r" radius))
+    (-> svg
+        (.append "circle")
+        (.style "fill" "#a5e2ed")
+        (.attr "transform" (str "translate(" (/ width 2) "," (/ height 2) ")"))
+        (.attr "r" inner-radius))
+    (-> svg
+        (.append "text")
+        (.attr "x" (/ width 2))
+        (.attr "y" (/ height 2))
+        (.style "fill" "#196674")
+        (.style "text-anchor" "middle")
+        (.style "font-family" "dashboardFontello")
+        (.style "alignment-baseline" "middle")
+        (.style "font-size" "3.0em")
+        (.text (format-fn current-value)))
     (-> svg
         (.append "path")
         (.attr "d" target-arc)
-        ;        (.attr "class" "arc")
-        (.style "fill" "blue")
-        (.attr "transform" (str "translate(" (/ width 2) "," (/ height 2) ")")))
-    (-> svg
-        (.append "path")
-        (.attr "d" actual-arc)
-        ;        (.attr "class" "arc")
-        (.style "fill" "grey")
+        (.style "fill" "#196674")
         (.attr "transform" (str "translate(" (/ width 2) "," (/ height 2) ")")))))
 
 #_(defn create-donut [colors billed-hours]

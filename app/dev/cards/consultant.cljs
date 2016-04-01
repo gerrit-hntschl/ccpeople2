@@ -94,5 +94,5 @@
             [stats-and-summary (atom late-start-state)
              "goal-late-start"])
 
-#_(defcard-rg progress-intermediate
-            [progress-component good-state "progress-intermediate"])
+(defcard-rg progress-intermediate
+            [progress-component good-state "progress-intermediate" :workdays-left-actually :workdays-total])
