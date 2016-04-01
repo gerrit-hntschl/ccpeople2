@@ -266,7 +266,8 @@
   (issues [this issue-ids]
     prefetched-issues)
   (users [this usernames]
-    prefetched-users))
+    prefetched-users)
+  (teams [this]))
 
 (defn work-date-between [from-date to-date]
   (fn [jira-worklog]
@@ -307,9 +308,9 @@
        (s/validate JiraRestClientOptions)
        (map->JiraRestClient)))
 
-(defn max-work-date [dbval]
+(defn any-work-date [dbval]
   (ffirst
-    (d/q '{:find  [(max ?work-date)]
+    (d/q '{:find  [?work-date]
            :in    [$]
            :where [[?e :worklog/work-date ?work-date]]}
          dbval)))
@@ -338,7 +339,7 @@
             dbval)
        (into #{} (map first))))
 
-(defn all-domain-worklog-ids-in-range [dbval import-start-date today]
+(defn all-domain-worklog-ids-in-range [dbval import-start-date import-end-date]
   (->> (d/q '{:find [?worklog-id]
               :in [$ ?start-date ?end-date]
               :where [[?worklog :worklog/work-date ?work-date]
@@ -347,7 +348,7 @@
                       [?worklog :worklog/id ?worklog-id]]}
             dbval
             import-start-date
-            today)
+            import-end-date)
        (into #{} (map first))))
 
 (defn worklog-retraction [worklog-id]
@@ -374,25 +375,20 @@
   ;; today :- Date of today with time 1 millisecond before tomorrow
   ;; jira :- Jira Client implementation
   (merge
-    {:db-max-work-date     (fnk [dbval]
-                             (time-coerce/from-date (max-work-date dbval)))
-     :import-start-date    (fnk [db-max-work-date today]
-                             (when db-max-work-date
-                               (assert (not (time/after? db-max-work-date today))
-                                       (str "db-max-work-date is after today: " db-max-work-date)))
-                             (if db-max-work-date
-                               (time/first-day-of-the-month db-max-work-date)
-                               (time/first-day-of-the-month (time/year today) 1)))
+    {:re-import?           (fnk [dbval]
+                             (boolean (any-work-date dbval)))
      :current-period-start (fnk [today]
                              (consultant/current-period-start today))
-     :re-import?           (fnk [db-max-work-date current-period-start]
-                             ;; todo correctly handle db-date == period-start
-                             (boolean (and db-max-work-date
-                                           (time/after? db-max-work-date current-period-start))))
-     :worklogs-retrieved   (fnk [jira import-start-date today]
+     :import-start-date    (fnk [re-import? today current-period-start]
+                             (if re-import?
+                               current-period-start
+                               (time/first-day-of-the-month (time/year today) 1)))
+     :import-end-date (fnk [today]
+                        (time/local-date (time/year today) 12 31))
+     :worklogs-retrieved   (fnk [jira import-start-date import-end-date]
                              ;; returns a map containing all intermediate state used to retrieve actual worklogs
                              ;; other entries are not used, but useful for debugging
-                             (worklogs jira import-start-date today))
+                             (worklogs jira import-start-date import-end-date))
      :worklogs-all         (fnk worklogs-all :- [model/JiraWorkLog]
                              [worklogs-retrieved]
                              ;; simplify access to actual worklogs
@@ -431,11 +427,11 @@
                                                (filter (comp customer-ids-new :id) jira-customers-new)))
      :worklogs-known-usernames         (fnk [worklogs-all worklogs-usernames-unknown]
                                          (remove (comp worklogs-usernames-unknown :username) worklogs-all))
-     :db-worklog-ids-in-import-range   (fnk [re-import? dbval import-start-date today]
+     :db-worklog-ids-in-import-range   (fnk [re-import? dbval import-start-date import-end-date]
                                          (when re-import?
                                            (all-domain-worklog-ids-in-range dbval
                                                                             (time-coerce/to-date import-start-date)
-                                                                            (time-coerce/to-date today))))
+                                                                            (time-coerce/to-date import-end-date))))
      :jira-worklog-ids-in-import-range (fnk [worklogs-known-usernames]
                                          (into #{} (map :worklog_id) worklogs-known-usernames))
      :jira-worklog-ids-deleted         (fnk [re-import? db-worklog-ids-in-import-range jira-worklog-ids-in-import-range]
@@ -460,6 +456,11 @@
                                                       [domain-users-new domain-customers-new tickets-new domain-worklogs-deleted domain-worklogs-new])))}))
 
 (def jira-import (graph/compile-cancelling jira-import-graph))
+
+(def jira-full-re-import (graph/compile-cancelling
+                           (assoc jira-import-graph
+                             :re-import? (graph/constant true)
+                             :import-start-date (fnk [today] (time/first-day-of-the-month (time/year today) 1)))))
 
 
 (defn to-datomic-user-join-date [team-member]
@@ -507,10 +508,10 @@
 (defprotocol Scheduler
   (schedule [this f repeat-delay] "Schedule f for periodic execution with given repeat-delay in seconds."))
 
-(defn sync-with-jira! [conn jira]
-  (let [import-result (jira-import {:dbval (db conn)
-                                    :today (today-before-midnight)
-                                    :jira  jira})]
+(defn sync-with-jira! [conn jira import-fn]
+  (let [import-result (import-fn {:dbval (db conn)
+                                  :today (time/today)
+                                  :jira  jira})]
     (log/info logger "done import jira" (:db-transactions-stats import-result))
     (def ii import-result)
     (doseq [tx (:db-transactions import-result)]
@@ -531,10 +532,11 @@
   (start [this]
     (if (:scheduled this)
       this
-      (do (schedule scheduler
+      (do                                                   ;(future (sync-with-jira! conn jira-client jira-full-re-import))
+          (schedule scheduler
                     (fn []
                       (log/info logger "Starting import: " (.getName (Thread/currentThread)))
-                      (try (sync-with-jira! conn jira-client)
+                      (try (sync-with-jira! conn jira-client jira-import)
                            (catch Throwable ex
                              (log/error logger ex "import error:" (.getMessage ex))
                              (def impex ex))))

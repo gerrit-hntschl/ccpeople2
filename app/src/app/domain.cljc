@@ -260,8 +260,8 @@
                                             (/ (sum-past-vacation-hours state (:today state)) 8.))
    :number-planned-vacation-days          (fnk [state]
                                             (/ (sum-planned-vacation-hours state (:today state)) 8.))
-   :number-holidays-remaining             (fnk [number-taken-vacation-days vacation-per-year-scaled]
-                                            (- vacation-per-year-scaled number-taken-vacation-days))
+   :number-holidays-remaining             (fnk [number-taken-vacation-days number-planned-vacation-days vacation-per-year-scaled]
+                                            (- vacation-per-year-scaled number-taken-vacation-days number-planned-vacation-days))
    :workdays-left-except-today            (fnk [state]
                                             (working-days-left-without-today (:today state)))
    :workdays-left-actually                (fnk [number-holidays-remaining workdays-left-except-today]

@@ -438,7 +438,6 @@
         (.attr "y" (/ height 2))
         (.style "fill" "#196674")
         (.style "text-anchor" "middle")
-        (.style "font-family" "dashboardFontello")
         (.style "alignment-baseline" "middle")
         (.style "font-size" "3.0em")
         (.text (format-fn current-value)))
