@@ -484,8 +484,8 @@
                                                (mapcat (partial team-member jira))
                                                team-ids-all))
           :team-members-with-join-date (fnk [team-members-all]
-                                         (into []
-                                               (comp (filter get-team-member-start-date)
+                                         (into []   ;; ignore spurious empty values
+                                               (comp (filter (comp seq get-team-member-start-date))
                                                      (map model/to-jira-team-member))
                                                team-members-all))
           :import-usernames-all        (fnk [team-members-with-join-date]
