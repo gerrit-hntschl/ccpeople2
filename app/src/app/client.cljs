@@ -10,7 +10,8 @@
     ;    [material-ui.core :as ui :include-macros true]
     [goog.history.EventType :as EventType]
     [app.days :as days]
-    [cljs.pprint :as pprint])
+    [cljs.pprint :as pprint]
+    [clojure.string :as str])
   (:import [goog.history Html5History EventType]))
 
 (enable-console-print!)
@@ -103,7 +104,11 @@
   (let [state @domain/app-state
         model-data (domain/app-model {:state state})
         rem-holidays (:number-holidays-remaining model-data)
-        unbooked-days-count (count (:days-without-booked-hours model-data))
+        days-without-booked-hours (:days-without-booked-hours model-data)
+        formatted-missing-days (->> days-without-booked-hours
+                                    (map days/format-simple-date)
+                                    (str/join ", "))
+        unbooked-days-count (count days-without-booked-hours)
         num-sick-leave-days (:number-sick-leave-days model-data)
         used-leave (:number-taken-vacation-days model-data)
         number-parental-leave-days (:number-parental-leave-days model-data)
@@ -117,7 +122,9 @@
              [:div {:style {:background-color "#e36588"
                            :color            "white"
                            :padding          "8px 15px 8px 15px"}}
-              (str "days w/o booked hours: " unbooked-days-count)])
+              (str "days w/o booked hours: " unbooked-days-count)
+              [:br]
+              formatted-missing-days])
            [:div {:style {:margin-left  "auto"
                           :margin-right "auto"
                           :width        "100%"
@@ -170,8 +177,7 @@
               [:div {:style {:display "flex"}}
                [days-rect "icon-medkit" "black" "#a5e2ed" "Sickness" num-sick-leave-days]
                (when (pos? number-parental-leave-days)
-                 [days-rect "icon-award" "white" "#9eb25d" "Parental leave" number-parental-leave-days])]]]
-            [:div {:style {:margin-top "10px"}} (str "Latest workdate considered: " (latest-worklog-work-date state))]]])))
+                 [days-rect "icon-award" "white" "#9eb25d" "Parental leave" number-parental-leave-days])]]]]])))
 
 (defn tabs []
   [:div ""])
