@@ -144,7 +144,7 @@
                 "days-to-100"
                 :days-to-reach-goal
                 :billable-days-goal-scaled
-                (partial pprint/cl-format nil "~,2f")]]
+                (fn [x] (str (js/Math.round x)))]]
               [:div
                "your workdays left"
                [progress-component

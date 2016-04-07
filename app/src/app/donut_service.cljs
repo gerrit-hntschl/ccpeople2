@@ -439,6 +439,7 @@
         (.style "fill" "#196674")
         (.style "text-anchor" "middle")
         (.style "alignment-baseline" "middle")
+        (.style "dominant-baseline" "middle")
         (.style "font-size" "3.0em")
         (.text (format-fn current-value)))
     (-> svg
