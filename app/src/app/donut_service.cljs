@@ -101,7 +101,7 @@
         (.append "text")
         (.classed "balance-in-days-text" true)
         (.style "fill" "white")
-        (.style "text-shadow" "0 0 0.2em black")
+                (.style "text-shadow" "-1px 0 black, 0 1px black, 1px 0 black, 0 -1px black")
         (.attr "transform" (str "translate(" (/ width 2) "," (/ height 2) ")"))
         (.attr "dy" ".15em")
         (.style "text-anchor" "middle")
