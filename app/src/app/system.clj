@@ -11,6 +11,7 @@
             [app.storage :as storage]
             [app.worklog :as worklog]
             [ring.middleware.format :as ring-format]
+            [ring.middleware.stacktrace :as stacktrace]
     ;; to load data reader
             app.date
             [cognitect.transit :as transit]
@@ -25,7 +26,8 @@
 (def base-config
   {:app {:middleware     [[wrap-not-found :not-found]
                           [ring-format/wrap-restful-format :transit-custom]
-                          [wrap-defaults :defaults]]
+                          [wrap-defaults :defaults]
+                          [stacktrace/wrap-stacktrace-log]]
          :not-found      (io/resource "errors/404.html")
          :defaults       (meta-merge site-defaults {:static {:resources "public"}})
          :transit-custom {:response-options
