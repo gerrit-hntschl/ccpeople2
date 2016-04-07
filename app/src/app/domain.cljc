@@ -264,8 +264,8 @@
                                             (- vacation-per-year-scaled number-taken-vacation-days number-planned-vacation-days))
    :workdays-left-except-today            (fnk [state]
                                             (working-days-left-without-today (:today state)))
-   :workdays-left-actually                (fnk [number-holidays-remaining workdays-left-except-today]
-                                            (max 0 (- workdays-left-except-today number-holidays-remaining)))
+   :workdays-left-actually                (fnk [number-holidays-remaining workdays-left-except-today number-planned-vacation-days]
+                                            (max 0 (- workdays-left-except-today number-holidays-remaining number-planned-vacation-days)))
    :number-workdays-till-today            (fnk [consultant-start-date state]
                                             (count (days/workdays-between consultant-start-date (:today state))))
 
