@@ -36,7 +36,11 @@
 (defonce app-state (atom initial-state))
 
 (defn error-handler-fn [{:keys [status status-text]}]
-  (reset! app-state (assoc-in initial-state [:user :user/signed-in?] false))
+  (reset! app-state
+          (cond->
+            (assoc-in initial-state [:user :user/signed-in?] false)
+            (not= 401 status)
+            (assoc :error :error/unexpected-api-response)))
   (mixpanel/track "hit")
   (println (str "api response: " status " " status-text)))
 
