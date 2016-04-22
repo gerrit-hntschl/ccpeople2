@@ -35,8 +35,8 @@ $vm_memory = 4096
 $vm_cpus = 1
 $shared_folders = {}
 $forwarded_ports = {
-# figwheel
-  3449 => 3449, 
+# figwheel -> not needed, runs on the host system
+#  3449 => 3449, 
 # datomic
   4334 => 4334, 
 # remote debugger
