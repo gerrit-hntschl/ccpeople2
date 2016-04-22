@@ -4,4 +4,4 @@ ADD target/app.jar /pipeline/source/app.jar
 
 EXPOSE 8000 35001
 
-CMD ["java", "-jar", "/pipeline/source/app.jar"]
+CMD java -Dclojure.server.repl="{:port 35001 :address \"0.0.0.0\" :accept clojure.core.server/repl}" -jar /pipeline/source/app.jar

@@ -36,7 +36,6 @@ services:
     build:
       context: app
       dockerfile: Dockerfile-uberjar
-    command: java -Dclojure.server.repl="{:port 35001 :address \"0.0.0.0\" :accept clojure.core.server/repl}" -jar /usr/src/app/target/app.jar
     ports:
       - "35001:35001"
       - "8000:8000"
