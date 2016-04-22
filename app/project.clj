@@ -40,6 +40,7 @@
                  [cljsjs/react "0.14.3-0"]
                  [com.andrewmcveigh/cljs-time "0.4.0"]
                  [net.oauth.core/oauth "20090617"]
+                 [lacij "0.9.1"]
                  [net.oauth.core/oauth-httpclient4 "20090617"]
                  [buddy/buddy-auth "0.9.0"]
                  [cljsjs/d3 "3.5.7-1"]
@@ -57,7 +58,8 @@
                                   [reloaded.repl "0.2.1"]
                                   [eftest "0.1.0"]
                                   [kerodon "0.7.0"]
-                                  [figwheel "0.5.0-6"]]
+                                  [figwheel "0.5.0-6"]
+                                  [metosin/schema-viz "0.1.1"]]
                    :plugins      [[lein-cljsbuild "1.1.1"]]
                    :jvm-opts     ^:replace ["-Dfile.encoding=UTF-8" "-Xmx1G" "-Xms512m" ;"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
                                             ]}

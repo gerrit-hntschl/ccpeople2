@@ -1,14 +1,16 @@
 (ns app.server
   (:require
-            [app.storage :as storage]
-            [environ.core :refer [env]]
-            [hiccup.page :as page]
-            [app.oauth :as oauth]
-            [clojure.java.io :as io]
-            [ring.util.response :refer [response redirect content-type] :as resp]
-            [buddy.auth :as auth :refer [authenticated?]]
-            [com.stuartsierra.component :as component]
-            [ring.util.response :as response])
+    [app.storage :as storage]
+    [environ.core :refer [env]]
+    [hiccup.page :as page]
+    [app.oauth :as oauth]
+    [clojure.java.io :as io]
+    [ring.util.response :refer [response redirect content-type] :as resp]
+    [buddy.auth :as auth :refer [authenticated?]]
+    [com.stuartsierra.component :as component]
+    [ring.util.response :as response]
+    [app.graph :as graph]
+    [app.worklog :as worklog])
   (:import (org.slf4j LoggerFactory)
            (java.util UUID)))
 
@@ -100,4 +102,18 @@
                                  (content-type "text/html")))
                   :tag     :index}))
 
+(defn dev-html [graph-svg-str]
+  (page/html5
+    [:head
+     [:link {:rel "stylesheet" :href "css/dev.css"}]]
+    [:body
+     graph-svg-str]))
 
+(defn graph-endpoint []
+  (map->Endpoint {:route   "/dev"
+                  :handler (fn [req]
+                             (-> (graph/as-svg-str worklog/jira-import-graph)
+                                 (dev-html)
+                                 (response)
+                                 (content-type "text/html")))
+                  :tag :dev-graph}))
