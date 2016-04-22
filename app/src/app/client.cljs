@@ -5,13 +5,13 @@
     [app.domain :as domain]
     [bidi.bidi :as bidi]
     [goog.events :as events]
-    [app.gsignin :as gs]
     cljsjs.react
     [app.donut-service :as donut-service]
     ;    [material-ui.core :as ui :include-macros true]
     [goog.history.EventType :as EventType]
     [app.days :as days]
-    [cljs.pprint :as pprint])
+    [cljs.pprint :as pprint]
+    [clojure.string :as str])
   (:import [goog.history Html5History EventType]))
 
 (enable-console-print!)
@@ -26,69 +26,158 @@
 (defn metric-style [text]
   [:span {:style {:font-size 60}} text])
 
-(defn current-stats-did-mount []
-  #_(donut-service/progress 730 250)
-  (let [state @domain/app-state
-        actual-hours (domain/billed-hours state)
-        todays-goal-hours (domain/todays-hour-goal state)
-        viewport-size (:viewport/size state)]
-    (donut-service/balance-view viewport-size todays-goal-hours actual-hours)))
+(defn current-stats-did-mount [state-atom component-name]
+  (let [state @state-atom
+        model-data (domain/app-model {:state state})
+        actual-hours (:hours-billed model-data)
+        todays-goal-hours (:hour-goal-today model-data)
+        viewport-size (:viewport/size state)
+        billable-days-goal-scaled (:billable-days-goal-scaled model-data)]
+    (donut-service/balance-view component-name
+                                viewport-size
+                                todays-goal-hours
+                                actual-hours
+                                billable-days-goal-scaled)))
 
-(defn current-stats-update [this old-argv]
-  (let [state @domain/app-state
-        actual-hours (domain/billed-hours state)
-        todays-goal-hours (domain/todays-hour-goal state)]
-    (donut-service/update-balance-view-transitioned todays-goal-hours actual-hours)))
+(defn current-stats-update [state-atom component-name this old-argv]
+  (let [state @state-atom
+        model-data (domain/app-model {:state state})
+        actual-hours (:hours-billed model-data)
+        todays-goal-hours (:hour-goal-today model-data)
+        total-billable-hours-goal (* 8 (:billable-days-goal-scaled model-data))]
+    (donut-service/update-balance-view-transitioned component-name todays-goal-hours actual-hours total-billable-hours-goal)))
 
-(defn current-stats []
+(defn current-stats [state-atom component-name]
   ;; is it really necessary to deref app-state here just to trigger an invocation of component-did-update??
-  (let [_ @domain/app-state]
-    [:div#current-stats {:style {:margin-left  "auto"
-                                 :margin-right "auto"}}
+  (let [_ @state-atom]
+    [:div {:style {:margin-left  "auto"
+                   :margin-right "auto"}
+           :id    component-name}
      [:svg]]))
 
-(defn current-stats-component []
-  (reagent/create-class {:reagent-render current-stats
-                         :component-did-mount current-stats-did-mount
-                         :component-did-update current-stats-update}))
+(defn current-stats-component [state-atom component-name]
+  (reagent/create-class {:reagent-render       (partial current-stats state-atom component-name)
+                         :component-did-mount  (partial current-stats-did-mount state-atom component-name)
+                         :component-did-update (partial current-stats-update state-atom component-name)}))
 
+(defn progress-render [state-atom component-name]
+  [:div {:id component-name
+         :style {:margin-top "10px"}}
+   [:svg]])
+
+(defn progress-did-mount [state-atom component-name stat-key total-stat-key format-fn]
+  (let [model-data (domain/app-model {:state @state-atom})
+        stat (get model-data stat-key)
+        total-stat (get model-data total-stat-key)]
+    (donut-service/progress component-name stat total-stat format-fn)))
+
+(defn progress-update [state-atom component-name stat-key total-stat-key])
+
+(defn progress-component [state-atom component-name stat-key total-stat-key & [format-fn]]
+  (let [format-fn (or format-fn str)]
+    (reagent/create-class {:reagent-render       (partial progress-render state-atom component-name)
+                           :component-did-mount  (partial progress-did-mount state-atom component-name stat-key total-stat-key format-fn)
+                           :component-did-update (partial progress-update state-atom component-name stat-key total-stat-key)})))
+
+(defn format-days [n]
+  (if (= n 1)
+    (str "1 day")
+    (str n " days")))
+
+(defn days-rect [icon-name color background-color label number-days]
+  [:div {:style {:width "90px"
+                 :height "120px"
+                 :margin "6px"
+                 :background-color background-color
+                 :color color
+                 :display "flex"
+                 :justify-content "space-around"
+                 :flex-direction "column"}}
+   [:div
+    [:div {:class "circle"
+           :display "flex"}
+     [:i {:class icon-name}]]]
+   [:div label]
+   [:div {:style {:font-size "1.2em"}} (format-days number-days)]])
 
 (defn profile-page [_]
   (let [state @domain/app-state
-        remaining-work-days-minus-vacation (str (domain/actual-work-days-left state))
-        rem-holidays (str (domain/number-remaining-holidays state))
-        days-to-100-percent (pprint/cl-format nil "~,2f" (domain/days-needed-to-reach-goal state))
-        unbooked-days-count (str (count (domain/unbooked-days state)))
-        billed-days (pprint/cl-format nil "~,1f%" (* 100 (/ (domain/billed-hours state) 8 domain/billable-days-goal)))
-        num-sick-leave-days (str (domain/number-sick-leave-days state))
-        today-str (days/month-day-today)]
+        model-data (domain/app-model {:state state})
+        rem-holidays (:number-holidays-remaining model-data)
+        days-without-booked-hours (:days-without-booked-hours model-data)
+        formatted-missing-days (->> days-without-booked-hours
+                                    (map days/format-simple-date)
+                                    (str/join ", "))
+        unbooked-days-count (count days-without-booked-hours)
+        num-sick-leave-days (:number-sick-leave-days model-data)
+        used-leave (:number-taken-vacation-days model-data)
+        number-parental-leave-days (:number-parental-leave-days model-data)
+        number-planned-vacation-days (:number-planned-vacation-days model-data)
+        today-str (days/month-day-today (:today state))]
     (cond (= (:error state) :error/unknown-user)
           [:h2 {:style {:color "white"}} "Sorry, but we don't know that user."]
           (:user state)
-          [:div {:style {:margin-left  "auto"
-                         :margin-right "auto"
-                         :width        "100%"
-                         :color "white"}}
-           [:h2 "Today " (metric-style today-str)]
-           [current-stats-component]
-           [:ul {:padding 1
-                 :style   {:width "100%"}}
-            [:li "days w/o booked hours"
-             (metric-style unbooked-days-count)]
-            [:li "your workdays left"
-             (metric-style remaining-work-days-minus-vacation)]
-            [:li "days needed to reach 100%"
-             (metric-style days-to-100-percent)]
-            [:li "remaining leave"
-             (metric-style rem-holidays)]
-            [:li "sick leave"
-             (metric-style num-sick-leave-days)]]
-           [:div (str "Latest workdate considered: " (latest-worklog-work-date state))]]
-          :else
-          [:h2 {:style {:color "white"}} "Please sign in"])))
-
-(defn bye-world [_]
-  [:h1 (:bye/text @domain/app-state)])
+          [:div {:style {:overflow "hidden"}}
+           (when (pos? unbooked-days-count)
+             [:div {:style {:background-color "#e36588"
+                           :color            "white"
+                           :padding          "8px 15px 8px 15px"}}
+              (str "days w/o booked hours: " unbooked-days-count)
+              [:br]
+              formatted-missing-days])
+           [:div {:style {:margin-left  "auto"
+                          :margin-right "auto"
+                          :width        "100%"
+                          :color        "#121212"}}
+            [:div {:style {:display "flex"
+                           :flex-wrap "wrap"
+                           :justify-content "center"
+                           :border-bottom "1px solid #f3f3f3"}}
+             [:div
+              [:h2 today-str]
+              [current-stats-component domain/app-state "goal-stats"]]
+             [:div {:style {:margin-top "10px"}}
+              [:div
+               "days needed to reach 100%"
+               [progress-component
+                domain/app-state
+                "days-to-100"
+                :days-to-reach-goal
+                :billable-days-goal-scaled
+                (fn [x] (str (js/Math.round x)))]]
+              [:div
+               "your workdays left"
+               [progress-component
+                domain/app-state
+                "workdays-left"
+                :workdays-left-actually
+                :workdays-total]]]]
+            [:div {:style {:display "flex"
+                           :justify-content "center"
+                           :flex-wrap "wrap"
+                           ;:margin-left  "auto"
+                           ;:margin-right "auto"
+                           ;:width        "100%"
+                           }}
+             [:div {:style {:display "flex"
+                            :flex-direction "column"
+                            :align-items "flex-start"
+                            :margin-right "10px"}}
+              [:h2 "Holidays"]
+              [:div {:style {:display "flex"}}
+               [days-rect "icon-flight" "black" "#f3f3f3" "Planned" number-planned-vacation-days]
+               [days-rect "icon-globe" "white" "#9eb25d" "Free" rem-holidays]
+               [days-rect "icon-cancel" "black" "#f3f3f3" "Used" used-leave]]]
+             [:div {:style {:display "flex"
+                            :flex-direction "column"
+                            :align-items "flex-start"
+                            :border-left "1px solid #f3f3f3"
+                            :padding-left "10px"}}
+              [:h2 "Absence"]
+              [:div {:style {:display "flex"}}
+               [days-rect "icon-medkit" "black" "#a5e2ed" "Sickness" num-sick-leave-days]
+               (when (pos? number-parental-leave-days)
+                 [days-rect "icon-award" "white" "#9eb25d" "Parental leave" number-parental-leave-days])]]]]])))
 
 (defn tabs []
   [:div ""])
@@ -98,8 +187,6 @@
                  "people" :people}])
 
 (defmulti handlers :handler :default :profile)
-
-(defmethod handlers :people [] bye-world)
 
 (defmethod handlers :profile [] profile-page)
 
@@ -118,15 +205,41 @@
   (let [{page-params :route-params :as route-state} (:page @domain/app-state)]
     ((handlers route-state) page-params)))
 
+(defn sign-in-component []
+  (let [state @domain/app-state
+        user-sign-in-state (domain/user-sign-in-state state)]
+    (cond (nil? user-sign-in-state)
+          [:p "Initializing..."]
+          user-sign-in-state
+          [:div                                             ;{:style {:margin-top "20px"}}
+           ;[:a.button {:href "/logout"} (str "Sign out " (:user/display-name (:user state)))]
+           [dispatcher]]
+          :else
+          [:div
+           [:div {:style {:margin-top "20px"}}
+            [:a.button {:href "/login"} "Sign-in"]
+            [:p "Yes, it uses Duo Mobile... But you only need to log-in once, then a cookie will keep you logged in for a year."]]])))
+
 (defn page []
   [:div
-   [:h3 "ccHours"]
+   [:div {:class "header"
+          :style {:display         "flex"
+                  :flex-direction  "row"
+                  :justify-content "space-around"}}
+    ;; layout hack: empty divs move the title and sign-off button more to the center
+    [:div]
+    [:div {:style {:font-size "1.3em"}} "ccDashboard"]
+    (if (domain/user-sign-in-state @domain/app-state)
+      [:a#logout {:href "/logout"}
+       [:i.icon-off.large-icon]]
+      [:div])
+    [:div]]
    [:div {:style {:text-align "center"}}
-    [gs/sign-in-component]
-    [dispatcher]]])
+    [sign-in-component]]])
 
 
 (defn start []
+  (domain/call-api)
   (reagent/render-component [page]
                             (.getElementById js/document "app")))
 

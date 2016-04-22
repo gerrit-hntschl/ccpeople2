@@ -3,12 +3,14 @@
             [schema.coerce :as coerce]
             [schema.utils :as s-util]
             [plumbing.core :refer [safe-get]]
-    #?@(:clj [[clj-time.core :as time]
-              [clj-time.format :as format]
-              [clj-time.coerce :as time-coerce]]
+    #?@(:clj  [
+            [clj-time.core :as time]
+            [clj-time.format :as format]
+            [clj-time.coerce :as time-coerce]]
         :cljs [[cljs-time.core :as time]
                [cljs-time.format :as format]
-               [cljs-time.coerce :as time-coerce]]))
+               [cljs-time.coerce :as time-coerce]])
+            [clojure.set :as set])
   )
 
 (def IDate "Cross-platform Date" #?(:clj java.util.Date
@@ -35,7 +37,8 @@
                                          (fn [s] (re-matches #"[^@]+@[^@]+" s))
                                          "Email address"))
 
-(s/defschema NumberHoursWorkedPerDay (s/constrained IDouble (fn [n] (<= 0 n 24))))
+;; apparently it is happens that more than 24 hours are booked for a single day
+(s/defschema NumberHoursWorkedPerDay (s/constrained IDouble pos? "Positive Double"))
 
 ;;;;;;;;;;; DATA MODEL MAPPINGS ;;;;;;;;;;;;;;;;;
 
@@ -45,7 +48,9 @@
                                               "Nach Aufwand (T&M)" :invoicing/time-monthly
                                               "Festpreis einmalig" :invoicing/fixed-price
                                               "Individuell nach Vertrag" :invoicing/individual-by-contract
-                                              "Support" :invoicing/support})
+                                              "Support" :invoicing/support
+                                              "Bereits abgerechnet" :invoicing/already-paid
+                                              "UHD" :invoicing/user-help-desk})
 
 (def jira-issue-type->datomic-issue-type {"Quote" :ticket.type/quote
                                           "Administrative Time" :ticket.type/admin
@@ -59,7 +64,8 @@
                                              :issue_id         :worklog/ticket})
 
 (def jira-user-attributes {:name          :user/jira-username
-                           :emailAddress :user/email})
+                           :emailAddress :user/email
+                           :displayName :user/display-name})
 
 
 ;;;;;;;;;;;; JIRA MODEL ;;;;;;;;;;;;;;;;;;
@@ -126,11 +132,26 @@
 (s/defschema JiraUser
   {:name NonEmptyString
    :emailAddress EmailAddress
+   :displayName NonEmptyString
    s/Keyword s/Any})
 
 (s/defschema JiraCustomer "Actually a Jira component, but represents as a customer."
   {:id   PositiveInt
    :name NonEmptyString})
+
+(s/defschema JiraTeam
+  {:id s/Int
+   :name NonEmptyString
+   ;:mission :summary :lead :leadUser
+   s/Keyword s/Any})
+
+(s/defschema JiraTeamMember
+  {:id         s/Int
+   :membership {(s/optional-key :dateFromANSI) IDate
+                s/Keyword       s/Any}
+   :member {:name NonEmptyString
+            s/Keyword s/Any}
+   s/Keyword   s/Any})
 
 (s/defschema DbInvoicingType (apply s/enum (vals jira-invoicing-types->datomic-invoicing)))
 
@@ -156,9 +177,16 @@
                              :customer/name NonEmptyString
                              s/Keyword      s/Any})
 
+(s/defschema DomainUser {;; :user/id is assigned on the first login -> only optional here to simplify REPLing on fresh users
+                         (s/optional-key :user/id)         s/Uuid
+                         :user/jira-username               NonEmptyString
+                         :user/email                       EmailAddress
+                         :user/display-name                NonEmptyString
+                         (s/optional-key :user/start-date) LocalDate
+                         s/Keyword                         s/Any})
 
 ;;;;;;;;;;;; transformations
-(def datetime-regex #"\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?")
+(def datetime-regex #"\d{4}-\d{2}-\d{2}")
 
 (def timestamp-formatter (format/formatter "yyyy-MM-dd"))
 
@@ -185,6 +213,10 @@
   (coerce/coercer JiraIssue
                   date-and-string-coercer))
 
+(def jira-team-member-coercer
+  (coerce/coercer JiraTeamMember
+                  date-and-string-coercer))
+
 (defn local-date-coercer [schema]
   (when (= LocalDate schema)
     (coerce/safe
@@ -195,6 +227,10 @@
 
 (def domain-worklog-coercer
   (coerce/coercer DomainWorklog
+                  local-date-coercer))
+
+(def domain-user-coercer
+  (coerce/coercer DomainUser
                   local-date-coercer))
 
 (defn throw-on-invalid-schema-error [x]
@@ -220,6 +256,9 @@
                            throw-on-invalid-schema-error
                            jira-worklog-coercer))
 
+(def to-jira-team-member (comp throw-on-invalid-schema-error
+                               jira-team-member-coercer))
+
 (def to-domain-worklog (comp throw-on-invalid-schema-error
                              domain-worklog-coercer))
 
@@ -230,3 +269,11 @@
 (defn to-domain-customer [customer]
   (s/validate DomainCustomer customer)
   customer)
+
+(defn jira-user->domain-user [jira-user]
+  (-> jira-user
+      (set/rename-keys jira-user-attributes)
+      (select-keys (vals jira-user-attributes))))
+
+(def to-domain-user (comp throw-on-invalid-schema-error
+                          domain-user-coercer))

@@ -20,14 +20,16 @@
 (defn create-openid-user
   [conn user]
   (try
-    (let [user-tempid (people-tempid -1)
+    (let [user-id (d/squuid)
           r @(d/transact conn [
                                (assoc user
-                                 :user/id (d/squuid)
+                                 :user/id user-id
                                  :db/id [:user/email (:user/email user)])])
-          db-after (:db-after r)
-          tempids (:tempids r)]
-      (d/resolve-tempid db-after tempids user-tempid))
+          ;db-after (:db-after r)
+          ;tempids (:tempids r)
+          ]
+      ;(d/resolve-tempid db-after tempids user-tempid)
+      user-id)
     (catch ExecutionException ex
       (def lexex ex)
       (when (= (:db/error (ex-data (.getCause ex)))
@@ -48,25 +50,34 @@
             dbval)
        (into #{} (map first))))
 
+(defn entity-id-by-username [dbval username]
+  (q-one '{:find  [?e]
+           :in    [$ ?username]
+           :where [[?e :user/jira-username ?username]]}
+         dbval
+         username))
+
 (defn user-id-by-email [dbval email]
-  (q-one '[:find ?u
-           :in $ ?email
-           :where [?u :user/email ?email]]
+  (q-one '{:find  [?id]
+           :in    [$ ?email]
+           :where [[?u :user/email ?email]
+                   [?u :user/id ?id]]}
          dbval
          email))
 
-(defn user-id-by-unique-identity [dbval openid-identity]
+(defn user-id-by-external-user-id [dbval external-user-id]
   (q-one '{:find [?u]
-           :in [$ ?openid-identity]
-           :where [[?u :user/google-id ?openid-identity]]}
+           :in [$ ?external-user-id]
+           :where [[?u :user/id ?external-user-id]]}
          dbval
-         openid-identity))
+         external-user-id))
 
-(defn user-id-by-openid-or-create [conn user-data]
-  (if-let [id (user-id-by-unique-identity (db conn) (:user/google-id user-data))]
+(defn user-id-by-email-or-create [conn domain-user]
+  (def cxc conn)
+  (def dus domain-user)
+  (if-let [id (user-id-by-email (db conn) (:user/email domain-user))]
     id
-    (do (create-openid-user conn user-data)
-        (user-id-by-unique-identity (db conn) (:user/google-id user-data)))))
+    (create-openid-user conn domain-user)))
 
 (def as-map
   (comp (partial into {}) d/touch))
@@ -96,13 +107,18 @@
       (dissoc :db/id)
       (model/to-domain-customer)))
 
-(defn existing-user-data [conn id]
+(defn domain-user [db-user]
+  (-> db-user
+      (as-map)
+      (model/to-domain-user)))
+
+(defn existing-user-data [dbval id]
   (def xxid id)
-  (let [user-entity (d/entity (db conn) id)
+  (let [user-entity (d/entity dbval id)
         db-worklogs (:worklog/_user user-entity)
         tickets (into #{} (map :worklog/ticket) db-worklogs)
         customers (into #{} (keep :ticket/customer) tickets)]
-    {:user      (->> user-entity (d/touch) (into {}))
+    {:user      (domain-user user-entity)
      :worklogs  (mapv domain-worklog db-worklogs)
      :tickets   (mapv domain-ticket tickets)
      :customers (mapv domain-customer customers)}))
@@ -140,6 +156,7 @@
   (map->DatomicSchema {:schema-file (:schema-file options)
                        :schema-name (:schema-name options)}))
 
-(defn existing-user-data-for-user [conn user-data]
-  (->> (user-id-by-openid-or-create conn user-data)
-       (existing-user-data conn)))
+(defn existing-user-data-for-user [conn user-id]
+  (let [dbval (db conn)]
+    (some->> (user-id-by-external-user-id dbval user-id)
+             (existing-user-data dbval))))

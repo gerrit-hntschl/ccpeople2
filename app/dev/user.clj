@@ -56,7 +56,7 @@
   (reload/go))
 
 (defn routes []
-  (-> system :router :routes))
+  (-> (system) :router :routes))
 
 (defn reset-database []
   (d/delete-database (:connect-url (:datomic config))))

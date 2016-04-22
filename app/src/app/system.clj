@@ -11,10 +11,12 @@
             [app.storage :as storage]
             [app.worklog :as worklog]
             [ring.middleware.format :as ring-format]
+            [ring.middleware.stacktrace :as stacktrace]
     ;; to load data reader
             app.date
             [cognitect.transit :as transit]
-            [app.log :as log])
+            [app.log :as log]
+            [app.oauth :as oauth])
   (:import (com.stuartsierra.component Lifecycle)
            (java.io Closeable)
            (java.util.concurrent Executors TimeUnit)
@@ -24,7 +26,8 @@
 (def base-config
   {:app {:middleware     [[wrap-not-found :not-found]
                           [ring-format/wrap-restful-format :transit-custom]
-                          [wrap-defaults :defaults]]
+                          [wrap-defaults :defaults]
+                          [stacktrace/wrap-stacktrace-log]]
          :not-found      (io/resource "errors/404.html")
          :defaults       (meta-merge site-defaults {:static {:resources "public"}})
          :transit-custom {:response-options
@@ -60,16 +63,16 @@
   (start [this]
     (if (:executor this)
       this
-      (assoc this :executor (Executors/newScheduledThreadPool 1))))
+      (assoc this :executor (Executors/newSingleThreadScheduledExecutor))))
   (stop [this]
     (when-let [executor (:executor this)]
       (.shutdownNow executor))
     (dissoc this :executor))
 
   worklog/Scheduler
-  (schedule [this f]
+  (schedule [this f repeat-delay]
     ;; todo handle exception happening in f
-    (.scheduleWithFixedDelay (:executor this) f 10 60 TimeUnit/SECONDS)))
+    (.scheduleWithFixedDelay (:executor this) f 10 repeat-delay TimeUnit/SECONDS)))
 
 (defn new-scheduler []
   (map->ExecutorScheduler {}))
@@ -87,13 +90,16 @@
           :http (aleph-server (:http config))
           :auth-endpoint (server/auth-endpoint)
           :index-endpoint (server/index-endpoint)
+          :login-endpoint (server/login-endpoint)
+          :logout-endpoint (server/logout-endpoint)
+          :api-endpoint (server/api-endpoint)
           :router (router-component))
 
         (component/system-using
           {;; web
            :http   [:app]
            :app    [:router]
-           :router [:index-endpoint :auth-endpoint]
+           :router [:index-endpoint :auth-endpoint :login-endpoint :api-endpoint :logout-endpoint]
 
            ;; datomic
            :database []
@@ -102,6 +108,7 @@
 
            ;; endpoints
            :auth-endpoint [:conn]
+           :api-endpoint [:conn]
            }))))
 
 (defn new-live-system [config]

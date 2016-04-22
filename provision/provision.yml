@@ -31,11 +31,15 @@
     - name: add docker-compose build alias
       lineinfile: dest=/home/core/.bashrc line="alias b='docker-compose build'"
       # todo this will go away as soon as docker-compose supports build-args
+    - name: delete transactor .credentials file
+      file: path=/home/core/share/transactor/.credentials state=absent
+    - name: delete datomic-console .credentials file
+      file: path=/home/core/share/datomic-console/.credentials state=absent
+    - name: delete app .credentials file
+      file: path=/home/core/share/app/.credentials state=absent
     - name: add transactor .credentials file
       lineinfile: dest=/home/core/share/transactor/.credentials line="{{env.DATOMIC_USER}}:{{env.DATOMIC_PASSWORD}}" create=yes
     - name: add datomic console .credentials file
       lineinfile: dest=/home/core/share/datomic-console/.credentials line="{{env.DATOMIC_USER}}:{{env.DATOMIC_PASSWORD}}" create=yes
-    - name: add transactor .credentials file
+    - name: add app .credentials file
       lineinfile: dest=/home/core/share/app/.credentials line="{{env.DATOMIC_USER}}:{{env.DATOMIC_PASSWORD}}" create=yes
-    - name: add artifactory .artcreds file
-      lineinfile: dest=/home/core/share/app/.artcreds line="{{env.CCARTUSER}}:{{env.CCARTPASS}}" create=yes

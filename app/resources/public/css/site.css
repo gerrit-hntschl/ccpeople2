@@ -1,6 +1,45 @@
+@font-face {
+    font-family: dashboardFontello;
+    src: url(font/fontello.woff);
+}
+
+i {
+    font-family: dashboardFontello;
+}
+
+.header {
+    background-color: #e9e8e8;
+    padding-top: 0.8em;
+    padding-bottom: 0.8em;
+}
+
+[class^="large-icon"]:before, [class*=" large-icon"]:before {
+    font-size: 1.6em
+}
+
+#logout {
+    cursor: pointer;
+}
+
+
+[class^="icon-"]:before, [class*=" icon-"]:before {
+    margin-left: 0.255em}
+
+.circle {
+    border-radius: 50%;
+    background: black;
+    width: 25px;
+    height: 25px;
+    line-height: 23px;
+    vertical-align: middle;
+    text-align: center;
+    color: white;
+    display: inline-block;
+}
+
 .error-page body,
 .welcome body {
-    background: #eee;
+    background: #f3f3f3;
 }
 
 .error-page h1 {
@@ -43,4 +82,14 @@ ul {
 
 body {
     margin: 0px;
+}
+
+a.button {
+
+    text-decoration: none;
+    color: initial;
+    background: white;
+    border: 1px solid grey;
+    border-radius: 5px;
+    padding: 10px;
 }

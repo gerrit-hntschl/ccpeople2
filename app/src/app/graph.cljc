@@ -1,6 +1,7 @@
 (ns app.graph
   (:require [plumbing.graph :as graph]
             [plumbing.map :as map]
+            [plumbing.core :as plumbing]
             [plumbing.fnk.pfnk :as pfnk]))
 
 (defn merge-inputs [f]
@@ -16,7 +17,8 @@
                  (assoc :input-params (dissoc im :jira))
                  (assoc :graph (dissoc m :jira)))]
     (def bb data)
-    (throw (ex-info (.getMessage exi)
+    (throw (ex-info #?(:clj (.getMessage exi)
+                       :cljs (.-message exi))
                     data
                     exi))))
 
@@ -28,8 +30,12 @@
     (fn [m k f]
       (let [im (select-keys m (pfnk/input-schema-keys f))]
         (assoc m k (try (f im)
-                        (catch Throwable ex
+                        (catch #?(:clj Throwable
+                                  :cljs js/Error) ex
                           (def oex ex)
                           (handle-exi ex m k im))))))))
 
 (def compile-cancelling-with-input (comp merge-inputs compile-cancelling))
+
+(defn constant [value]
+  (plumbing/fnk [] value))

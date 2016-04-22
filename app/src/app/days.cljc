@@ -58,10 +58,10 @@
 
 (def yyyy-MM-dd-formatter (format/formatter "yyyy-MM-dd"))
 
-(def month-day-formatter (format/formatter "MMM d"))
+(def month-day-formatter (format/formatter "dd.MM.yyyy"))
 
-(defn month-day-today []
-  (format/unparse month-day-formatter (time/now)))
+(defn month-day-today [today]
+  (format/unparse-local-date month-day-formatter today))
 
 (defn this-year []
   (time/year (time/today)))
@@ -76,7 +76,7 @@
   (day-at-midnight (time/now)))
 
 (defn format-simple-date [date]
-  (format/unparse-local-date month-day-formatter (time-coerce/to-date-time date)))
+  (format/unparse-local-date month-day-formatter date))
 
 (defn month-start-ends [start-day end-day]
   ;; assumes start and end are in the same year
@@ -96,6 +96,7 @@
 (defn days-between [start-day end-day-inclusive]
   (date-range start-day end-day-inclusive (time/days 1)))
 
+
 (defn workdays-between [start-day end-day-inclusive]
   (remove (some-fn time-predicates/weekend?
                    (get holidays (time/year start-day)))
@@ -109,3 +110,12 @@
 
 (defn as-yyyy-MM-dd [date]
   (format/unparse yyyy-MM-dd-formatter date))
+
+(defn in-range-pred [start-day-inclusive end-day-inclusive]
+  {:pre [(or (= start-day-inclusive end-day-inclusive)
+             (time/before? start-day-inclusive end-day-inclusive)
+             (throw (ex-info "end-day must be equal to or after start-day" {:start-day start-day-inclusive
+                                                          :end-day end-day-inclusive})))]}
+  (fn [day]
+    (or (= day end-day-inclusive)
+        (time/within? start-day-inclusive end-day-inclusive day))))

@@ -14,9 +14,8 @@ This part has to be done only once.
 - Clone this repo.
 - Copy `provision/private_vars/env.yml.sample` to `provision/private_vars/env.yml` and fill out the placeholders:
     * `JIRA_TEMPO`, `JIRA_BASE_URL` and `JIRA_CONSUMER_PRIVATE_KEY` can be provided by your colleagues
-    * `CCARTUSER` and `CCARTPASS` are your credentials to the codecentric artifactory. The pass is the encrypted password which you can find on the settings page.
     * `DATOMIC_USER` and `DATOMIC_PASSWORD`: Create an account at [Datomic](https://my.datomic.com/account/create) and copy `username` and `password` from [Datomic account page](https://my.datomic.com/account)
-    * `DATOMIC_POSTGRES_PASSWORD`: choose some password for your local postgres user.
+    * `DATOMIC_POSTGRES_PASSWORD`, `APP_HOSTNAME`, `JWS_TOKEN_SECRET`: you can leave them as they are.
     * `DATOMIC_LICENSE_KEY`: the license key received after Datomic registration
     * `JIRA_ACCESS_TOKEN`: See next section.
 
@@ -43,6 +42,7 @@ Note: Make sure that you completed the `env.yml` setup before. If you missed som
 - Connect to the vagrant REPL by using the IntelliJ run configuration or connect yourself on port 35001
 - Inside the connected REPL you start in workspace `user`. Run `(go)` to start the server.
 - The ClojureScript-client is compiled incrementally by Figwheel and instantly reloaded on code changes. To start it use the `figwheel` run-configuration which uses the approach described [here](https://github.com/bhauman/lein-figwheel/wiki/Running-figwheel-in-a-Cursive-Clojure-REPL).
+- The app is hosted at [https://localhost:9090](https://localhost:9090). (https only)
 
   
 
