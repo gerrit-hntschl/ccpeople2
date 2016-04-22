@@ -30,3 +30,9 @@
       lineinfile: dest=/home/core/.bashrc line="alias u='docker-compose up'"
     - name: add docker-compose build alias
       lineinfile: dest=/home/core/.bashrc line="alias b='docker-compose build'"
+    - name: add docker-compose uberjar build alias
+      lineinfile: dest=/home/core/.bashrc line="alias ub='docker-compose -f docker-compose-uberjared-app.yml build'"
+    - name: add docker-compose uberjar up alias
+      lineinfile: dest=/home/core/.bashrc line="alias uu='docker-compose -f docker-compose-uberjared-app.yml up'"
+    - name: add docker uberjar build alias
+      lineinfile: dest=/home/core/.bashrc line="alias lu='docker run -it -v /home/core/share/app:/usr/src/app -v /home/core/.m2:/root/.m2 app-uberjar-build'"
