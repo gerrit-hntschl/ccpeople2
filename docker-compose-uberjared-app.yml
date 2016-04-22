@@ -35,13 +35,11 @@ services:
   devapp:
     build:
       context: app
-      args:
-        DATOMIC_USER: ${DATOMIC_USER}
-        DATOMIC_PASSWORD: ${DATOMIC_PASSWORD}
+      dockerfile: Dockerfile-uberjar
+    command: java -Dclojure.server.repl="{:port 35001 :address \"0.0.0.0\" :accept clojure.core.server/repl}" -jar /usr/src/app/target/app.jar
     ports:
       - "35001:35001"
       - "8000:8000"
-      - "5005:5005"
     volumes:
       - "/home/core/share/app:/usr/src/app"
       - "/home/core/.m2:/root/.m2"
