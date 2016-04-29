@@ -215,7 +215,9 @@
   (get-in state [:user :user/signed-in?]))
 
 (def app-model-graph
-  {:worklogs-billable                     (fnk [state]
+  {:monthly-hours                    (fnk [state]
+                                            (billed-hours-by-month state))
+   :worklogs-billable                     (fnk [state]
                                             (billable-worklogs state))
    ;; the consultant specific goal start date...
    ;; 1st of January if consultant employment did not start this year, otherwise employment start.

@@ -378,7 +378,9 @@
     {:re-import?           (fnk [dbval]
                              (boolean (any-work-date dbval)))
      :current-period-start (fnk [today]
-                             (consultant/current-period-start today))
+                             ;(consultant/current-period-start today)
+                             (time/date-time 2016 1 1)
+                             )
      :import-start-date    (fnk [re-import? today current-period-start]
                              (if re-import?
                                current-period-start
