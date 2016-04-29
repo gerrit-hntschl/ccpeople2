@@ -410,7 +410,7 @@
         [actual-hours-y goal-y actual-hours-label-offset-fn goal-label-offset-fn]
         (if (pos? balance-hours)
           [balance-y-upper balance-y-lower #(- % 15) (partial + 25)]
-          [balance-y-lower balance-y-upper (partial + 25) #(- % 15)])
+          [balance-y-lower bxalance-y-upper (partial + 25) #(- % 15)])
         rect-color-interpolator (-> js/d3
                                     (.interpolateLab "#1FB7D4" "#7FFBC6"))
         normalized-balance-ratio (-> balance-hours

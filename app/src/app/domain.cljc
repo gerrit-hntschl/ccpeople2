@@ -90,14 +90,6 @@
   (fn [vs]
     (reduce + (map k vs))))
 
-(defn billed-hours-by-month [app-state]
-  (->> (billable-worklogs app-state)
-       (group-by (comp time/month :worklog/work-date))
-       (map-vals (sum-of :worklog/hours))))
-
-(defn working-days-left-without-today [today]
-  (dec (count (days/workdays-till-end-of-year today))))
-
 ;; vacation ticket TS-2
 (def vacation-ticket-id 68000)
 
@@ -106,6 +98,43 @@
 
 ;; parental leave TS-345
 (def parental-leave-ticket-id 71746)
+
+(defn worktype-fn [{:keys [worklogs tickets customers]}]
+  (let [codecentric-id (customer-id-by-name "codecentric" customers)
+        codecentric-ticket-ids (->> tickets
+                                    (filter (matching :ticket/customer codecentric-id))
+                                    (into #{} (map :ticket/id)))
+        billable-ticket-ids (->> tickets
+                                 (filter (fn [ticket]
+                                           (not= (:ticket/invoicing ticket)
+                                                 :invoicing/not-billable)))
+                                 (into #{} (map :ticket/id)))
+        ticket->worktype (-> (zipmap billable-ticket-ids (repeat :billable))
+                             (assoc vacation-ticket-id :vacation
+                                    sick-leave-ticket-id :sickness
+                                    parental-leave-ticket-id :parental-leave
+                                    )
+                             )
+
+        ]
+    (fn [worklog]
+      (get ticket->worktype (:worklog/ticket worklog) :other)
+      )
+    )
+  )
+
+(defn hours-by-month [app-state]
+  (->> (:worklogs app-state)
+       (group-by (comp time/month :worklog/work-date))
+       (map-vals (fn [worklogs]
+                   (->> worklogs
+                        (group-by (worktype-fn app-state))
+                        (map-vals (sum-of :worklog/hours)))))))
+
+(defn working-days-left-without-today [today]
+  (dec (count (days/workdays-till-end-of-year today))))
+
+
 
 (defn ticket-days [ticket-id worklogs]
   (into #{}
@@ -216,7 +245,7 @@
 
 (def app-model-graph
   {:monthly-hours                    (fnk [state]
-                                            (billed-hours-by-month state))
+                                            (hours-by-month state))
    :worklogs-billable                     (fnk [state]
                                             (billable-worklogs state))
    ;; the consultant specific goal start date...
