@@ -52,6 +52,10 @@
       (.style "text-anchor" "middle")
       (.text label-text)))
 
+(defn billable[hours-by-month]
+  (get (js->clj hours-by-month) "billable")
+  )
+
 (defn create-monthly-bar-view [component-name width height billed-hours-by-month]
 
   (let [x-padding (* width 0.26)
@@ -83,19 +87,19 @@
         (.enter)
         (.append "rect")
         (.attr "x" (fn [d,i] (+ (* i 40) 350)))
-        (.attr "y" (fn [d] (- height d)))
+        (.attr "y" (fn [d] (- height (billable d))))
         (.attr "width" 38)
-        (.attr "height" (fn [d] d))
-        (.style "fill" (fn [d] (str "rgb(0,0," (int (Math/ceil d)) ")")))
+        (.attr "height" (fn [d] (billable d)))
+        (.style "fill" (fn [d] (str "rgb(0,0," (int (Math/ceil (billable d))) ")")))
         )
 
     (-> svg (.selectAll "text")
         (.data billed-hours-by-month)
         (.enter)
         (.append "text")
-        (.text (fn [d] (int (Math/ceil d))))
-        (.attr "x" (fn [d,i] (+ 355 (* (/ (if (> d 99) 480 494) 12) i))))
-        (.attr "y" (fn [d] (+ (if (> d 70) 50 (if(> d 20) 20 10) ) (- height d))))
+        (.text (fn [d] (int (Math/ceil (billable d)))))
+        (.attr "x" (fn [d,i] (+ 355 (* (if (> (billable d) 99) 40 41) i))))
+        (.attr "y" (fn [d] (+ (if (> (billable d) 70) 50 (if(> (billable d) 20) 20 10) ) (- height (billable d)))))
         (.style "fill" "#ffffff")
         )
 
@@ -410,7 +414,7 @@
         [actual-hours-y goal-y actual-hours-label-offset-fn goal-label-offset-fn]
         (if (pos? balance-hours)
           [balance-y-upper balance-y-lower #(- % 15) (partial + 25)]
-          [balance-y-lower bxalance-y-upper (partial + 25) #(- % 15)])
+          [balance-y-lower balance-y-upper (partial + 25) #(- % 15)])
         rect-color-interpolator (-> js/d3
                                     (.interpolateLab "#1FB7D4" "#7FFBC6"))
         normalized-balance-ratio (-> balance-hours
