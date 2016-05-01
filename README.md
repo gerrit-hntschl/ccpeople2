@@ -1,10 +1,11 @@
-# ccHours - dashboard
+# ccDashboard
 
 ## Development
 
 ### Prerequisites
 - Virtualbox & Vagrant
 - Ansible
+- Leiningen
 
 Choose your favorite Clojure IDE. We provide run configurations for [Cursive](https://cursiveclojure.com/userguide/), making it easiest to start with that.
 

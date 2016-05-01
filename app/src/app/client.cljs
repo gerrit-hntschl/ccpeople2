@@ -100,9 +100,8 @@
    [:div label]
    [:div {:style {:font-size "1.2em"}} (format-days number-days)]])
 
-(defn profile-page [_]
-  (let [state @domain/app-state
-        model-data (domain/app-model {:state state})
+(defn user-stats [state]
+  (let [model-data (domain/app-model {:state state})
         rem-holidays (:number-holidays-remaining model-data)
         days-without-booked-hours (:days-without-booked-hours model-data)
         formatted-missing-days (->> days-without-booked-hours
@@ -114,70 +113,74 @@
         number-parental-leave-days (:number-parental-leave-days model-data)
         number-planned-vacation-days (:number-planned-vacation-days model-data)
         today-str (days/month-day-today (:today state))]
+    [:div {:style {:overflow "hidden"}}
+     (when (pos? unbooked-days-count)
+       [:div {:style {:background-color "#e36588"
+                      :color            "white"
+                      :padding          "8px 15px 8px 15px"}}
+        (str "days w/o booked hours: " unbooked-days-count)
+        [:br]
+        formatted-missing-days])
+     [:div {:style {:margin-left  "auto"
+                    :margin-right "auto"
+                    :width        "100%"
+                    :color        "#121212"}}
+      [:div {:style {:display         "flex"
+                     :flex-wrap       "wrap"
+                     :justify-content "center"
+                     :border-bottom   "1px solid #f3f3f3"}}
+       [:div
+        [:h2 today-str]
+        [current-stats-component domain/app-state "goal-stats"]]
+       [:div {:style {:margin-top "10px"}}
+        [:div
+         "days needed to reach 100%"
+         [progress-component
+          domain/app-state
+          "days-to-100"
+          :days-to-reach-goal
+          :billable-days-goal-scaled
+          (fn [x] (str (js/Math.round x)))]]
+        [:div
+         "your workdays left"
+         [progress-component
+          domain/app-state
+          "workdays-left"
+          :workdays-left-actually
+          :workdays-total]]]]
+      [:div {:style {:display         "flex"
+                     :justify-content "center"
+                     :flex-wrap       "wrap"
+                     ;:margin-left  "auto"
+                     ;:margin-right "auto"
+                     ;:width        "100%"
+                     }}
+       [:div {:style {:display        "flex"
+                      :flex-direction "column"
+                      :align-items    "flex-start"
+                      :margin-right   "10px"}}
+        [:h2 "Holidays"]
+        [:div {:style {:display "flex"}}
+         [days-rect "icon-flight" "black" "#f3f3f3" "Planned" number-planned-vacation-days]
+         [days-rect "icon-globe" "white" "#9eb25d" "Free" rem-holidays]
+         [days-rect "icon-cancel" "black" "#f3f3f3" "Used" used-leave]]]
+       [:div {:style {:display        "flex"
+                      :flex-direction "column"
+                      :align-items    "flex-start"
+                      :border-left    "1px solid #f3f3f3"
+                      :padding-left   "10px"}}
+        [:h2 "Absence"]
+        [:div {:style {:display "flex"}}
+         [days-rect "icon-medkit" "black" "#a5e2ed" "Sickness" num-sick-leave-days]
+         (when (pos? number-parental-leave-days)
+           [days-rect "icon-award" "white" "#9eb25d" "Parental leave" number-parental-leave-days])]]]]]))
+
+(defn profile-page [_]
+  (let [state @domain/app-state]
     (cond (= (:error state) :error/unknown-user)
-          [:h2 {:style {:color "white"}} "Sorry, but we don't know that user."]
+          [:h2 {:style {:color "black"}} "Sorry, but we don't know that user."]
           (:user state)
-          [:div {:style {:overflow "hidden"}}
-           (when (pos? unbooked-days-count)
-             [:div {:style {:background-color "#e36588"
-                           :color            "white"
-                           :padding          "8px 15px 8px 15px"}}
-              (str "days w/o booked hours: " unbooked-days-count)
-              [:br]
-              formatted-missing-days])
-           [:div {:style {:margin-left  "auto"
-                          :margin-right "auto"
-                          :width        "100%"
-                          :color        "#121212"}}
-            [:div {:style {:display "flex"
-                           :flex-wrap "wrap"
-                           :justify-content "center"
-                           :border-bottom "1px solid #f3f3f3"}}
-             [:div
-              [:h2 today-str]
-              [current-stats-component domain/app-state "goal-stats"]]
-             [:div {:style {:margin-top "10px"}}
-              [:div
-               "days needed to reach 100%"
-               [progress-component
-                domain/app-state
-                "days-to-100"
-                :days-to-reach-goal
-                :billable-days-goal-scaled
-                (fn [x] (str (js/Math.round x)))]]
-              [:div
-               "your workdays left"
-               [progress-component
-                domain/app-state
-                "workdays-left"
-                :workdays-left-actually
-                :workdays-total]]]]
-            [:div {:style {:display "flex"
-                           :justify-content "center"
-                           :flex-wrap "wrap"
-                           ;:margin-left  "auto"
-                           ;:margin-right "auto"
-                           ;:width        "100%"
-                           }}
-             [:div {:style {:display "flex"
-                            :flex-direction "column"
-                            :align-items "flex-start"
-                            :margin-right "10px"}}
-              [:h2 "Holidays"]
-              [:div {:style {:display "flex"}}
-               [days-rect "icon-flight" "black" "#f3f3f3" "Planned" number-planned-vacation-days]
-               [days-rect "icon-globe" "white" "#9eb25d" "Free" rem-holidays]
-               [days-rect "icon-cancel" "black" "#f3f3f3" "Used" used-leave]]]
-             [:div {:style {:display "flex"
-                            :flex-direction "column"
-                            :align-items "flex-start"
-                            :border-left "1px solid #f3f3f3"
-                            :padding-left "10px"}}
-              [:h2 "Absence"]
-              [:div {:style {:display "flex"}}
-               [days-rect "icon-medkit" "black" "#a5e2ed" "Sickness" num-sick-leave-days]
-               (when (pos? number-parental-leave-days)
-                 [days-rect "icon-award" "white" "#9eb25d" "Parental leave" number-parental-leave-days])]]]]])))
+          [user-stats state])))
 
 (defn tabs []
   [:div ""])
@@ -210,6 +213,8 @@
         user-sign-in-state (domain/user-sign-in-state state)]
     (cond (nil? user-sign-in-state)
           [:p "Initializing..."]
+          (= (:error state) :error/unexpected-api-response)
+          [:h2 {:style {:color "black"}} "Oops, something went wrong. Please report issue in #ccdashboard-feedback."]
           user-sign-in-state
           [:div                                             ;{:style {:margin-top "20px"}}
            ;[:a.button {:href "/logout"} (str "Sign out " (:user/display-name (:user state)))]
