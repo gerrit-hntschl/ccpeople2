@@ -165,10 +165,13 @@
   [start-date]
   (let [start-month (time/month start-date)
         number-of-complete-months (- 12 start-month)
-        start-month-days (time/number-of-days-in-the-month start-date)
-        number-of-worked-days-in-start-month (- start-month-days
-                                                (dec (time/day start-date)))
-        start-month-percentage (/ number-of-worked-days-in-start-month start-month-days)]
+        start-month-percentage (condp = (time/day start-date)
+                                 1 1
+                                 15 0.5
+                                 (let [start-month-days (time/number-of-days-in-the-month start-date)
+                                       number-of-worked-days-in-start-month (- start-month-days
+                                                                               (dec (time/day start-date)))]
+                                   (/ number-of-worked-days-in-start-month start-month-days)))]
     (/ (+ number-of-complete-months start-month-percentage) 12)))
 
 ;; TODO make user dependent
