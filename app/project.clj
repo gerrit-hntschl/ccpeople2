@@ -99,6 +99,9 @@
   :repositories {"my.datomic.com" {:url      "https://my.datomic.com/repo"
                                    :username [:env/datomic_user]
                                    :password [:env/datomic_password]}
+                 "artifactory.codecentric.de" {:url "https://artifactory.codecentric.de/artifactory/repo"
+                                               :username [:env/ccartuser]
+                                               :password [:env/ccartpass]}
                  "oauth" "http://oauth.googlecode.com/svn/code/maven/"}
 
   )
