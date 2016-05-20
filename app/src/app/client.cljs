@@ -244,9 +244,12 @@
                   :justify-content "space-around"}}
     ;; layout hack: empty divs move the title and sign-off button more to the center
     [:div]
-    [:div {:style {:font-size "1.3em"}} "ccDashboard"]
-    (sign-in-only-content [:a#location {:href "/#location"}
-                           "location View"])
+    [:a {:href  "/#"
+         :style {:font-size "1.3em"}}
+     "ccDashboard"]
+    (sign-in-only-content [:a#location {:href "/#location"
+                                        :style {:font-size "1.3em"}}
+                           "Location View"])
     (sign-in-only-content [:a#logout {:href "/logout"}
                            [:i.icon-off.large-icon]])
     [:div]]
