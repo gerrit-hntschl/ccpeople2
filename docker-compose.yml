@@ -38,6 +38,8 @@ services:
       args:
         DATOMIC_USER: ${DATOMIC_USER}
         DATOMIC_PASSWORD: ${DATOMIC_PASSWORD}
+        CCARTUSER: ${CCARTUSER}
+        CCARTPASS: ${CCARTPASS}
     ports:
       - "35001:35001"
       - "8000:8000"
@@ -49,6 +51,8 @@ services:
       - DATOMIC_CONNECT_URL=datomic:sql://people?jdbc:postgresql://postgres:5432/datomic?user=datomic&password=${DATOMIC_POSTGRES_PASSWORD}
       - DATOMIC_USER
       - DATOMIC_PASSWORD
+      - CCARTUSER
+      - CCARTPASS
       - JIRA_BASE_URL
       - JIRA_TEMPO
       - JIRA_ACCESS_TOKEN

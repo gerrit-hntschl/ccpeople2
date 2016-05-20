@@ -18,6 +18,8 @@ This part has to be done only once.
     * `DATOMIC_USER` and `DATOMIC_PASSWORD`: Create an account at [Datomic](https://my.datomic.com/account/create) and copy `username` and `password` from [Datomic account page](https://my.datomic.com/account)
     * `DATOMIC_POSTGRES_PASSWORD`, `APP_HOSTNAME`, `JWS_TOKEN_SECRET`: you can leave them as they are.
     * `DATOMIC_LICENSE_KEY`: the license key received after Datomic registration
+    * `CCARTUSER`: Artifactory Username
+    * `CCARTPASS`: Encrypted Artifactory Password, you can get it under your Artifactory Settings
     * `JIRA_ACCESS_TOKEN`: See next section.
 
 #### Getting a Jira Access Token
