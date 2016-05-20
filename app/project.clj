@@ -102,6 +102,6 @@
                  "artifactory.codecentric.de" {:url "https://artifactory.codecentric.de/artifactory/repo"
                                                :username [:env/ccartuser]
                                                :password [:env/ccartpass]}
-                 "oauth" "http://oauth.googlecode.com/svn/code/maven/"}
+                 }
 
   )

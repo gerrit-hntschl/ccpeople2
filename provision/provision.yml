@@ -36,5 +36,3 @@
       lineinfile: dest=/home/core/.bashrc line="alias uu='docker-compose -f docker-compose-uberjared-app.yml up'"
     - name: add docker uberjar build alias
       lineinfile: dest=/home/core/.bashrc line="alias lu='docker run -it -v /home/core/share/app:/usr/src/app -v /home/core/.m2:/root/.m2 app-uberjar-build'"
-    - name: add artifactory .artcreds file
-      lineinfile: dest=/home/core/share/app/.artcreds line="{{env.CCARTUSER}}:{{env.CCARTPASS}}" create=yes
