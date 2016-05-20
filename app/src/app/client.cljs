@@ -182,16 +182,22 @@
           (:user state)
           [user-stats state])))
 
+(defn location-page [_]
+  [:h1 "Comming Soon..."])
+
 (defn tabs []
   [:div ""])
 
 
 (def routes ["" {"profile" :profile
-                 "people" :people}])
+                 "people" :people
+                 "location" :location}])
 
 (defmulti handlers :handler :default :profile)
 
 (defmethod handlers :profile [] profile-page)
+
+(defmethod handlers :location [] location-page)
 
 (defn update-page-to-token [token]
   (swap! domain/app-state assoc :page (bidi/match-route routes token)))
@@ -207,6 +213,11 @@
 (defn dispatcher []
   (let [{page-params :route-params :as route-state} (:page @domain/app-state)]
     ((handlers route-state) page-params)))
+
+(defn sign-in-only-content [content]
+  (if (domain/user-sign-in-state @domain/app-state)
+    content
+    [:div]))
 
 (defn sign-in-component []
   (let [state @domain/app-state
@@ -234,10 +245,10 @@
     ;; layout hack: empty divs move the title and sign-off button more to the center
     [:div]
     [:div {:style {:font-size "1.3em"}} "ccDashboard"]
-    (if (domain/user-sign-in-state @domain/app-state)
-      [:a#logout {:href "/logout"}
-       [:i.icon-off.large-icon]]
-      [:div])
+    (sign-in-only-content [:a#logout {:href "/logout"}
+                           [:i.icon-off.large-icon]])
+    (sign-in-only-content [:a#location {:href "/location"}
+                           "location View"])
     [:div]]
    [:div {:style {:text-align "center"}}
     [sign-in-component]]])
