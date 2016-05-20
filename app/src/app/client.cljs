@@ -245,10 +245,10 @@
     ;; layout hack: empty divs move the title and sign-off button more to the center
     [:div]
     [:div {:style {:font-size "1.3em"}} "ccDashboard"]
+    (sign-in-only-content [:a#location {:href "/#location"}
+                           "location View"])
     (sign-in-only-content [:a#logout {:href "/logout"}
                            [:i.icon-off.large-icon]])
-    (sign-in-only-content [:a#location {:href "/location"}
-                           "location View"])
     [:div]]
    [:div {:style {:text-align "center"}}
     [sign-in-component]]])
