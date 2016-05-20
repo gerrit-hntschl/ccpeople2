@@ -9,7 +9,7 @@
     [buddy.auth :as auth :refer [authenticated?]]
     [com.stuartsierra.component :as component]
     [ring.util.response :as response]
-    [app.graph :as graph]
+    [app.graphviz :as graphviz]
     [app.worklog :as worklog])
   (:import (org.slf4j LoggerFactory)
            (java.util UUID)))
@@ -105,14 +105,19 @@
 (defn dev-html [graph-svg-str]
   (page/html5
     [:head
-     [:link {:rel "stylesheet" :href "css/dev.css"}]]
+     [:link {:rel "stylesheet" :href "css/dev.css"}]
+     [:link {:rel "stylesheet" :href "//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.3.0/styles/default.min.css"}]
+     [:link {:rel "stylesheet" :href "css/default.css"}]
+     ]
     [:body
-     graph-svg-str]))
+     graph-svg-str
+     [:script {:src "js/highlight.pack.js"}]
+     [:script "hljs.initHighlightingOnLoad();"]]))
 
 (defn graph-endpoint []
   (map->Endpoint {:route   "/dev"
                   :handler (fn [req]
-                             (-> (graph/as-svg-str worklog/jira-import-graph)
+                             (-> (graphviz/as-svg-str worklog/jira-import-graph)
                                  (dev-html)
                                  (response)
                                  (content-type "text/html")))
