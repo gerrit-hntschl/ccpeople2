@@ -12,7 +12,10 @@
             [eftest.runner :as eftest]
             [app.config :as config]
             [app.system :as system]
-            [bidi.bidi :as bidi]))
+            [bidi.bidi :as bidi]
+            [app.storage :as storage]
+            [clj-time.core :as time]
+            [app.domain :as domain]))
 
 ;; last handled request and response
 (def rq)
@@ -66,5 +69,15 @@
 
 (defn path-for [handler-tag]
   (bidi/path-for (routes) handler-tag))
+
+(defn get-client-data [user-name]
+  (let [dbval (d/db (:conn (system)))
+        user-ent-id (storage/entity-id-by-username dbval user-name)]
+    {:state
+     (assoc (storage/existing-user-data dbval user-ent-id)
+       :today (time/today))}))
+
+(defn get-client-state [user-name]
+  (domain/app-model (get-client-data user-name)))
 
 (reloaded.repl/set-init! new-system)

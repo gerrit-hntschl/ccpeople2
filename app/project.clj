@@ -93,6 +93,8 @@
                         :compiler     {:output-to     "resources/public/js/main.js"
                                        :main          app.start
                                        :optimizations :advanced
+                                       :closure-defines {app.client/timetrack-uri
+                                                         ~(str (java.lang.System/getenv "JIRA_BASE_URL") "/secure/TempoUserBoard!timesheet.jspa")}
                                        :externs       ["externs/mixpanel_externs.js"]
                                        ;                                         :pseudo-names true
                                        ;:pretty-print  true
@@ -101,6 +103,9 @@
   :repositories {"my.datomic.com" {:url      "https://my.datomic.com/repo"
                                    :username [:env/datomic_user]
                                    :password [:env/datomic_password]}
-                 "oauth" "http://oauth.googlecode.com/svn/code/maven/"}
+                 "artifactory.codecentric.de" {:url "https://artifactory.codecentric.de/artifactory/repo"
+                                               :username [:env/ccartuser]
+                                               :password [:env/ccartpass]}
+                 }
 
   )
