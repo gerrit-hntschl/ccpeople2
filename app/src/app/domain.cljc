@@ -224,8 +224,8 @@
                                 (into #{} (keys day->worklogs)))
    :days-without-booked-hours (fnk [days-with-some-hours period-days]
                                 (remove days-with-some-hours period-days))
-   :days-below-threshold      (fnk [days-with-some-hours days-above-min-threshold]
-                                (set/difference days-with-some-hours days-above-min-threshold))})
+   :days-below-threshold      (fnk [days-with-some-hours days-above-min-threshold period-days]
+                                (set/intersection (set period-days) (set/difference days-with-some-hours days-above-min-threshold)))})
 
 (def compute-unbooked-days-stats (graph/compile-cancelling unbooked-days-graph))
 
