@@ -105,12 +105,21 @@
        (map days/format-simple-date)
        (str/join ", ")))
 
+;; creates a constant that can be overriden at compile time
+(goog-define timetrack-uri "https://the.timetracking-system.url")
+
 (defn days-info [description background-color font-color days]
   (let [unbooked-days-count (count days)]
     (when (pos? unbooked-days-count)
+      ;; to make the entire div clickable, position it relative
+      ;; and add link with empty span which is positioned absolute with width and height of 100%
       [:div {:style {:background-color background-color
                      :color            font-color
-                     :padding          "8px 15px 8px 15px"}}
+                     :padding          "8px 15px 8px 15px"
+                     :position "relative"}}
+       [:a {:href timetrack-uri
+            :class "div-link"
+            :target "_blank"} [:span]]
        (str description unbooked-days-count)
        [:br]
        (formatted-days-comma-separated days)])))

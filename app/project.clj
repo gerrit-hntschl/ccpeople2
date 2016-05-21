@@ -91,6 +91,8 @@
                         :compiler     {:output-to     "resources/public/js/main.js"
                                        :main          app.start
                                        :optimizations :advanced
+                                       :closure-defines {app.client/timetrack-uri
+                                                         ~(str (java.lang.System/getenv "JIRA_BASE_URL") "/secure/TempoUserBoard!timesheet.jspa")}
                                        :externs       ["externs/mixpanel_externs.js"]
                                        ;                                         :pseudo-names true
                                        ;:pretty-print  true
