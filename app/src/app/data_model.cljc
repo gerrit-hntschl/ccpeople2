@@ -34,7 +34,7 @@
 (s/defschema NonEmptyString (s/constrained s/Str seq "Non-empty string"))
 
 (s/defschema EmailAddress (s/constrained NonEmptyString
-                                         (fn [s] (re-matches #"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$" s))
+                                         (fn [s] (re-matches #"^\s*[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\s*$" s))
                                          "Email address"))
 
 ;; apparently it is happens that more than 24 hours are booked for a single day
