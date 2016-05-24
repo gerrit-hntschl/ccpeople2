@@ -7,12 +7,6 @@ i {
     font-family: dashboardFontello;
 }
 
-.header {
-    background-color: #e9e8e8;
-    padding-top: 0.8em;
-    padding-bottom: 0.8em;
-}
-
 [class^="large-icon"]:before, [class*=" large-icon"]:before {
     font-size: 1.6em
 }
@@ -97,103 +91,134 @@ a.button {
     padding: 10px;
 }
 
+
 #navbar {
     width: 100%;
     height: 50px;
-	background: #2f3036;
+    background: #f3f3f3;
+    text-decoration: none;
 }
 
 ul#menu {
-	list-style-type:none;
-	width: 100%;
-	margin:0;
-	padding:0;
-	position: absolute;
+    list-style-type:none;
+    margin:0;
+    padding:0;
+    position: absolute;
 }
 
 li {
-	display:inline-block;
-	float: left;
+    display:inline-block;
+    float: left;
 }
 
 li a {
-	display:block;
-	width: 100%;
-	height: 50px;
-	text-align: center;
-	line-height: 50px;
-	color: #fff;
-	background: #2f3036;
-	text-decoration: none;
+    display:block;
+    width: 100%;
+    height: 50px;
+    text-align: center;
+    line-height: 50px;
+    color: #626161;
+    background: #f3f3f3;
+    text-decoration: none;
 }
 
 li:hover ul a {
-	background: #f3f3f3;
-	color: #2f3036;
-	height: 40px;
-	line-height: 40px;
+    height: 50px;
+    line-height: 50px;
 }
 
 li ul {
-	display: none;
-}
-
-li ul li {
-	display: block;
-	float: none;
-}
-
-li ul li a {
-	width: auto;
-	min-width: 100px;
-	padding: 0 20px;
-}
-
-ul li a:hover + .hidden, .hidden:hover {
-	display: block;
-}
-
-.show-menu {
-	text-decoration: none;
-	color: #fff;
-	background: #2f3036;
-	text-align: center;
-	padding: 10px 0;
-	display: none;
-}
-
-input[type=checkbox]{
     display: none;
 }
 
-input[type=checkbox]:checked ~ #menu{
+li ul li {
     display: block;
+    float: none;
+}
+
+li ul li a {
+    width: auto;
+    min-width: 100px;
+    padding: 0 20px;
+}
+
+ul li a:hover + .hidden, .hidden:hover {
+    display: block;
+}
+
+input[type=checkbox]#show-menu{
+    display: none;
+}
+
+input[type=checkbox]#show-menu:checked ~ #menu{
+    display: block;
+}
+
+.show-menu {
+    text-decoration: none;
+    color: #626161;
+    text-align: center;
+    padding: 10px 0;
+    display: none;
+    width: 50%;
+    margin: 0;
+}
+#banner {
+    height: 50px;
+    text-align: center;
+}
+
+#banner > a {
+    text-decoration: none;
+    color: #626161;
+    text-align: center;
+    line-height: 50px;
+    height: 50px;
+    font-size: 1.3em;
 }
 
 @media screen and (max-width : 760px){
 	ul {
 		position: static;
 		display: none;
+		width: 100%;
 	}
 
-	li {
-	    border-top: 1px solid #f3f3f3;
+    li {
+	    border-top: 1px solid #e9e8e8;
+    }
+
+	li:last-child {
+	    border-bottom: 1px solid #e9e8e8;
 	}
 
-	ul li, li a {
+	ul li {
 		width: 100%;
 	}
 
 	.show-menu {
 		display:block;
+        float: right;
 	}
+
+    #banner {
+        padding: 0 10px;
+    }
 }
 
 @media screen and (min-width : 760px){
+    #navbar {
+        display: flex;
+    }
+
     ul {
         list-style-type: none;
         margin: 0;
         padding: 0;
+    }
+
+    #banner {
+        min-width: 200px;
     }
 
     li {

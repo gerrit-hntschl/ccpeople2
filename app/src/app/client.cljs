@@ -254,13 +254,16 @@
    ;                        [:i.icon-off.large-icon]])
    ; [:div]]
    [:div#navbar
-    [:label.show-menu {:for "show-menu"} "Show Menu"]
+    [:label.show-menu {:for "show-menu"
+                       :style {:width "50px"}}
+     [:i.icon-menu.large-icon]]
+    [:span#banner
+     [:a {:href "/#"} "ccDashboard"]]
     [:input#show-menu {:type "checkbox"
                        :role "button"}]
     [:ul#menu
      (map (fn [[h s]] ^{:key h} [:li [:a {:href h} s]])
-          '(("/" "ccDashboard")
-            ("/#location" "Location")
+          '(("/#location" "Location")
             ("/logout" "Logout")))]]
    [:div {:style {:text-align "center"}}
     [sign-in-component]]])
