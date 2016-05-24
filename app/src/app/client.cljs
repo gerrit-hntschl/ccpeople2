@@ -259,7 +259,7 @@
                        :role "button"}]
     [:ul#menu
      (map (fn [[h s]] ^{:key h} [:li [:a {:href h} s]])
-          '(("/#" "ccDashboard")
+          '(("/" "ccDashboard")
             ("/#location" "Location")
             ("/logout" "Logout")))]]
    [:div {:style {:text-align "center"}}

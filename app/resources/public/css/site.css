@@ -127,20 +127,11 @@ li a {
 	text-decoration: none;
 }
 
-li:hover a {
-	background: #19c589;
-}
-
 li:hover ul a {
 	background: #f3f3f3;
 	color: #2f3036;
 	height: 40px;
 	line-height: 40px;
-}
-
-li:hover ul a:hover {
-	background: #19c589;
-	color: #fff;
 }
 
 li ul {
