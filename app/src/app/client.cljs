@@ -238,21 +238,30 @@
 
 (defn page []
   [:div
-   [:div {:class "header"
-          :style {:display         "flex"
-                  :flex-direction  "row"
-                  :justify-content "space-around"}}
-    ;; layout hack: empty divs move the title and sign-off button more to the center
-    [:div]
-    [:a {:href  "/#"
-         :style {:font-size "1.3em"}}
-     "ccDashboard"]
-    (sign-in-only-content [:a#location {:href "/#location"
-                                        :style {:font-size "1.3em"}}
-                           "Location View"])
-    (sign-in-only-content [:a#logout {:href "/logout"}
-                           [:i.icon-off.large-icon]])
-    [:div]]
+   ;[:div {:class "header"
+   ;       :style {:display         "flex"
+   ;               :flex-direction  "row"
+   ;               :justify-content "space-around"}}
+   ; ;; layout hack: empty divs move the title and sign-off button more to the center
+   ; [:div]
+   ; [:a {:href  "/#"
+   ;      :style {:font-size "1.3em"}}
+   ;  "ccDashboard"]
+   ; (sign-in-only-content [:a#location {:href "/#location"
+   ;                                     :style {:font-size "1.3em"}}
+   ;                        "Location View"])
+   ; (sign-in-only-content [:a#logout {:href "/logout"}
+   ;                        [:i.icon-off.large-icon]])
+   ; [:div]]
+   [:div#navbar
+    [:label.show-menu {:for "show-menu"} "Show Menu"]
+    [:input#show-menu {:type "checkbox"
+                       :role "button"}]
+    [:ul#menu
+     (map (fn [[h s]] ^{:key h} [:li [:a {:href h} s]])
+          '(("/#" "ccDashboard")
+            ("/#location" "Location")
+            ("/logout" "Logout")))]]
    [:div {:style {:text-align "center"}}
     [sign-in-component]]])
 
