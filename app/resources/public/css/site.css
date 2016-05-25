@@ -93,10 +93,8 @@ a.button {
 
 
 #navbar {
-    width: 100%;
     height: 50px;
     background: #f3f3f3;
-    text-decoration: none;
 }
 
 ul#menu {
@@ -107,7 +105,6 @@ ul#menu {
 }
 
 li {
-    display:inline-block;
     float: left;
 }
 
@@ -122,15 +119,6 @@ li a {
     text-decoration: none;
 }
 
-li:hover ul a {
-    height: 50px;
-    line-height: 50px;
-}
-
-li ul {
-    display: none;
-}
-
 li ul li {
     display: block;
     float: none;
@@ -142,44 +130,34 @@ li ul li a {
     padding: 0 20px;
 }
 
-ul li a:hover + .hidden, .hidden:hover {
-    display: block;
-}
-
-input[type=checkbox]#show-menu{
+input[type=checkbox]#show-menu {
     display: none;
 }
 
-input[type=checkbox]#show-menu:checked ~ #menu{
+input[type=checkbox]#show-menu:checked ~ #menu {
     display: block;
 }
 
 .show-menu {
-    text-decoration: none;
     color: #626161;
     text-align: center;
     padding: 10px 0;
     display: none;
-    width: 50%;
-    margin: 0;
+    width: 50px;
 }
 #banner {
-    height: 50px;
     text-align: center;
 }
 
 #banner > a {
     text-decoration: none;
     color: #626161;
-    text-align: center;
     line-height: 50px;
-    height: 50px;
     font-size: 1.3em;
 }
 
 @media screen and (max-width : 760px){
 	ul {
-		position: static;
 		display: none;
 		width: 100%;
 	}
@@ -209,12 +187,6 @@ input[type=checkbox]#show-menu:checked ~ #menu{
 @media screen and (min-width : 760px){
     #navbar {
         display: flex;
-    }
-
-    ul {
-        list-style-type: none;
-        margin: 0;
-        padding: 0;
     }
 
     #banner {

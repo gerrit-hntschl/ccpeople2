@@ -254,8 +254,7 @@
    ;                        [:i.icon-off.large-icon]])
    ; [:div]]
    [:div#navbar
-    [:label.show-menu {:for "show-menu"
-                       :style {:width "50px"}}
+    [:label.show-menu {:for "show-menu"}
      [:i.icon-menu.large-icon]]
     [:span#banner
      [:a {:href "/#"} "ccDashboard"]]
