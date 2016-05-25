@@ -191,13 +191,13 @@
 
 (def routes ["" {"profile" :profile
                  "people" :people
-                 "location" :location}])
+                 "locations" :locations}])
 
 (defmulti handlers :handler :default :profile)
 
 (defmethod handlers :profile [] profile-page)
 
-(defmethod handlers :location [] location-page)
+(defmethod handlers :locations [] location-page)
 
 (defn update-page-to-token [token]
   (swap! domain/app-state assoc :page (bidi/match-route routes token)))
@@ -264,7 +264,7 @@
      [:ul
       (map (fn [[h s]] ^{:key h} [:li [:a {:href h} s]])
            '(("/#" "Home")
-             ("/#location" "Location")
+             ("/#locations" "Locations")
              ("/logout" [:i.icon-off.medium-icon])))]]]
    [:div {:style {:text-align "center"}}
     [sign-in-component]]])
