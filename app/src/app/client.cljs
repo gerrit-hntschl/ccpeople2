@@ -260,10 +260,11 @@
      [:a {:href "/#"} "ccDashboard"]]
     [:input#show-menu {:type "checkbox"
                        :role "button"}]
-    [:ul#menu
-     (map (fn [[h s]] ^{:key h} [:li [:a {:href h} s]])
-          '(("/#location" "Location")
-            ("/logout" "Logout")))]]
+    [:span#menu
+     [:ul
+      (map (fn [[h s]] ^{:key h} [:li [:a {:href h} s]])
+           '(("/#location" "Location")
+              ("/logout" [:i.icon-off.medium-icon])))]]]
    [:div {:style {:text-align "center"}}
     [sign-in-component]]])
 

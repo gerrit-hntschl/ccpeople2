@@ -94,18 +94,25 @@ a.button {
 
 #navbar {
     height: 50px;
+    display: flex;
+    justify-content: center;
     background: #f3f3f3;
 }
 
-ul#menu {
+#navbar span {
+    flex-basis: 50%;
+}
+
+#menu ul {
     list-style-type:none;
-    margin:0;
-    padding:0;
+    width: 50%;
+    margin: 0;
+    padding: 0;
     position: absolute;
 }
 
 li {
-    float: left;
+    position: relative;
 }
 
 li a {
@@ -119,22 +126,11 @@ li a {
     text-decoration: none;
 }
 
-li ul li {
-    display: block;
-    float: none;
-}
-
-li ul li a {
-    width: auto;
-    min-width: 100px;
-    padding: 0 20px;
-}
-
 input[type=checkbox]#show-menu {
     display: none;
 }
 
-input[type=checkbox]#show-menu:checked ~ #menu {
+input[type=checkbox]#show-menu:checked ~ #menu ul {
     display: block;
 }
 
@@ -145,11 +141,12 @@ input[type=checkbox]#show-menu:checked ~ #menu {
     display: none;
     width: 50px;
 }
+
 #banner {
     text-align: center;
 }
 
-#banner > a {
+#banner a {
     text-decoration: none;
     color: #626161;
     line-height: 50px;
@@ -157,21 +154,22 @@ input[type=checkbox]#show-menu:checked ~ #menu {
 }
 
 @media screen and (max-width : 760px){
-	ul {
+    #navbar {
+        display: block;
+    }
+
+	#menu ul {
 		display: none;
 		width: 100%;
 	}
 
-    li {
+	#menu ul li {
+		width: 100%;
 	    border-top: 1px solid #e9e8e8;
-    }
-
-	li:last-child {
-	    border-bottom: 1px solid #e9e8e8;
 	}
 
-	ul li {
-		width: 100%;
+	#menu ul li:last-child {
+	    border-bottom: 1px solid #e9e8e8;
 	}
 
 	.show-menu {
@@ -184,16 +182,11 @@ input[type=checkbox]#show-menu:checked ~ #menu {
     }
 }
 
-@media screen and (min-width : 760px){
-    #navbar {
-        display: flex;
-    }
+@media screen and (min-width : 760px) {
+    #menu ul li {
+        float:left;
+        left: 50%;
+        margin: 0 20px;
+}
 
-    #banner {
-        min-width: 200px;
-    }
-
-    li {
-        min-width: 200px;
-    }
 }
