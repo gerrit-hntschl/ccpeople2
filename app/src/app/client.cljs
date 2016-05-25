@@ -263,8 +263,9 @@
     [:span#menu
      [:ul
       (map (fn [[h s]] ^{:key h} [:li [:a {:href h} s]])
-           '(("/#location" "Location")
-              ("/logout" [:i.icon-off.medium-icon])))]]]
+           '(("/#" "Home")
+             ("/#location" "Location")
+             ("/logout" [:i.icon-off.medium-icon])))]]]
    [:div {:style {:text-align "center"}}
     [sign-in-component]]])
 
