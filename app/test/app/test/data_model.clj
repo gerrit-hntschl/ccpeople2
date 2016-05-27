@@ -21,7 +21,9 @@
               "4343424234@telefon.net"))
 
 (deftest should-not-validate-email
-  (are [mail] (not (re-matches #"^\s*[a-zA-Z0-9!#$%^&*-=_+'?~/]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\s*$" mail))
+  (are [mail] (try (not (string? (s/validate EmailAddress mail)))
+                   (catch clojure.lang.ExceptionInfo ex
+                     (= :schema.core/error (-> ex ex-data :type))))
               "Abc.example.com"
               "A@b@c@example.com"
               "ab(c)d,e:f;g<h>i[j\\k]l@example.com"
