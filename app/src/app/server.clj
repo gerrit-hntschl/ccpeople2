@@ -9,7 +9,8 @@
     [buddy.auth :as auth :refer [authenticated?]]
     [com.stuartsierra.component :as component]
     [ring.util.response :as response]
-    [app.graphviz :as graphviz]
+    [graphviz.core :as graphviz]
+    [cheshire.core :as json]
     [app.worklog :as worklog])
   (:import (org.slf4j LoggerFactory)
            (java.util UUID)))
@@ -102,7 +103,7 @@
                                  (content-type "text/html")))
                   :tag     :index}))
 
-(defn dev-html [graph-svg-str]
+(defn dev-html [graph-svg-str graph-desc]
   (page/html5
     [:head
      [:link {:rel "stylesheet" :href "css/dev.css"}]
@@ -111,6 +112,8 @@
      ]
     [:body
      graph-svg-str
+     [:script {:src "js/compiled/graphviz-interact.js"}]
+     [:script (str "graphviz.interact.start(" (json/generate-string graph-desc) ");")]
      [:script {:src "js/highlight.pack.js"}]
      [:script "hljs.initHighlightingOnLoad();"]]))
 
@@ -118,7 +121,7 @@
   (map->Endpoint {:route   "/dev"
                   :handler (fn [req]
                              (-> (graphviz/as-svg-str worklog/jira-import-graph)
-                                 (dev-html)
+                                 (dev-html (graphviz/graph-description worklog/jira-import-graph))
                                  (response)
                                  (content-type "text/html")))
-                  :tag :dev-graph}))
+                  :tag     :dev-graph}))

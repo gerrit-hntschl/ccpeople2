@@ -80,13 +80,14 @@
   :clean-targets ^{:protect false} ["resources/public/js/compiled" "target"]
 
   :cljsbuild {:builds [{:id           "dev"
-                        :source-paths ["src" "dev"]
-                        :figwheel     {:on-jsload "app.client/on-js-reload"}
+                        :source-paths ["src"]
+                        ;                        :figwheel     {:on-jsload "app.client/on-js-reload"}
 
-                        :compiler     {:main                 app.client
+                        :compiler     {:main                 graphviz.interact
                                        :asset-path           "js/compiled/out"
-                                       :output-to            "resources/public/js/compiled/app.js"
+                                       :output-to            "resources/public/js/compiled/graphviz-interact.js"
                                        :output-dir           "resources/public/js/compiled/out"
+                                       :optimizations :whitespace
                                        :source-map-timestamp true}}
                        {:id           "min"
                         :source-paths ["src"]

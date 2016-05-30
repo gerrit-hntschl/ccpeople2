@@ -5,3 +5,27 @@ white-space: pre-wrap;
 pre {
 margin: 0px;
 }
+
+.nowrap {
+    white-space: nowrap;
+}
+
+.input-param {
+  color: #5882FA;
+}
+
+.selected-node.node rect {
+  stroke: red;
+}
+
+.node rect {
+  stroke: black;
+}
+
+.node-code {
+  border: 1px solid black;
+}
+
+.selected-node .node-code {
+  border-color: red;
+}

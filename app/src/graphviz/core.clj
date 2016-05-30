@@ -1,4 +1,4 @@
-(ns app.graphviz
+(ns graphviz.core
   (:require [analemma.svg :as s]
             [lacij.view.core :as lacij-view-core]
             [lacij.edit.graph :as lacij]
@@ -12,7 +12,7 @@
             [lacij.view.core :as lacij-view-core]
             [analemma.xml :as xml]
             [plumbing.fnk.pfnk :as pfnk]
-            [plumbing.core :as plumbing]
+            [plumbing.core :refer [map-vals] :as plumbing]
             [clojure.string :as str])
   (:import
     (java.awt Rectangle)
@@ -192,15 +192,32 @@
   [doc ns tag]
   (elements-helper doc ns tag))
 
-(defn foreign-object [text width]
-  (let [formatted-code (-> (read-string text)
+(def ^:const symbol-with-dash-regex #"(\S+(?:-\S+)+)")
+
+(defn foreign-object [text width input-keys]
+  (let [input-names (into #{}
+                          (map (fn [input-key]
+                                 (-> input-key name (.replace \-  \u2011))))
+                          input-keys)
+        formatted-code (-> (read-string text)
                            (clojure.pprint/write
                              :dispatch clojure.pprint/code-dispatch)
                            (with-out-str)
-                           ;                     (.replace \-  \u2011)
-                           )
-        non-breaking-formatted-code (-> formatted-code
-                                        )
+                           (.replace \-  \u2011))
+        code-with-marked-input (reduce (fn [code input-name]
+                                             (-> code
+                                                 (str/replace input-name (str "@@@" input-name "@@@"))))
+                                           formatted-code
+                                           input-names)
+        _ (println "what" code-with-marked-input)
+        code-markup (-> code-with-marked-input
+                        ;(str/replace symbol-with-dash-regex "@@@$1@@@")
+                        (str/split #"@@@")
+                        (->> (map (fn [s]
+                                    (if (contains? input-names s)                    ;(.contains s "-")
+                                      [:span {:class "input-param"} s]
+                                      [:span s])))))
+
         number-of-lines (-> formatted-code (.split "\n") (count))
         height (str (* 60 number-of-lines))]
     [:foreignObject {:width     width
@@ -209,11 +226,14 @@
                      :font-size "12"
                      :y         "40"}
      [:body
-      [:div {:style "border: 1px solid black;border-radius: 5px; background:white"}
+      [:div {:style "border-radius: 5px; background:white; overflow:auto;"
+             :class "node-code"}
        [:pre
-        [:code {:class "clojure"}
-         [:span formatted-code]
-         ]]]]]))
+        (into [:code {:class "clojure"}
+
+               ;[:span formatted-code]
+          ]
+              code-markup)]]]]))
 
 (defrecord RectNodeView2
   [id
@@ -239,7 +259,11 @@
                                      :text-anchor-multi "start"})
           decorations (map #(lacij-view-core/decorate % this context) decorators)
           xml (concat (s/group
-                        {:id (name id) :transform (format "translate(%s, %s)" x y)}
+                        {:id (name id)
+                         :class "node"
+                         :data-x x
+                         :data-y y
+                         :transform (format "translate(%s, %s)" x y)}
                         (-> [:rect {:height height :width width}]
                             (lacij.view.utils.style/apply-styles default-style style)
                             (lacij.view.utils.style/apply-attrs attrs)))
@@ -247,8 +271,8 @@
                       ;                      code
                       decorations
                       )]
-      (prn "xml =")
-      (pprint/pprint xml)
+      ;      (prn "xml =")
+      ;(pprint/pprint xml)
       (elements doc svg-ns xml)))
 
   (center
@@ -269,7 +293,6 @@
   (bounding-box
     [this]
     (let [margin 5]
-      (prn "bbox" [(- x margin) (- y margin) (+ width (* 2 margin)) (+ (* 2 height) (* 2 margin))])
       [(- x margin) (- y margin) (+ width (* 2 margin)) (+ (* 2 height) (* 2 margin))])))
 
 (defn add-nodes [g nodes style]
@@ -306,21 +329,27 @@
 (defrecord CodeDecorator [g]
   Decorator
    (lacij-view-core/decorate [this view context]
-             (-> g (get (:id view)) (meta) (:source) (foreign-object (:width view)))))
+             (-> g (get (:id view)) (meta) (:source) (foreign-object (:width view) (pfnk/input-schema-keys (get g (:id view)))))))
 
 (defmacro fnk [bindings & body]
             `(vary-meta (plumbing/fnk ~bindings ~@body) assoc :source ~(apply str body)))
 
+(defn get-nodes [g]
+  (into #{} (concat (mapcat pfnk/input-schema-keys (vals g)) (keys g))))
+
+(defn get-edges [g nodes]
+  (->> nodes
+       (map (juxt identity
+                  (fn [node] (some-> (get g node) (pfnk/input-schema-keys)))))
+       (filter (comp some? second))
+       (mapcat (fn [[dest srcs]]
+                 (map (fn [src]
+                        [src dest])
+                      srcs)))))
+
 (defn as-svg [g]
-  (let [nodes (into #{} (concat (mapcat pfnk/input-schema-keys (vals g)) (keys g)))
-        edges (->> nodes
-                   (map (juxt identity
-                              (fn [node] (some-> (get g node) (pfnk/input-schema-keys)))))
-                   (filter (comp some? second))
-                   (mapcat (fn [[dest srcs]]
-                             (map (fn [src]
-                                    [src dest])
-                                  srcs))))
+  (let [nodes (get-nodes g)
+        edges (get-edges g nodes)
         target-nodes (->> edges (group-by second) (keys) (into #{}))
         in-nodes (set/difference nodes target-nodes)
         source-nodes (->> edges (group-by first) (keys) (into #{}))
@@ -330,15 +359,17 @@
                       (lacij/add-default-node-attrs :rx 5 :ry 5)
                       (lacij/set-node-view-factory (fn [id shape x y style attrs]
                                                      (when (= :rect shape)
-                                                       (let [default-style {:fill "white" :stroke "black"}
+                                                       (let [default-style {:fill "white" ;:stroke "black"
+                                                                            }
                                                              {:keys [x y width height r] :or {x x y y width 100 height 40 r 20}} attrs]
                                                          (->RectNodeView2 id x y width height [] default-style style attrs #{})))))
                       (add-nodes in-nodes {:fill "lightgreen"})
                       (add-nodes out-nodes {:fill "royalblue"})
                       (add-nodes inner-nodes {:fill "white"})
                       (add-decorator inner-nodes (->CodeDecorator g))
+                      (add-decorator out-nodes (->CodeDecorator g))
                       (add-edges edges)
-                      (lacij-layout/layout :hierarchical :flow :out :inlayer-space 50))
+                      (lacij-layout/layout :hierarchical :flow :out :inlayer-space 80))
         fix-height (max (+ 30 (find-max-y svg-graph)) (:height svg-graph))]
     (-> svg-graph
         (assoc :height fix-height)
@@ -346,3 +377,18 @@
 
 (defn as-svg-str [g]
   (tikkba/spit-str (:xmldoc (as-svg g))))
+
+(defn graph-description [g]
+  (let [nodes (get-nodes g)
+        edges (get-edges g nodes)
+        node->out-nodes (->> edges
+                             (group-by first)
+                             (map-vals (fn [edges] (into #{} (map second) edges))))
+        node->in-nodes (->> edges
+                            (group-by second)
+                            (map-vals (fn [edges] (into #{} (map first) edges))))]
+    (into {}
+          (map (fn [node]
+                 [node {:in  (get node->in-nodes node)
+                   :out (get node->out-nodes node)}]))
+          nodes)))

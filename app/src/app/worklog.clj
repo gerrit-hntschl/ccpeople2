@@ -8,7 +8,7 @@
             [plumbing.core :refer [safe-get]]
             [environ.core :refer [env]]
             [app.graph :as graph]
-            [app.graphviz :refer [fnk]]
+            [graphviz.core :refer [fnk]]
             [app.log :as log]
             [app.oauth :as oauth]
             [app.consultant :as consultant]
