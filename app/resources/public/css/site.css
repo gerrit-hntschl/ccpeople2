@@ -111,11 +111,11 @@ a.button {
     position: absolute;
 }
 
-li {
+#menu li {
     position: relative;
 }
 
-li a {
+#menu li a {
     display:block;
     width: 100%;
     height: 50px;
