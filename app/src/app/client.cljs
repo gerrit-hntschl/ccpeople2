@@ -214,11 +214,6 @@
   (let [{page-params :route-params :as route-state} (:page @domain/app-state)]
     ((handlers route-state) page-params)))
 
-(defn sign-in-only-content [content]
-  (if (domain/user-sign-in-state @domain/app-state)
-    content
-    [:div]))
-
 (defn sign-in-component []
   (let [state @domain/app-state
         user-sign-in-state (domain/user-sign-in-state state)]
@@ -238,21 +233,6 @@
 
 (defn page []
   [:div
-   ;[:div {:class "header"
-   ;       :style {:display         "flex"
-   ;               :flex-direction  "row"
-   ;               :justify-content "space-around"}}
-   ; ;; layout hack: empty divs move the title and sign-off button more to the center
-   ; [:div]
-   ; [:a {:href  "/#"
-   ;      :style {:font-size "1.3em"}}
-   ;  "ccDashboard"]
-   ; (sign-in-only-content [:a#location {:href "/#location"
-   ;                                     :style {:font-size "1.3em"}}
-   ;                        "Location View"])
-   ; (sign-in-only-content [:a#logout {:href "/logout"}
-   ;                        [:i.icon-off.large-icon]])
-   ; [:div]]
    [:div#navbar
     [:label.show-menu {:for "show-menu"}
      [:i.icon-menu.large-icon]]
@@ -262,10 +242,14 @@
                        :role "button"}]
     [:span#menu
      [:ul
-      (map (fn [[h s]] ^{:key h} [:li [:a {:href h} s]])
-           '(("/#" "Home")
-             ("/#locations" "Locations")
-             ("/logout" [:i.icon-off.medium-icon])))]]]
+      (filter some?
+              (map (fn [[href content & {:keys [sign-in-only] :or {sign-in-only true}}]]
+                     (if (or (not sign-in-only) (domain/user-sign-in-state @domain/app-state))
+                       ^{:key href} [:li [:a {:href href} content]]))
+                   
+                   '[["/#" "Home" :sign-in-only false]
+                     ["/#locations" "Locations"]
+                     ["/logout" [:i.icon-off.medium-icon]]]))]]]
    [:div {:style {:text-align "center"}}
     [sign-in-component]]])
 
