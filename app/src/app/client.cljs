@@ -183,7 +183,7 @@
           [user-stats state])))
 
 (defn location-page [_]
-  [:h1 "Comming Soon..."])
+  [:h1 "Coming Soon..."])
 
 (defn tabs []
   [:div ""])
