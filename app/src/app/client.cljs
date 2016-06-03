@@ -261,7 +261,7 @@
       (doall
         (keep (fn [[href content]]
                 (if (domain/user-sign-in-state @domain/app-state)
-                  ^{:key href} [:li [:a {:href href} content]]))
+                  ^{:key href} [:li.menu-item [:a {:href href} content]]))
               [["/#" "Home"]
                ["/#locations" "Locations"]
                ["/logout" [:i.icon-off.medium-icon]]]))]]]
