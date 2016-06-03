@@ -242,12 +242,13 @@
                        :role "button"}]
     [:span#menu
      [:ul
-      (keep (fn [[href content & {:keys [sign-in-only] :or {sign-in-only true}}]]
-             (if (or (not sign-in-only) (domain/user-sign-in-state @domain/app-state))
-               ^{:key href} [:li [:a {:href href} content]]))
-           [["/#" "Home" :sign-in-only false]
-            ["/#locations" "Locations"]
-            ["/logout" [:i.icon-off.medium-icon]]])]]]
+      (doall
+        (keep (fn [[href content & {:keys [sign-in-only] :or {sign-in-only true}}]]
+                (if (or (not sign-in-only) (domain/user-sign-in-state @domain/app-state))
+                  ^{:key href} [:li [:a {:href href} content]]))
+              [["/#" "Home" :sign-in-only false]
+               ["/#locations" "Locations"]
+               ["/logout" [:i.icon-off.medium-icon]]]))]]]
    [:div {:style {:text-align "center"}}
     [sign-in-component]]])
 
@@ -261,7 +262,6 @@
 (defn on-js-reload []
   ;; optionally touch your app-state to force rerendering depending on
   ;; your application
-  ;; (swap! app-state update-in [:__figwheel_counter] inc)
 
 )
 
