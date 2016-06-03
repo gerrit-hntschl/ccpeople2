@@ -243,8 +243,8 @@
     [:span#menu
      [:ul
       (doall
-        (keep (fn [[href content & {:keys [sign-in-only] :or {sign-in-only true}}]]
-                (if (or (not sign-in-only) (domain/user-sign-in-state @domain/app-state))
+        (keep (fn [[href content]]
+                (if (domain/user-sign-in-state @domain/app-state)
                   ^{:key href} [:li [:a {:href href} content]]))
               [["/#" "Home"]
                ["/#locations" "Locations"]
