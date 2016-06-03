@@ -248,25 +248,27 @@
             [:p "Yes, it uses Duo Mobile... But you only need to log-in once, then a cookie will keep you logged in for a year."]]])))
 
 (defn page []
-  [:div
-   [:div#navbar
-    [:label.show-menu {:for "show-menu"}
-     [:i.icon-menu.large-icon]]
-    [:span#banner
-     [:a {:href "/#"} "ccDashboard"]]
-    [:input#show-menu {:type "checkbox"
-                       :role "button"}]
-    [:span#menu
-     [:ul
-      (doall
-        (keep (fn [[href content]]
-                (if (domain/user-sign-in-state @domain/app-state)
-                  ^{:key href} [:li.menuitem [:a {:href href} content]]))
-              [["/#" "Home"]
-               ["/#locations" "Locations"]
-               ["/logout" [:i.icon-off.medium-icon]]]))]]]
-   [:div {:style {:text-align "center"}}
-    [sign-in-component]]])
+  (let [user-signed-in (domain/user-sign-in-state @domain/app-state)]
+    [:div
+     [:div#navbar
+      (if user-signed-in
+        [:label.show-menu {:for "show-menu"}
+         [:i.icon-menu.large-icon]])
+      [:span#banner
+       [:a {:href "/#"} "ccDashboard"]]
+      [:input#show-menu {:type "checkbox"
+                         :role "button"}]
+      [:span#menu
+       [:ul
+        (doall
+          (keep (fn [[href content]]
+                  (if user-signed-in
+                    ^{:key href} [:li.menuitem [:a {:href href} content]]))
+                [["/#" "Home"]
+                 ["/#locations" "Locations"]
+                 ["/logout" [:i.icon-off.medium-icon]]]))]]]
+     [:div {:style {:text-align "center"}}
+      [sign-in-component]]]))
 
 
 (defn start []
