@@ -246,7 +246,7 @@
         (keep (fn [[href content & {:keys [sign-in-only] :or {sign-in-only true}}]]
                 (if (or (not sign-in-only) (domain/user-sign-in-state @domain/app-state))
                   ^{:key href} [:li [:a {:href href} content]]))
-              [["/#" "Home" :sign-in-only false]
+              [["/#" "Home"]
                ["/#locations" "Locations"]
                ["/logout" [:i.icon-off.medium-icon]]]))]]]
    [:div {:style {:text-align "center"}}
