@@ -183,7 +183,7 @@
           [user-stats state])))
 
 (defn location-page [_]
-  [:h1 "Coming Soon..."])
+  [:h1 "Coming soon..."])
 
 (defn tabs []
   [:div ""])
@@ -242,14 +242,12 @@
                        :role "button"}]
     [:span#menu
      [:ul
-      (filter some?
-              (map (fn [[href content & {:keys [sign-in-only] :or {sign-in-only true}}]]
-                     (if (or (not sign-in-only) (domain/user-sign-in-state @domain/app-state))
-                       ^{:key href} [:li [:a {:href href} content]]))
-                   
-                   '[["/#" "Home" :sign-in-only false]
-                     ["/#locations" "Locations"]
-                     ["/logout" [:i.icon-off.medium-icon]]]))]]]
+      (keep (fn [[href content & {:keys [sign-in-only] :or {sign-in-only true}}]]
+             (if (or (not sign-in-only) (domain/user-sign-in-state @domain/app-state))
+               ^{:key href} [:li [:a {:href href} content]]))
+           [["/#" "Home" :sign-in-only false]
+            ["/#locations" "Locations"]
+            ["/logout" [:i.icon-off.medium-icon]]])]]]
    [:div {:style {:text-align "center"}}
     [sign-in-component]]])
 
