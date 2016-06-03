@@ -198,16 +198,22 @@
           (:user state)
           [user-stats state])))
 
+(defn location-page [_]
+  [:h1 "Coming soon..."])
+
 (defn tabs []
   [:div ""])
 
 
 (def routes ["" {"profile" :profile
-                 "people" :people}])
+                 "people" :people
+                 "locations" :locations}])
 
 (defmulti handlers :handler :default :profile)
 
 (defmethod handlers :profile [] profile-page)
+
+(defmethod handlers :locations [] location-page)
 
 (defn update-page-to-token [token]
   (swap! domain/app-state assoc :page (bidi/match-route routes token)))
@@ -243,18 +249,22 @@
 
 (defn page []
   [:div
-   [:div {:class "header"
-          :style {:display         "flex"
-                  :flex-direction  "row"
-                  :justify-content "space-around"}}
-    ;; layout hack: empty divs move the title and sign-off button more to the center
-    [:div]
-    [:div {:style {:font-size "1.3em"}} "ccDashboard"]
-    (if (domain/user-sign-in-state @domain/app-state)
-      [:a#logout {:href "/logout"}
-       [:i.icon-off.large-icon]]
-      [:div])
-    [:div]]
+   [:div#navbar
+    [:label.show-menu {:for "show-menu"}
+     [:i.icon-menu.large-icon]]
+    [:span#banner
+     [:a {:href "/#"} "ccDashboard"]]
+    [:input#show-menu {:type "checkbox"
+                       :role "button"}]
+    [:span#menu
+     [:ul
+      (doall
+        (keep (fn [[href content]]
+                (if (domain/user-sign-in-state @domain/app-state)
+                  ^{:key href} [:li [:a {:href href} content]]))
+              [["/#" "Home"]
+               ["/#locations" "Locations"]
+               ["/logout" [:i.icon-off.medium-icon]]]))]]]
    [:div {:style {:text-align "center"}}
     [sign-in-component]]])
 
@@ -268,7 +278,6 @@
 (defn on-js-reload []
   ;; optionally touch your app-state to force rerendering depending on
   ;; your application
-  ;; (swap! app-state update-in [:__figwheel_counter] inc)
 
 )
 
