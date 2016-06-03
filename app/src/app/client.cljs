@@ -100,27 +100,43 @@
    [:div label]
    [:div {:style {:font-size "1.2em"}} (format-days number-days)]])
 
+(defn formatted-days-comma-separated [days]
+  (->> days
+       (map days/format-simple-date)
+       (str/join ", ")))
+
+;; creates a constant that can be overriden at compile time
+(goog-define timetrack-uri "https://the.timetracking-system.url")
+
+(defn days-info [description background-color font-color days]
+  (let [unbooked-days-count (count days)]
+    (when (pos? unbooked-days-count)
+      ;; to make the entire div clickable, position it relative
+      ;; and add link with empty span which is positioned absolute with width and height of 100%
+      [:div {:style {:background-color background-color
+                     :color            font-color
+                     :padding          "8px 15px 8px 15px"
+                     :position "relative"}}
+       [:a {:href timetrack-uri
+            :class "div-link"
+            :target "_blank"} [:span]]
+       (str description unbooked-days-count)
+       [:br]
+       (formatted-days-comma-separated days)])))
+
 (defn user-stats [state]
   (let [model-data (domain/app-model {:state state})
         rem-holidays (:number-holidays-remaining model-data)
         days-without-booked-hours (:days-without-booked-hours model-data)
-        formatted-missing-days (->> days-without-booked-hours
-                                    (map days/format-simple-date)
-                                    (str/join ", "))
-        unbooked-days-count (count days-without-booked-hours)
+        days-below-threshold (:days-below-threshold model-data)
         num-sick-leave-days (:number-sick-leave-days model-data)
         used-leave (:number-taken-vacation-days model-data)
         number-parental-leave-days (:number-parental-leave-days model-data)
         number-planned-vacation-days (:number-planned-vacation-days model-data)
         today-str (days/month-day-today (:today state))]
     [:div {:style {:overflow "hidden"}}
-     (when (pos? unbooked-days-count)
-       [:div {:style {:background-color "#e36588"
-                      :color            "white"
-                      :padding          "8px 15px 8px 15px"}}
-        (str "days w/o booked hours: " unbooked-days-count)
-        [:br]
-        formatted-missing-days])
+     (days-info "days w/o booked hours: " "#e36588" "white" days-without-booked-hours)
+     (days-info "days w/ less than 4 hours booked: " "#f1db4b" "#626161" days-below-threshold)
      [:div {:style {:margin-left  "auto"
                     :margin-right "auto"
                     :width        "100%"

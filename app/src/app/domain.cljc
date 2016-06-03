@@ -14,8 +14,10 @@
                [goog.dom :as dom]
                cljs-time.extend
                [plumbing.core :refer-macros [fnk]]]
-        :clj [[clj-time.core :as time]
-              [plumbing.core :refer [fnk]]])))
+        :clj  [
+            [clj-time.core :as time]
+            [plumbing.core :refer [fnk]]])
+            [clojure.set :as set]))
 
 (def standard-billable-days-goal 180)
 
@@ -190,15 +192,46 @@
           (* 37 (.getTimezoneOffset o))))
      IComparable
      (-compare [this other]
-       (if (instance? js/Date other)
-         (garray/defaultCompare (.valueOf this) (.valueOf other))
+       (if (instance? js/goog.date.Date other)
+         (compare (.getTime this) (.getTime other))
          (throw (js/Error. (str "Cannot compare " this " to " other)))))))
 
 (def min-hours-per-day 4)
 
+(def unbooked-days-graph
+  {:yesterday                 (fnk [today]
+                                (-> today (time/minus (-> 1 time/days))))
+   :period-days               (fnk [current-period-start-date yesterday]
+                                (days/workdays-between current-period-start-date yesterday))
+   :worklogs-in-period        (fnk [worklogs current-period-start-date today]
+                                (filter (fn [{:keys [worklog/work-date]}]
+                                          ;; the end of the period has to be today, because within excludes dates equal to end
+                                          (time/within? current-period-start-date today work-date))
+                                        worklogs))
+   :day->worklogs             (fnk [worklogs-in-period]
+                                (group-by :worklog/work-date worklogs-in-period))
+   :day->worked-hours         (fnk [day->worklogs]
+                                (map (fn [[day worklogs]]
+                                       [day (reduce + (map :worklog/hours worklogs))])
+                                     day->worklogs))
+   :days-above-min-threshold  (fnk [day->worked-hours]
+                                (->> day->worked-hours
+                                     (filter (fn [[_ worked-hours]]
+                                               (>= worked-hours min-hours-per-day)))
+                                     (map (comp first))
+                                     (into #{})))
+   :days-with-some-hours      (fnk [day->worklogs]
+                                (into #{} (keys day->worklogs)))
+   :days-without-booked-hours (fnk [days-with-some-hours period-days]
+                                (remove days-with-some-hours period-days))
+   :days-below-threshold      (fnk [days-with-some-hours days-above-min-threshold period-days]
+                                (set/intersection (set period-days) (set/difference days-with-some-hours days-above-min-threshold)))})
+
+(def compute-unbooked-days-stats (graph/compile-cancelling unbooked-days-graph))
+
 (defn unbooked-days [app-state period-start-date]
   (let [today (:today app-state)
-        yesterday (time/minus today (-> 1 time/days))
+        yesterday (-> today (time/minus (-> 1 time/days)))
         ;; ignore today
         period-days (days/workdays-between period-start-date yesterday)
         worklogs (:worklogs app-state)
@@ -291,8 +324,15 @@
                                                   number-taken-vacation-days
                                                   number-parental-leave-days-till-today)
                                                burndown-hours-per-workday))
-   :days-without-booked-hours             (fnk [state current-period-start-date]
-                                            (unbooked-days state current-period-start-date))
+   :unbooked-days-stats                   (fnk [state current-period-start-date]
+                                            (compute-unbooked-days-stats
+                                              (-> state
+                                                  (select-keys [:today :worklogs])
+                                                  (assoc :current-period-start-date current-period-start-date))))
+   :days-without-booked-hours             (fnk [unbooked-days-stats]
+                                            (:days-without-booked-hours unbooked-days-stats))
+   :days-below-threshold                  (fnk [unbooked-days-stats]
+                                            (sort (:days-below-threshold unbooked-days-stats)))
    :number-sick-leave-days                (fnk [state]
                                             (/ (sick-leave-hours state) 8))
    })
