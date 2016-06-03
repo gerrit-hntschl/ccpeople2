@@ -1,4 +1,4 @@
-(ns app.mixpanel)
+(ns ccdashboard.analytics.mixpanel)
 
 (defn identify [identifier]
   #?(:cljs (.identify js/mixpanel identifier)))

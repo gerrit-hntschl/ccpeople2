@@ -1,17 +1,17 @@
-(ns app.test.worklog
+(ns ccdashboard.test.worklog
   (:require [schema.experimental.complete :as c]
             [schema.experimental.generators :as g]
-            [app.worklog :refer :all]
+            [ccdashboard.ticket-import.core :refer :all]
             [datomic.api :as d]
             [clj-time.core :as time]
             [clj-time.coerce :as time-coerce]
-            [app.system :as system]
-            [app.config :as config]
-            [app.data-model :as model]
+            [ccdashboard.system :as system]
+            [ccdashboard.config :as config]
+            [ccdashboard.domain.data-model :as model]
             [com.stuartsierra.component :as component]
-            [app.storage :as storage]
+            [ccdashboard.persistence.core :as storage]
             [clojure.test :refer [is deftest run-tests]]
-            [app.graph :as graph])
+            [ccdashboard.graph :as graph])
   (:import (java.util UUID)))
 
 (def ^:const bob-baumeister "bob.baumeister")

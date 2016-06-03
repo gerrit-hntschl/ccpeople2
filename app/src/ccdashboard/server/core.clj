@@ -1,9 +1,9 @@
-(ns app.server
+(ns ccdashboard.server.core
   (:require
-            [app.storage :as storage]
+            [ccdashboard.persistence.core :as storage]
             [environ.core :refer [env]]
             [hiccup.page :as page]
-            [app.oauth :as oauth]
+            [ccdashboard.oauth.core :as oauth]
             [clojure.java.io :as io]
             [ring.util.response :refer [response redirect content-type] :as resp]
             [buddy.auth :as auth :refer [authenticated?]]
@@ -12,7 +12,7 @@
   (:import (org.slf4j LoggerFactory)
            (java.util UUID)))
 
-(def logger ^ch.qos.logback.classic.Logger (LoggerFactory/getLogger "app.server"))
+(def logger ^ch.qos.logback.classic.Logger (LoggerFactory/getLogger "ccdashboard.server.core"))
 
 (comment
   (defn layout [body]

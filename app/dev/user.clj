@@ -10,12 +10,12 @@
             [com.stuartsierra.component :as component]
             [ring.middleware.stacktrace :refer [wrap-stacktrace]]
             [eftest.runner :as eftest]
-            [app.config :as config]
-            [app.system :as system]
+            [ccdashboard.config :as config]
+            [ccdashboard.system :as system]
             [bidi.bidi :as bidi]
-            [app.storage :as storage]
+            [ccdashboard.persistence.core :as storage]
             [clj-time.core :as time]
-            [app.domain :as domain]))
+            [ccdashboard.domain.core :as domain]))
 
 ;; last handled request and response
 (def rq)

@@ -1,17 +1,17 @@
-(ns app.oauth
+(ns ccdashboard.oauth.core
   (:require [aleph.http :as http]
             [byte-streams :as bs]
             [clojure.set :as set]
             [ring.util.response :as response]
             [environ.core :refer [env]]
-            [app.retry :as retry]
+            [ccdashboard.retry :as retry]
             [cheshire.core :as json]
-            [app.log :as log]
+            [ccdashboard.log :as log]
             [schema.core :as s]
-            [app.data-model :as model]
+            [ccdashboard.domain.data-model :as model]
             [buddy.auth.backends.token :refer [jws-backend]]
             [buddy.sign.jws :as jws]
-            [app.storage :as storage]
+            [ccdashboard.persistence.core :as storage]
             [clojure.java.io :as io])
   (:import (java.util Collections)
            (net.oauth OAuthServiceProvider OAuthConsumer OAuthAccessor OAuth OAuth$Parameter)
@@ -22,7 +22,7 @@
            (org.slf4j LoggerFactory)
            (clojure.lang ExceptionInfo)))
 
-(def logger ^ch.qos.logback.classic.Logger (LoggerFactory/getLogger "app.worklog"))
+(def logger ^ch.qos.logback.classic.Logger (LoggerFactory/getLogger "ccdashboard.oauth"))
 
 (def jws-token-secret (get env :jws-token-secret))
 

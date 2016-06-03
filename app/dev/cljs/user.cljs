@@ -1,6 +1,6 @@
 (ns cljs.user
   (:require [figwheel.client :as figwheel]
-            [app.client :as client]))
+            [ccdashboard.client.core :as client]))
 
 (js/console.info "Starting in development mode")
 

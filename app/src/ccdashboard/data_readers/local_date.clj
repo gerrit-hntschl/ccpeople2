@@ -1,4 +1,4 @@
-(ns app.date
+(ns ccdashboard.data-readers.local-date
   (:require [clj-time.core :as time])
   (:import org.joda.time.LocalDate))
 

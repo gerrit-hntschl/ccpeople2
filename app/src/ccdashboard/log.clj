@@ -1,4 +1,4 @@
-(ns app.log
+(ns ccdashboard.log
   (:require [clojure.pprint :as pprint])
   (:import (clojure.lang ExceptionInfo)
            (java.io StringWriter)

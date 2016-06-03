@@ -1,15 +1,15 @@
-(ns ^:figwheel-always app.client
+(ns ^:figwheel-always ccdashboard.client.core
   (:require
     [reagent.core :as reagent]
     [reagent.interop :refer-macros [$]]
-    [app.domain :as domain]
+    [ccdashboard.domain.core :as domain]
     [bidi.bidi :as bidi]
     [goog.events :as events]
     cljsjs.react
-    [app.donut-service :as donut-service]
+    [ccdashboard.client.dataviz :as dataviz]
     ;    [material-ui.core :as ui :include-macros true]
     [goog.history.EventType :as EventType]
-    [app.days :as days]
+    [ccdashboard.domain.days :as days]
     [cljs.pprint :as pprint]
     [clojure.string :as str])
   (:import [goog.history Html5History EventType]))
@@ -33,11 +33,11 @@
         todays-goal-hours (:hour-goal-today model-data)
         viewport-size (:viewport/size state)
         billable-days-goal-scaled (:billable-days-goal-scaled model-data)]
-    (donut-service/balance-view component-name
-                                viewport-size
-                                todays-goal-hours
-                                actual-hours
-                                billable-days-goal-scaled)))
+    (dataviz/balance-view component-name
+                          viewport-size
+                          todays-goal-hours
+                          actual-hours
+                          billable-days-goal-scaled)))
 
 (defn current-stats-update [state-atom component-name this old-argv]
   (let [state @state-atom
@@ -45,7 +45,7 @@
         actual-hours (:hours-billed model-data)
         todays-goal-hours (:hour-goal-today model-data)
         total-billable-hours-goal (* 8 (:billable-days-goal-scaled model-data))]
-    (donut-service/update-balance-view-transitioned component-name todays-goal-hours actual-hours total-billable-hours-goal)))
+    (dataviz/update-balance-view-transitioned component-name todays-goal-hours actual-hours total-billable-hours-goal)))
 
 (defn current-stats [state-atom component-name]
   ;; is it really necessary to deref app-state here just to trigger an invocation of component-did-update??
@@ -69,7 +69,7 @@
   (let [model-data (domain/app-model {:state @state-atom})
         stat (get model-data stat-key)
         total-stat (get model-data total-stat-key)]
-    (donut-service/progress component-name stat total-stat format-fn)))
+    (dataviz/progress component-name stat total-stat format-fn)))
 
 (defn progress-update [state-atom component-name stat-key total-stat-key])
 
