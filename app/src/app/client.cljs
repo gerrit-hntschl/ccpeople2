@@ -246,7 +246,7 @@
         (keep (fn [[href content]]
                 (if (domain/user-sign-in-state @domain/app-state)
                   ^{:key href} [:li [:a {:href href} content]]))
-              [["/#" "Home"]
+              [["/#" "Home" :sign-in-only false]
                ["/#locations" "Locations"]
                ["/logout" [:i.icon-off.medium-icon]]]))]]]
    [:div {:style {:text-align "center"}}
