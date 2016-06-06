@@ -489,10 +489,10 @@
                                                           :team-id       (get-in member [:membership :teamId])})
                                                        team-members-all)))
           :team-name-and-team-ids      (fnk [teams-all]
-                                         (println (into [] (map (fn [team]
-                                                          {:team-name (:name team)
-                                                           :team-id   (:id team)})
-                                                        teams-all))))
+                                         (into [] (map (fn [team]
+                                                         {:team-name (:name team)
+                                                          :team-id   (:id team)})
+                                                       teams-all)))
           :team-members-with-join-date (fnk [team-members-all]
                                          (into []   ;; ignore spurious empty values
                                                (comp (filter (comp seq get-team-member-start-date))
