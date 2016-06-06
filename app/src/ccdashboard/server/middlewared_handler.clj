@@ -1,4 +1,4 @@
-(ns app.middlewared-handler
+(ns ccdashboard.server.middlewared-handler
   (:require [com.stuartsierra.component :as component]
             [bidi.ring :as bidi-ring]))
 

@@ -1,4 +1,4 @@
-(ns app.days
+(ns ccdashboard.domain.days
   #?(:clj
      (:require [clj-time.core :as time]
                [clj-time.format :as format]

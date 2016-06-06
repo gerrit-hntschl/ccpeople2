@@ -5,12 +5,6 @@
     # bootstraps a python interpreter as coreOS doesn't bundle one, but ansible depends on it
     - defunctzombie.coreos-bootstrap
   tasks:
-    - name: delete standard bashrc
-      file: path=/home/core/.bashrc state=absent
-    - name: initialize bashrc
-      shell: cp /usr/share/skel/.bashrc /home/core
-    - name: create bin folder
-      file: path=/home/core/bin state=directory
     - name: create data folder
       file: path=/home/core/data state=directory
     - name: create docker-compose download url
@@ -18,8 +12,6 @@
       register: docker_compose_download_url
     - name: download docker-compose
       get_url: url={{docker_compose_download_url.stdout}} dest=/home/core/bin/docker-compose mode="a+x"
-    - name: add bin folder to path
-      lineinfile: dest=/home/core/.bashrc line="export PATH=/home/core/bin:$PATH"
     - name: start in share folder
       lineinfile: dest=/home/core/.bashrc line="cd share"
     - name: setup environment variables

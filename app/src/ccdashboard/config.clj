@@ -1,4 +1,4 @@
-(ns app.config
+(ns ccdashboard.config
   (:require [environ.core :refer [env]]))
 
 (def defaults

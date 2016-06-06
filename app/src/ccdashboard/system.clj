@@ -1,22 +1,22 @@
-(ns app.system
+(ns ccdashboard.system
   (:require [com.stuartsierra.component :as component]
             [aleph.http :as http]
             [schema.core :as s]
-            [app.server :as server]
+            [ccdashboard.server.core :as server]
             [clojure.java.io :as io]
             [duct.middleware.not-found :refer [wrap-not-found]]
             [meta-merge.core :refer [meta-merge]]
             [ring.middleware.defaults :refer [wrap-defaults site-defaults]]
-            [app.middlewared-handler :refer [handler-component router-component]]
-            [app.storage :as storage]
-            [app.worklog :as worklog]
+            [ccdashboard.server.middlewared-handler :refer [handler-component router-component]]
+            [ccdashboard.persistence.core :as storage]
+            [ccdashboard.ticket-import.core :as worklog]
             [ring.middleware.format :as ring-format]
             [ring.middleware.stacktrace :as stacktrace]
     ;; to load data reader
-            app.date
+            ccdashboard.data-readers.local-date
             [cognitect.transit :as transit]
-            [app.log :as log]
-            [app.oauth :as oauth])
+            [ccdashboard.log :as log]
+            [ccdashboard.oauth.core :as oauth])
   (:import (com.stuartsierra.component Lifecycle)
            (java.io Closeable)
            (java.util.concurrent Executors TimeUnit)

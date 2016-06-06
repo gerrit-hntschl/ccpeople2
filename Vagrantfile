@@ -173,7 +173,7 @@ Vagrant.configure("2") do |config|
           ansible.groups = {
             "coreos" => ["core-01"],
             "coreos:vars" => {"ansible_ssh_user" => "core",
-                              "ansible_python_interpreter" => "PATH=/home/core/bin:$PATH python"}}
+                              "ansible_python_interpreter" => "/home/core/bin/python"}}
 
         end
       else

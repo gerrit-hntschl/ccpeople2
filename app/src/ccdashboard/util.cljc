@@ -1,4 +1,4 @@
-(ns app.util)
+(ns ccdashboard.util)
 
 (defn matching [k v]
   (fn [m]

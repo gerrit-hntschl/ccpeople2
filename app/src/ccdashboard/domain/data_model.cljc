@@ -1,4 +1,4 @@
-(ns app.data-model
+(ns ccdashboard.domain.data-model
   (:require [schema.core :as s]
             [schema.coerce :as coerce]
             [schema.utils :as s-util]

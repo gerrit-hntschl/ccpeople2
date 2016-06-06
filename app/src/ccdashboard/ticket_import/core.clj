@@ -1,33 +1,33 @@
-(ns app.worklog
+(ns ccdashboard.ticket-import.core
   (:require [net.cgrand.enlive-html :as html]
             [aleph.http :as http]
             [aleph.http.client-middleware :as mw]
             [clojure.string :as str]
-            [app.util :refer [matching]]
+            [ccdashboard.util :refer [matching]]
             [datomic.api :refer [db] :as d]
             [plumbing.core :refer [safe-get]]
             [environ.core :refer [env]]
-            [app.graph :as graph]
+            [ccdashboard.graph :as graph]
             [graphviz.core :refer [fnk]]
-            [app.log :as log]
-            [app.oauth :as oauth]
-            [app.consultant :as consultant]
+            [ccdashboard.log :as log]
+            [ccdashboard.oauth.core :as oauth]
             [byte-streams :as bs]
             [schema.core :as s]
             [clj-time.core :as time]
             [clj-time.coerce :as time-coerce]
             [cheshire.core :as json]
             [clojure.set :as set]
-            [app.retry :as retry]
-            [app.storage :as storage]
-            [app.data-model :as model]
+            [ccdashboard.retry :as retry]
+            [ccdashboard.persistence.core :as storage]
+            [ccdashboard.domain.data-model :as model]
             [com.stuartsierra.component :as component]
-            [app.days :as days])
+            [ccdashboard.domain.days :as days]
+            [ccdashboard.domain.core :as domain])
   (:import (java.io StringReader)
            (io.netty.channel ConnectTimeoutException)
            (org.slf4j LoggerFactory)))
 
-(def logger ^ch.qos.logback.classic.Logger (LoggerFactory/getLogger "app.worklog"))
+(def logger ^ch.qos.logback.classic.Logger (LoggerFactory/getLogger "ccdashboard.ticket-import.core"))
 
 (def ^:const jira-timesheet-project-key "TS")
 
@@ -379,13 +379,13 @@
     {:re-import?           (fnk [dbval]
                              (boolean (any-work-date dbval)))
      :current-period-start (fnk [today]
-                             (consultant/current-period-start today))
+                             (domain/current-period-start today))
      :import-start-date    (fnk [re-import? today current-period-start]
                              (if re-import?
                                current-period-start
                                (time/first-day-of-the-month (time/year today) 1)))
-     :import-end-date (fnk [today]
-                        (time/local-date (time/year today) 12 31))
+     :import-end-date      (fnk [today]
+                             (time/local-date (time/year today) 12 31))
      :worklogs-retrieved   (fnk [jira import-start-date import-end-date]
                              ;; returns a map containing all intermediate state used to retrieve actual worklogs
                              ;; other entries are not used, but useful for debugging
