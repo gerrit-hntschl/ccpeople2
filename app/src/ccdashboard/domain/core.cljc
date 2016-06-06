@@ -1,21 +1,22 @@
-(ns app.domain
-  (:require [app.days :as days]
-            [app.consultant :as consultant]
+(ns ccdashboard.domain.core
+  (:require [ccdashboard.domain.days :as days]
             [plumbing.core :refer [map-vals]]
             [ajax.core :as ajax]
             [cognitect.transit :as transit]
-            [app.mixpanel :as mixpanel]
-            [app.util :refer [matching]]
+            [ccdashboard.analytics.mixpanel :as mixpanel]
+            [ccdashboard.util :refer [matching]]
 
-            [app.graph :as graph]
+            [ccdashboard.graph :as graph]
     #?@(:cljs [[reagent.core :refer [atom]]
                [goog.array :as garray]
                [cljs-time.core :as time]
                [goog.dom :as dom]
                cljs-time.extend
                [plumbing.core :refer-macros [fnk]]]
-        :clj [[clj-time.core :as time]
-              [plumbing.core :refer [fnk]]])))
+        :clj  [
+            [clj-time.core :as time]
+            [plumbing.core :refer [fnk]]])
+            [clojure.set :as set]))
 
 (def standard-billable-days-goal 180)
 
@@ -36,7 +37,11 @@
 (defonce app-state (atom initial-state))
 
 (defn error-handler-fn [{:keys [status status-text]}]
-  (reset! app-state (assoc-in initial-state [:user :user/signed-in?] false))
+  (reset! app-state
+          (cond->
+            (assoc-in initial-state [:user :user/signed-in?] false)
+            (not= 401 status)
+            (assoc :error :error/unexpected-api-response)))
   (mixpanel/track "hit")
   (println (str "api response: " status " " status-text)))
 
@@ -59,6 +64,14 @@
                                        {:handlers
                                         {"date/local" (fn [date-fields]
                                                         (apply time/local-date date-fields))}})}))
+
+(defn current-period-start [today]
+  ;; period is closed on 5th of next month, unless in January
+  (if (and (<= (time/day today) 5) (> (time/month today) 1))
+    (-> today
+        (time/minus (-> 1 (time/months)))
+        (time/first-day-of-the-month))
+    (time/first-day-of-the-month today)))
 
 (defn customer-id-by-name [customer-name customers]
   (->> customers
@@ -190,10 +203,13 @@
   [start-date]
   (let [start-month (time/month start-date)
         number-of-complete-months (- 12 start-month)
-        start-month-days (time/number-of-days-in-the-month start-date)
-        number-of-worked-days-in-start-month (- start-month-days
-                                                (dec (time/day start-date)))
-        start-month-percentage (/ number-of-worked-days-in-start-month start-month-days)]
+        start-month-percentage (condp = (time/day start-date)
+                                 1 1
+                                 15 0.5
+                                 (let [start-month-days (time/number-of-days-in-the-month start-date)
+                                       number-of-worked-days-in-start-month (- start-month-days
+                                                                               (dec (time/day start-date)))]
+                                   (/ number-of-worked-days-in-start-month start-month-days)))]
     (/ (+ number-of-complete-months start-month-percentage) 12)))
 
 ;; TODO make user dependent
@@ -212,33 +228,42 @@
           (* 37 (.getTimezoneOffset o))))
      IComparable
      (-compare [this other]
-       (if (instance? js/Date other)
-         (garray/defaultCompare (.valueOf this) (.valueOf other))
+       (if (instance? js/goog.date.Date other)
+         (compare (.getTime this) (.getTime other))
          (throw (js/Error. (str "Cannot compare " this " to " other)))))))
 
 (def min-hours-per-day 4)
 
-(defn unbooked-days [app-state period-start-date]
-  (let [today (:today app-state)
-        yesterday (time/minus today (-> 1 time/days))
-        ;; ignore today
-        period-days (days/workdays-between period-start-date yesterday)
-        worklogs (:worklogs app-state)
-        worklogs-in-period (filter (fn [{:keys [worklog/work-date]}]
-                                     ;; the end of the period has to be today, because within excludes dates equal to end
-                                     (time/within? period-start-date today work-date))
-                                   worklogs)
-        day->worklogs (group-by :worklog/work-date worklogs-in-period)
-        day->worked-hours (map (fn [[day worklogs]]
-                                 [day (reduce + (map :worklog/hours worklogs))])
-                               day->worklogs)
-        days-with-work-hours-above-min-threshold (->> day->worked-hours
-                                                      (filter (fn [[_ worked-hours]]
-                                                                (>= worked-hours min-hours-per-day)))
-                                                      (map (comp first))
-                                                      (into #{}))]
-    (remove days-with-work-hours-above-min-threshold period-days)))
+(def unbooked-days-graph
+  {:yesterday                 (fnk [today]
+                                (-> today (time/minus (-> 1 time/days))))
+   :period-days               (fnk [current-period-start-date yesterday]
+                                (days/workdays-between current-period-start-date yesterday))
+   :worklogs-in-period        (fnk [worklogs current-period-start-date today]
+                                (filter (fn [{:keys [worklog/work-date]}]
+                                          ;; the end of the period has to be today, because within excludes dates equal to end
+                                          (time/within? current-period-start-date today work-date))
+                                        worklogs))
+   :day->worklogs             (fnk [worklogs-in-period]
+                                (group-by :worklog/work-date worklogs-in-period))
+   :day->worked-hours         (fnk [day->worklogs]
+                                (map (fn [[day worklogs]]
+                                       [day (reduce + (map :worklog/hours worklogs))])
+                                     day->worklogs))
+   :days-above-min-threshold  (fnk [day->worked-hours]
+                                (->> day->worked-hours
+                                     (filter (fn [[_ worked-hours]]
+                                               (>= worked-hours min-hours-per-day)))
+                                     (map (comp first))
+                                     (into #{})))
+   :days-with-some-hours      (fnk [day->worklogs]
+                                (into #{} (keys day->worklogs)))
+   :days-without-booked-hours (fnk [days-with-some-hours period-days]
+                                (remove days-with-some-hours period-days))
+   :days-below-threshold      (fnk [days-with-some-hours days-above-min-threshold period-days]
+                                (set/intersection (set period-days) (set/difference days-with-some-hours days-above-min-threshold)))})
 
+(def compute-unbooked-days-stats (graph/compile-cancelling unbooked-days-graph))
 
 (defn user-sign-in-state [state]
   (get-in state [:user :user/signed-in?]))
@@ -255,7 +280,7 @@
 
    ;; the current open period for booking billable hours, unless before the consultant start date
    :current-period-start-date             (fnk [state consultant-start-date]
-                                            (let [period-start (consultant/current-period-start (:today state))]
+                                            (let [period-start (current-period-start (:today state))]
                                               (if (time/before? period-start consultant-start-date)
                                                 consultant-start-date
                                                 period-start)))
@@ -315,8 +340,15 @@
                                                   number-taken-vacation-days
                                                   number-parental-leave-days-till-today)
                                                burndown-hours-per-workday))
-   :days-without-booked-hours             (fnk [state current-period-start-date]
-                                            (unbooked-days state current-period-start-date))
+   :unbooked-days-stats                   (fnk [state current-period-start-date]
+                                            (compute-unbooked-days-stats
+                                              (-> state
+                                                  (select-keys [:today :worklogs])
+                                                  (assoc :current-period-start-date current-period-start-date))))
+   :days-without-booked-hours             (fnk [unbooked-days-stats]
+                                            (:days-without-booked-hours unbooked-days-stats))
+   :days-below-threshold                  (fnk [unbooked-days-stats]
+                                            (sort (:days-below-threshold unbooked-days-stats)))
    :number-sick-leave-days                (fnk [state]
                                             (/ (sick-leave-hours state) 8))
    })

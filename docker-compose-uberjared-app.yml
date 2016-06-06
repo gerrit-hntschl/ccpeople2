@@ -35,15 +35,10 @@ services:
   devapp:
     build:
       context: app
-      args:
-        DATOMIC_USER: ${DATOMIC_USER}
-        DATOMIC_PASSWORD: ${DATOMIC_PASSWORD}
-        CCARTUSER: ${CCARTUSER}
-        CCARTPASS: ${CCARTPASS}
+      dockerfile: Dockerfile-uberjar
     ports:
       - "35001:35001"
       - "8000:8000"
-      - "5005:5005"
     volumes:
       - "/home/core/share/app:/usr/src/app"
       - "/home/core/.m2:/root/.m2"
@@ -51,8 +46,6 @@ services:
       - DATOMIC_CONNECT_URL=datomic:sql://people?jdbc:postgresql://postgres:5432/datomic?user=datomic&password=${DATOMIC_POSTGRES_PASSWORD}
       - DATOMIC_USER
       - DATOMIC_PASSWORD
-      - CCARTUSER
-      - CCARTPASS
       - JIRA_BASE_URL
       - JIRA_TEMPO
       - JIRA_ACCESS_TOKEN

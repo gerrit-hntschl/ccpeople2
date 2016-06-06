@@ -1,12 +1,12 @@
-(ns app.main
+(ns ccdashboard.main
   (:gen-class)
   (:require [clojure.java.io :as io]
             [com.stuartsierra.component :as component]
             [duct.middleware.errors :refer [wrap-hide-errors]]
             [meta-merge.core :refer [meta-merge]]
-            [app.system :as system]
-            [app.config :as config]
-            [app.log :as log])
+            [ccdashboard.system :as system]
+            [ccdashboard.config :as config]
+            [ccdashboard.log :as log])
   (:import (java.lang.invoke MethodHandles)
            (org.slf4j LoggerFactory)))
 
@@ -24,4 +24,4 @@
 (defn -main [& args]
   (let [system (system/new-live-system config)]
     (log/info logger "Starting HTTP server on port" (-> system :http :port))
-    (component/start system)))
+    (def prod-system (component/start system))))

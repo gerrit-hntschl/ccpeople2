@@ -1,4 +1,4 @@
-(ns app.data-model
+(ns ccdashboard.domain.data-model
   (:require [schema.core :as s]
             [schema.coerce :as coerce]
             [schema.utils :as s-util]
@@ -37,7 +37,8 @@
                                          (fn [s] (re-matches #"[^@]+@[^@]+" s))
                                          "Email address"))
 
-(s/defschema NumberHoursWorkedPerDay (s/constrained IDouble (fn [n] (<= 0 n 24))))
+;; apparently it is happens that more than 24 hours are booked for a single day
+(s/defschema NumberHoursWorkedPerDay (s/constrained IDouble pos? "Positive Double"))
 
 ;;;;;;;;;;; DATA MODEL MAPPINGS ;;;;;;;;;;;;;;;;;
 

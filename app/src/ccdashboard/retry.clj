@@ -1,4 +1,4 @@
-(ns app.retry)
+(ns ccdashboard.retry)
 
 (defn retryable
   "Returns a function that retries f up to max-attempts, with exponentially

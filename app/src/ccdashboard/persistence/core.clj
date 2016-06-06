@@ -1,12 +1,12 @@
-(ns app.storage
+(ns ccdashboard.persistence.core
   (:require [datomic.api :refer [db q] :as d]
             [io.rkn.conformity :as c]
             [clojure.java.io :as io]
             [environ.core :refer [env]]
             [plumbing.core :refer [update-in-when]]
             [com.stuartsierra.component :as component]
-            app.date
-            [app.data-model :as model])
+            ccdashboard.data-readers.local-date
+            [ccdashboard.domain.data-model :as model])
   (:import (java.util.concurrent ExecutionException)))
 
 (def people-tempid

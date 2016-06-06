@@ -35,8 +35,8 @@ $vm_memory = 4096
 $vm_cpus = 1
 $shared_folders = {}
 $forwarded_ports = {
-# figwheel
-  3449 => 3449, 
+# figwheel -> not needed, runs on the host system
+#  3449 => 3449, 
 # datomic
   4334 => 4334, 
 # remote debugger
@@ -173,7 +173,7 @@ Vagrant.configure("2") do |config|
           ansible.groups = {
             "coreos" => ["core-01"],
             "coreos:vars" => {"ansible_ssh_user" => "core",
-                              "ansible_python_interpreter" => "PATH=/home/core/bin:$PATH python"}}
+                              "ansible_python_interpreter" => "/home/core/bin/python"}}
 
         end
       else

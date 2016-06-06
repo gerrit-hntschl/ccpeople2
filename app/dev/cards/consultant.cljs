@@ -1,11 +1,11 @@
 (ns cards.consultant
   (:require
     [devcards.core]
-    [app.client :refer [current-stats-component progress-component]]
-    [app.domain :as domain]
+    [ccdashboard.client.core :refer [current-stats-component progress-component]]
+    [ccdashboard.domain.core :as domain]
     [reagent.core :as reagent]
     [cljs-time.core :as time]
-    [app.days :as days])
+    [ccdashboard.domain.days :as days])
   (:require-macros
     [devcards.core :as dc :refer [defcard defcard-rg]]))
 

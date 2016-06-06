@@ -1,15 +1,15 @@
-(ns ^:figwheel-always app.client
+(ns ^:figwheel-always ccdashboard.client.core
   (:require
     [reagent.core :as reagent]
     [reagent.interop :refer-macros [$]]
-    [app.domain :as domain]
+    [ccdashboard.domain.core :as domain]
     [bidi.bidi :as bidi]
     [goog.events :as events]
     cljsjs.react
-    [app.donut-service :as donut-service]
+    [ccdashboard.client.dataviz :as dataviz]
     ;    [material-ui.core :as ui :include-macros true]
     [goog.history.EventType :as EventType]
-    [app.days :as days]
+    [ccdashboard.domain.days :as days]
     [cljs.pprint :as pprint]
     [clojure.string :as str])
   (:import [goog.history Html5History EventType]))
@@ -41,11 +41,11 @@
         todays-goal-hours (:hour-goal-today model-data)
         viewport-size (:viewport/size state)
         billable-days-goal-scaled (:billable-days-goal-scaled model-data)]
-    (donut-service/balance-view component-name
-                                viewport-size
-                                todays-goal-hours
-                                actual-hours
-                                billable-days-goal-scaled)))
+    (dataviz/balance-view component-name
+                          viewport-size
+                          todays-goal-hours
+                          actual-hours
+                          billable-days-goal-scaled)))
 
 (defn current-stats-update [state-atom component-name this old-argv]
   (let [state @state-atom
@@ -53,7 +53,7 @@
         actual-hours (:hours-billed model-data)
         todays-goal-hours (:hour-goal-today model-data)
         total-billable-hours-goal (* 8 (:billable-days-goal-scaled model-data))]
-    (donut-service/update-balance-view-transitioned component-name todays-goal-hours actual-hours total-billable-hours-goal)))
+    (dataviz/update-balance-view-transitioned component-name todays-goal-hours actual-hours total-billable-hours-goal)))
 
 (defn current-stats [state-atom component-name]
   ;; is it really necessary to deref app-state here just to trigger an invocation of component-did-update??
@@ -89,7 +89,7 @@
   (let [model-data (domain/app-model {:state @state-atom})
         stat (get model-data stat-key)
         total-stat (get model-data total-stat-key)]
-    (donut-service/progress component-name stat total-stat format-fn)))
+    (dataviz/progress component-name stat total-stat format-fn)))
 
 (defn progress-update [state-atom component-name stat-key total-stat-key])
 
@@ -120,108 +120,126 @@
    [:div label]
    [:div {:style {:font-size "1.2em"}} (format-days number-days)]])
 
-(defn profile-page [_]
-  (let [state @domain/app-state
-        model-data (domain/app-model {:state state})
+(defn formatted-days-comma-separated [days]
+  (->> days
+       (map days/format-simple-date)
+       (str/join ", ")))
+
+;; creates a constant that can be overriden at compile time
+(goog-define timetrack-uri "https://the.timetracking-system.url")
+
+(defn days-info [description background-color font-color days]
+  (let [unbooked-days-count (count days)]
+    (when (pos? unbooked-days-count)
+      ;; to make the entire div clickable, position it relative
+      ;; and add link with empty span which is positioned absolute with width and height of 100%
+      [:div {:style {:background-color background-color
+                     :color            font-color
+                     :padding          "8px 15px 8px 15px"
+                     :position "relative"}}
+       [:a {:href timetrack-uri
+            :class "div-link"
+            :target "_blank"} [:span]]
+       (str description unbooked-days-count)
+       [:br]
+       (formatted-days-comma-separated days)])))
+
+(defn user-stats [state]
+  (let [model-data (domain/app-model {:state state})
         rem-holidays (:number-holidays-remaining model-data)
         days-without-booked-hours (:days-without-booked-hours model-data)
-        formatted-missing-days (->> days-without-booked-hours
-                                    (map days/format-simple-date)
-                                    (str/join ", "))
-        unbooked-days-count (count days-without-booked-hours)
+        days-below-threshold (:days-below-threshold model-data)
         num-sick-leave-days (:number-sick-leave-days model-data)
         used-leave (:number-taken-vacation-days model-data)
         number-parental-leave-days (:number-parental-leave-days model-data)
         number-planned-vacation-days (:number-planned-vacation-days model-data)
         today-str (days/month-day-today (:today state))]
+    [:div {:style {:overflow "hidden"}}
+     (days-info "days w/o booked hours: " "#e36588" "white" days-without-booked-hours)
+     (days-info "days w/ less than 4 hours booked: " "#f1db4b" "#626161" days-below-threshold)
+     [:div {:style {:margin-left  "auto"
+                    :margin-right "auto"
+                    :width        "100%"
+                    :color        "#121212"}}
+      [:div {:style {:display         "flex"
+                     :flex-wrap       "wrap"
+                     :justify-content "center"
+                     :border-bottom   "1px solid #f3f3f3"}}
+       [:div
+        [:h2 today-str]
+        [current-stats-component domain/app-state "goal-stats"]]
+       [:div {:style {:margin-top "10px"}}
+        [:div
+         "days needed to reach 100%"
+         [progress-component
+          domain/app-state
+          "days-to-100"
+          :days-to-reach-goal
+          :billable-days-goal-scaled
+          (fn [x] (str (js/Math.round x)))]]
+        [:div
+         "your workdays left"
+         [progress-component
+          domain/app-state
+          "workdays-left"
+          :workdays-left-actually
+          :workdays-total]]]]
+      [:div {:style {:display "flex"
+                     :flex-wrap "wrap"
+                     :justify-content "center"
+                     :border-bottom "1px solid #f3f3f3"}}
+       [:div [:h2 "Billed hours by month"]
+        [monthly-component domain/app-state "monthly-stats"]]]
+      [:div {:style {:display         "flex"
+                     :justify-content "center"
+                     :flex-wrap       "wrap"
+                     ;:margin-left  "auto"
+                     ;:margin-right "auto"
+                     ;:width        "100%"
+                     }}
+       [:div {:style {:display        "flex"
+                      :flex-direction "column"
+                      :align-items    "flex-start"
+                      :margin-right   "10px"}}
+        [:h2 "Holidays"]
+        [:div {:style {:display "flex"}}
+         [days-rect "icon-flight" "black" "#f3f3f3" "Planned" number-planned-vacation-days]
+         [days-rect "icon-globe" "white" "#9eb25d" "Free" rem-holidays]
+         [days-rect "icon-cancel" "black" "#f3f3f3" "Used" used-leave]]]
+       [:div {:style {:display        "flex"
+                      :flex-direction "column"
+                      :align-items    "flex-start"
+                      :border-left    "1px solid #f3f3f3"
+                      :padding-left   "10px"}}
+        [:h2 "Absence"]
+        [:div {:style {:display "flex"}}
+         [days-rect "icon-medkit" "black" "#a5e2ed" "Sickness" num-sick-leave-days]
+         (when (pos? number-parental-leave-days)
+           [days-rect "icon-award" "white" "#9eb25d" "Parental leave" number-parental-leave-days])]]]]]))
+
+(defn profile-page [_]
+  (let [state @domain/app-state]
     (cond (= (:error state) :error/unknown-user)
-          [:h2 {:style {:color "white"}} "Sorry, but we don't know that user."]
+          [:h2 {:style {:color "black"}} "Sorry, but we don't know that user."]
           (:user state)
-          [:div {:style {:overflow "hidden"}}
-           (when (pos? unbooked-days-count)
-             [:div {:style {:background-color "#e36588"
-                           :color            "white"
-                           :padding          "8px 15px 8px 15px"}}
-              (str "days w/o booked hours: " unbooked-days-count)
-              [:br]
-              formatted-missing-days])
-           [:div {:style {:margin-left  "auto"
-                          :margin-right "auto"
-                          :width        "100%"
-                          :color        "#121212"}}
-            [:div {:style {:display "flex"
-                           :flex-wrap "wrap"
-                           :justify-content "center"
-                           :border-bottom "1px solid #f3f3f3"}}
-             [:div
-              [:h2 today-str]
-              [current-stats-component domain/app-state "goal-stats"]]
-             [:div {:style {:margin-top "10px"}}
-              [:div
-               "days needed to reach 100%"
-               [progress-component
-                domain/app-state
-                "days-to-100"
-                :days-to-reach-goal
-                :billable-days-goal-scaled
-                (partial pprint/cl-format nil "~,2f")]]
-              [:div
-               "your workdays left"
-               [progress-component
-                domain/app-state
-                "workdays-left"
-                :workdays-left-actually
-                :workdays-total]]]]
+          [user-stats state])))
 
-
-            [:div {:style {:display "flex"
-                           :flex-wrap "wrap"
-                           :justify-content "center"
-                           :border-bottom "1px solid #f3f3f3"}}
-             [:div [:h2 "Billed hours by month"]
-              [monthly-component domain/app-state "monthly-stats"]]
-             ]
-
-
-
-
-            [:div {:style {:display "flex"
-                           :justify-content "center"
-                           :flex-wrap "wrap"
-                           ;:margin-left  "auto"
-                           ;:margin-right "auto"
-                           ;:width        "100%"
-                           }}
-             [:div {:style {:display "flex"
-                            :flex-direction "column"
-                            :align-items "flex-start"
-                            :margin-right "10px"}}
-              [:h2 "Holidays"]
-              [:div {:style {:display "flex"}}
-               [days-rect "icon-flight" "black" "#f3f3f3" "Planned" number-planned-vacation-days]
-               [days-rect "icon-globe" "white" "#9eb25d" "Free" rem-holidays]
-               [days-rect "icon-cancel" "black" "#f3f3f3" "Used" used-leave]]]
-             [:div {:style {:display "flex"
-                            :flex-direction "column"
-                            :align-items "flex-start"
-                            :border-left "1px solid #f3f3f3"
-                            :padding-left "10px"}}
-              [:h2 "Absence"]
-              [:div {:style {:display "flex"}}
-               [days-rect "icon-medkit" "black" "#a5e2ed" "Sickness" num-sick-leave-days]
-               (when (pos? number-parental-leave-days)
-                 [days-rect "icon-award" "white" "#9eb25d" "Parental leave" number-parental-leave-days])]]]]])))
+(defn location-page [_]
+  [:h1 "Coming soon..."])
 
 (defn tabs []
   [:div ""])
 
 
 (def routes ["" {"profile" :profile
-                 "people" :people}])
+                 "people" :people
+                 "locations" :locations}])
 
 (defmulti handlers :handler :default :profile)
 
 (defmethod handlers :profile [] profile-page)
+
+(defmethod handlers :locations [] location-page)
 
 (defn update-page-to-token [token]
   (swap! domain/app-state assoc :page (bidi/match-route routes token)))
@@ -243,6 +261,8 @@
         user-sign-in-state (domain/user-sign-in-state state)]
     (cond (nil? user-sign-in-state)
           [:p "Initializing..."]
+          (= (:error state) :error/unexpected-api-response)
+          [:h2 {:style {:color "black"}} "Oops, something went wrong. Please report issue in #ccdashboard-feedback."]
           user-sign-in-state
           [:div                                             ;{:style {:margin-top "20px"}}
            ;[:a.button {:href "/logout"} (str "Sign out " (:user/display-name (:user state)))]
@@ -254,21 +274,27 @@
             [:p "Yes, it uses Duo Mobile... But you only need to log-in once, then a cookie will keep you logged in for a year."]]])))
 
 (defn page []
-  [:div
-   [:div {:class "header"
-          :style {:display         "flex"
-                  :flex-direction  "row"
-                  :justify-content "space-around"}}
-    ;; layout hack: empty divs move the title and sign-off button more to the center
-    [:div]
-    [:div {:style {:font-size "1.3em"}} "ccDashboard"]
-    (if (domain/user-sign-in-state @domain/app-state)
-      [:a#logout {:href "/logout"}
-       [:i.icon-off.large-icon]]
-      [:div])
-    [:div]]
-   [:div {:style {:text-align "center"}}
-    [sign-in-component]]])
+  (let [user-signed-in (domain/user-sign-in-state @domain/app-state)]
+    [:div
+     [:div#navbar
+      (if user-signed-in
+        [:label.show-menu {:for "show-menu"}
+         [:i.icon-menu.large-icon]])
+      [:span#banner
+       [:a {:href "/#"} "ccDashboard"]]
+      [:input#show-menu {:type "checkbox"
+                         :role "button"}]
+      [:span#menu
+       [:ul
+        (doall
+          (keep (fn [[href content]]
+                  (if user-signed-in
+                    ^{:key href} [:li.menuitem [:a {:href href} content]]))
+                [["/#" "Home"]
+                 ["/#locations" "Locations"]
+                 ["/logout" [:i.icon-off.medium-icon]]]))]]]
+     [:div {:style {:text-align "center"}}
+      [sign-in-component]]]))
 
 
 (defn start []
@@ -280,7 +306,6 @@
 (defn on-js-reload []
   ;; optionally touch your app-state to force rerendering depending on
   ;; your application
-  ;; (swap! app-state update-in [:__figwheel_counter] inc)
 
 )
 
