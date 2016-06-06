@@ -164,10 +164,4 @@
            :db/valueType          :db.type/string
            :db/cardinality        :db.cardinality/one
            :db.install/_attribute :db.part/db}
-          ; Allredy exists, user/id is not unique
-          ;{:db/id #db/id          [:db.part/db]
-          ; :db/ident              :user/id
-          ; :db/valueType          :db.type/ref
-          ; :db/cardinality        :db.cardinality/one
-          ; :db.install/_attribute :db.part/db}
          ]]}}
