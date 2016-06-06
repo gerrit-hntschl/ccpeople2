@@ -483,6 +483,16 @@
                                          (into []
                                                (mapcat (partial team-member jira))
                                                team-ids-all))
+          :jira-username-and-team-ids  (fnk [team-members-all]
+                                         (into [] (map (fn [member]
+                                                         {:jira-username (get-in member [:member :id])
+                                                          :team-id       (get-in member [:membership :teamId])})
+                                                       team-members-all)))
+          :team-name-and-team-ids      (fnk [teams-all]
+                                         (println (into [] (map (fn [team]
+                                                          {:team-name (:name team)
+                                                           :team-id   (:id team)})
+                                                        teams-all))))
           :team-members-with-join-date (fnk [team-members-all]
                                          (into []   ;; ignore spurious empty values
                                                (comp (filter (comp seq get-team-member-start-date))
