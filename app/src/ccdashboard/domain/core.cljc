@@ -1,13 +1,12 @@
-(ns app.domain
-  (:require [app.days :as days]
-            [app.consultant :as consultant]
+(ns ccdashboard.domain.core
+  (:require [ccdashboard.domain.days :as days]
             [plumbing.core :refer [map-vals]]
             [ajax.core :as ajax]
             [cognitect.transit :as transit]
-            [app.mixpanel :as mixpanel]
-            [app.util :refer [matching]]
+            [ccdashboard.analytics.mixpanel :as mixpanel]
+            [ccdashboard.util :refer [matching]]
 
-            [app.graph :as graph]
+            [ccdashboard.graph :as graph]
     #?@(:cljs [[reagent.core :refer [atom]]
                [goog.array :as garray]
                [cljs-time.core :as time]
@@ -65,6 +64,14 @@
                                        {:handlers
                                         {"date/local" (fn [date-fields]
                                                         (apply time/local-date date-fields))}})}))
+
+(defn current-period-start [today]
+  ;; period is closed on 5th of next month, unless in January
+  (if (and (<= (time/day today) 5) (> (time/month today) 1))
+    (-> today
+        (time/minus (-> 1 (time/months)))
+        (time/first-day-of-the-month))
+    (time/first-day-of-the-month today)))
 
 (defn customer-id-by-name [customer-name customers]
   (->> customers
@@ -229,28 +236,6 @@
 
 (def compute-unbooked-days-stats (graph/compile-cancelling unbooked-days-graph))
 
-(defn unbooked-days [app-state period-start-date]
-  (let [today (:today app-state)
-        yesterday (-> today (time/minus (-> 1 time/days)))
-        ;; ignore today
-        period-days (days/workdays-between period-start-date yesterday)
-        worklogs (:worklogs app-state)
-        worklogs-in-period (filter (fn [{:keys [worklog/work-date]}]
-                                     ;; the end of the period has to be today, because within excludes dates equal to end
-                                     (time/within? period-start-date today work-date))
-                                   worklogs)
-        day->worklogs (group-by :worklog/work-date worklogs-in-period)
-        day->worked-hours (map (fn [[day worklogs]]
-                                 [day (reduce + (map :worklog/hours worklogs))])
-                               day->worklogs)
-        days-with-work-hours-above-min-threshold (->> day->worked-hours
-                                                      (filter (fn [[_ worked-hours]]
-                                                                (>= worked-hours min-hours-per-day)))
-                                                      (map (comp first))
-                                                      (into #{}))]
-    (remove days-with-work-hours-above-min-threshold period-days)))
-
-
 (defn user-sign-in-state [state]
   (get-in state [:user :user/signed-in?]))
 
@@ -264,7 +249,7 @@
 
    ;; the current open period for booking billable hours, unless before the consultant start date
    :current-period-start-date             (fnk [state consultant-start-date]
-                                            (let [period-start (consultant/current-period-start (:today state))]
+                                            (let [period-start (current-period-start (:today state))]
                                               (if (time/before? period-start consultant-start-date)
                                                 consultant-start-date
                                                 period-start)))

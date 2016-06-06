@@ -1,4 +1,4 @@
-(ns app.graph
+(ns ccdashboard.graph
   (:require [plumbing.graph :as graph]
             [plumbing.map :as map]
             [plumbing.core :as plumbing]

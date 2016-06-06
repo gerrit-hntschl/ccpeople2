@@ -63,13 +63,13 @@
                                             ]}
    :test          {}
    :uberjar       {:aot          :all
-                   :uberjar-name "app.jar"
+                   :uberjar-name "ccdashboard.jar"
                    :prep-tasks [["cljsbuild" "once" "min"] ["compile"]]
                    :omit-source  true}
    :repl          {:resource-paths ^:replace ["resources" "target/figwheel"]
                    :prep-tasks     ^:replace [["compile"]]} }
 
-  :main app.main
+  :main ccdashboard.main
 
   :source-paths ["src"]
   :test-paths ["test"]
@@ -79,19 +79,19 @@
 
   :cljsbuild {:builds [{:id           "dev"
                         :source-paths ["src" "dev"]
-                        :figwheel     {:on-jsload "app.client/on-js-reload"}
+                        :figwheel     {:on-jsload "ccdashboard.client/on-js-reload"}
 
-                        :compiler     {:main                 app.client
+                        :compiler     {:main                 ccdashboard.client
                                        :asset-path           "js/compiled/out"
-                                       :output-to            "resources/public/js/compiled/app.js"
+                                       :output-to            "resources/public/js/compiled/ccdashboard.js"
                                        :output-dir           "resources/public/js/compiled/out"
                                        :source-map-timestamp true}}
                        {:id           "min"
                         :source-paths ["src"]
                         :compiler     {:output-to     "resources/public/js/main.js"
-                                       :main          app.start
+                                       :main          ccdashboard.client.start
                                        :optimizations :advanced
-                                       :closure-defines {app.client/timetrack-uri
+                                       :closure-defines {ccdashboard.client/timetrack-uri
                                                          ~(str (java.lang.System/getenv "JIRA_BASE_URL") "/secure/TempoUserBoard!timesheet.jspa")}
                                        :externs       ["externs/mixpanel_externs.js"]
                                        ;                                         :pseudo-names true

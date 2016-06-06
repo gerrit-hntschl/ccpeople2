@@ -1,4 +1,4 @@
-(ns app.donut-service
+(ns ccdashboard.client.dataviz
   (:require [cljs.pprint :as pprint]))
 
 (enable-console-print!)

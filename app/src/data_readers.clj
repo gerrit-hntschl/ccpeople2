@@ -1,1 +1,1 @@
-{date/local app.date/parse-local-date}
+{date/local ccdashboard.data-readers.local-date/parse-local-date}
