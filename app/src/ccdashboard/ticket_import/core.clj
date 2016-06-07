@@ -500,8 +500,8 @@
           :team-name-and-team-ids      (fnk [teams-all]
                                          (into [] (map (fn [team]
                                                          {:team-name (:name team)
-                                                          :team-id   (:id team)})
-                                                       teams-all)))
+                                                          :team-id   (:id team)}))
+                                               teams-all))
           :team-members-with-join-date (fnk [team-members-all]
                                          (into []   ;; ignore spurious empty values
                                                (comp (filter (comp seq get-team-member-start-date))
@@ -517,10 +517,12 @@
                                                team-members-with-join-date))
           :db-team-name-with-team-id   (fnk [team-name-and-team-ids]
                                          (into []
-                                               (map to-datomic-team-name-with-id team-name-and-team-ids)))
+                                               (map to-datomic-team-name-with-id)
+                                               team-name-and-team-ids))
           :db-user-with-team-id        (fnk [jira-username-and-team-ids]
                                          (into []
-                                               (map to-datomic-user-with-team-id jira-username-and-team-ids)))
+                                               (map to-datomic-user-with-team-id)
+                                               jira-username-and-team-ids))
           :db-transactions             (fnk [db-user-with-join-date domain-users-new db-team-name-with-team-id db-user-with-team-id]
                                          (vector domain-users-new
                                                  db-user-with-join-date
