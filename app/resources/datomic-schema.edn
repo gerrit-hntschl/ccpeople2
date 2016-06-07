@@ -168,5 +168,5 @@
            :db/ident              :user/team
            :db/valueType          :db.type/ref
            :db/cardinality        :db.cardinality/one
-           :db.install/_attribute :db.part/db}
-         ]]}}
+           :db.install/_attribute :db.part/db}]
+         ]}}
