@@ -498,7 +498,8 @@
                                                           :team-id       (get-in member [:membership :teamId])}))
                                                team-members-all))
           :team-name-and-team-ids      (fnk [teams-all]
-                                         (into [] (map (fn [team]
+                                         (into []
+                                               (map (fn [team]
                                                          {:team-name (:name team)
                                                           :team-id   (:id team)}))
                                                teams-all))
