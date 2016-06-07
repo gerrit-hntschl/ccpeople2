@@ -485,7 +485,7 @@
                                                team-ids-all))
           :jira-username-and-team-ids  (fnk [team-members-all]
                                          (into [] (map (fn [member]
-                                                         {:jira-username (get-in member [:member :id])
+                                                         {:jira-username (get-in member [:member :name])
                                                           :team-id       (get-in member [:membership :teamId])})
                                                        team-members-all)))
           :team-name-and-team-ids      (fnk [teams-all]
