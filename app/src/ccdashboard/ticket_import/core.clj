@@ -259,7 +259,7 @@
   (team-member [this team-id]
     (fetch-team-member team-id jira-base-url jira-access-token jira-consumer-private-key)))
 
-(defrecord JiraFakeClient [prefetched-worklogs prefetched-issues prefetched-users]
+(defrecord JiraFakeClient [prefetched-worklogs prefetched-issues prefetched-users teams-all team-members-all]
   Jira
   (worklogs [this from-date to-date]
     {:worklogs prefetched-worklogs})
@@ -267,7 +267,10 @@
     prefetched-issues)
   (users [this usernames]
     prefetched-users)
-  (teams [this]))
+  (teams [this]
+    teams-all)
+  (team-member [this team-id]
+    team-members-all))
 
 (defn work-date-between [from-date to-date]
   (fn [jira-worklog]
