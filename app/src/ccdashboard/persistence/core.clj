@@ -73,8 +73,6 @@
          external-user-id))
 
 (defn user-id-by-email-or-create [conn domain-user]
-  (def cxc conn)
-  (def dus domain-user)
   (if-let [id (user-id-by-email (db conn) (:user/email domain-user))]
     id
     (create-openid-user conn domain-user)))
@@ -110,10 +108,10 @@
 (defn domain-user [db-user]
   (-> db-user
       (as-map)
+      (update :user/team :team/id)
       (model/to-domain-user)))
 
 (defn existing-user-data [dbval id]
-  (def xxid id)
   (let [user-entity (d/entity dbval id)
         db-worklogs (:worklog/_user user-entity)
         tickets (into #{} (map :worklog/ticket) db-worklogs)
@@ -160,3 +158,12 @@
   (let [dbval (db conn)]
     (some->> (user-id-by-external-user-id dbval user-id)
              (existing-user-data dbval))))
+
+(defn all-team-informations [dbval]
+  (into #{}
+        (map (comp model/to-domain-team
+                   (fn [team] (dissoc team :db/id))
+                   first))
+        (d/q '{:find  [(pull ?t [*])]
+               :where [[?t :team/id]]}
+             dbval)))
