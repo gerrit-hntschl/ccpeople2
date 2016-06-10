@@ -64,7 +64,7 @@
    :test          {}
    :uberjar       {:aot          :all
                    :uberjar-name "ccdashboard.jar"
-                   :prep-tasks [["cljsbuild" "once" "min"] ["compile"]]
+                   :prep-tasks [["clean"] ["cljsbuild" "once" "min"] ["compile"]]
                    :omit-source  true}
    :repl          {:resource-paths ^:replace ["resources" "target/figwheel"]
                    :prep-tasks     ^:replace [["compile"]]} }
@@ -91,7 +91,7 @@
                         :compiler     {:output-to     "resources/public/js/main.js"
                                        :main          ccdashboard.client.start
                                        :optimizations :advanced
-                                       :closure-defines {ccdashboard.client/timetrack-uri
+                                       :closure-defines {ccdashboard.client.core/timetrack-uri
                                                          ~(str (java.lang.System/getenv "JIRA_BASE_URL") "/secure/TempoUserBoard!timesheet.jspa")}
                                        :externs       ["externs/mixpanel_externs.js"]
                                        ;                                         :pseudo-names true
