@@ -108,6 +108,7 @@
 (defn domain-user [db-user]
   (-> db-user
       (as-map)
+      (update :user/team :team/id)
       (model/to-domain-user)))
 
 (defn existing-user-data [dbval id]
@@ -116,29 +117,9 @@
         tickets (into #{} (map :worklog/ticket) db-worklogs)
         customers (into #{} (keep :ticket/customer) tickets)]
     {:user      (domain-user user-entity)
-     :team      (:user/team user-entity)
      :worklogs  (mapv domain-worklog db-worklogs)
      :tickets   (mapv domain-ticket tickets)
      :customers (mapv domain-customer customers)}))
-
-(defn team-id-by-external-team-id [dbval external-team-id]
-  (q-one '{:find [?t]
-           :in [$ ?external-team-id]
-           :where [[?t :team/id ?external-team-id]]}
-         dbval
-         external-team-id))
-
-(defn existing-team-data [dbval id]
-  (let [team-entity (d/entity dbval id)
-        id (:team/id team-entity)
-        name (:team/name team-entity)]
-    {:id id
-     :name name}))
-
-(defn existing-team-data-for-team [conn team-id]
-  (let [dbval (d/db conn)]
-    (some->> (team-id-by-external-team-id dbval team-id)
-             (existing-team-data dbval))))
 
 (defrecord DatomicDatabase [uri]
   component/Lifecycle
@@ -177,3 +158,12 @@
   (let [dbval (db conn)]
     (some->> (user-id-by-external-user-id dbval user-id)
              (existing-user-data dbval))))
+
+(defn all-team-informations [dbval]
+  (into #{}
+        (map (comp model/to-domain-team
+                   (fn [team] (dissoc team :db/id))
+                   first))
+        (d/q '{:find  [(pull ?t [*])]
+               :where [[?t :team/id]]}
+             dbval)))
