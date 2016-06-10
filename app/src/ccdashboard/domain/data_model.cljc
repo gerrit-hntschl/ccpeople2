@@ -182,6 +182,7 @@
                          :user/jira-username               NonEmptyString
                          :user/email                       EmailAddress
                          :user/display-name                NonEmptyString
+                         :user/team                        PositiveInt
                          (s/optional-key :user/start-date) LocalDate
                          s/Keyword                         s/Any})
 
