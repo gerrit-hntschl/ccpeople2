@@ -500,6 +500,11 @@
                                                          {:jira-username (get-in member [:member :name])
                                                           :team-id       (get-in member [:membership :teamId])}))
                                                team-members-all))
+          :imported-jira-users-and-team-ids (fnk [jira-username-and-team-ids db-usernames-all]
+                                              (into []
+                                                    (filter (fn [{:keys [jira-username]}]
+                                                              (contains? db-usernames-all jira-username)))
+                                                    jira-username-and-team-ids))
           :team-name-and-team-ids      (fnk [teams-all]
                                          (into []
                                                (map (fn [team]
@@ -523,10 +528,10 @@
                                          (into []
                                                (map to-datomic-team-name-with-id)
                                                team-name-and-team-ids))
-          :db-user-with-team-id        (fnk [jira-username-and-team-ids]
+          :db-user-with-team-id        (fnk [imported-jira-users-and-team-ids]
                                          (into []
                                                (map to-datomic-user-with-team-id)
-                                               jira-username-and-team-ids))
+                                               imported-jira-users-and-team-ids))
           :db-transactions             (fnk [db-user-with-join-date domain-users-new db-team-name-with-team-id db-user-with-team-id]
                                          (vector domain-users-new
                                                  db-user-with-join-date
