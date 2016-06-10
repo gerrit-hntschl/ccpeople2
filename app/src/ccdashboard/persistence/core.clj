@@ -73,8 +73,6 @@
          external-user-id))
 
 (defn user-id-by-email-or-create [conn domain-user]
-  (def cxc conn)
-  (def dus domain-user)
   (if-let [id (user-id-by-email (db conn) (:user/email domain-user))]
     id
     (create-openid-user conn domain-user)))
@@ -113,15 +111,34 @@
       (model/to-domain-user)))
 
 (defn existing-user-data [dbval id]
-  (def xxid id)
   (let [user-entity (d/entity dbval id)
         db-worklogs (:worklog/_user user-entity)
         tickets (into #{} (map :worklog/ticket) db-worklogs)
         customers (into #{} (keep :ticket/customer) tickets)]
     {:user      (domain-user user-entity)
+     :team      (:user/team user-entity)
      :worklogs  (mapv domain-worklog db-worklogs)
      :tickets   (mapv domain-ticket tickets)
      :customers (mapv domain-customer customers)}))
+
+(defn team-id-by-external-team-id [dbval external-team-id]
+  (q-one '{:find [?t]
+           :in [$ ?external-team-id]
+           :where [[?t :team/id ?external-team-id]]}
+         dbval
+         external-team-id))
+
+(defn existing-team-data [dbval id]
+  (let [team-entity (d/entity dbval id)
+        id (:team/id team-entity)
+        name (:team/name team-entity)]
+    {:id id
+     :name name}))
+
+(defn existing-team-data-for-team [conn team-id]
+  (let [dbval (d/db conn)]
+    (some->> (team-id-by-external-team-id dbval team-id)
+             (existing-team-data dbval))))
 
 (defrecord DatomicDatabase [uri]
   component/Lifecycle
