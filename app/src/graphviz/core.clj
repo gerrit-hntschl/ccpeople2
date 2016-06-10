@@ -209,7 +209,6 @@
                                                  (str/replace input-name (str "@@@" input-name "@@@"))))
                                            formatted-code
                                            input-names)
-        _ (println "what" code-with-marked-input)
         code-markup (-> code-with-marked-input
                         ;(str/replace symbol-with-dash-regex "@@@$1@@@")
                         (str/split #"@@@")
@@ -260,7 +259,7 @@
           decorations (map #(lacij-view-core/decorate % this context) decorators)
           xml (concat (s/group
                         {:id (name id)
-                         :class "node"
+                         :class "gnode"
                          :data-x x
                          :data-y y
                          :transform (format "translate(%s, %s)" x y)}

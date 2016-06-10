@@ -14,11 +14,11 @@ margin: 0px;
   color: #5882FA;
 }
 
-.selected-node.node rect {
+.selected-node.gnode rect {
   stroke: red;
 }
 
-.node rect {
+.gnode rect {
   stroke: black;
 }
 
@@ -28,4 +28,16 @@ margin: 0px;
 
 .selected-node .node-code {
   border-color: red;
+}
+
+.highlighted-node {
+  z-index: 2;
+  opacity: 1;
+}
+
+.background {
+  color: grey;
+  opacity: 0.2;
+
+  z-index: 1;
 }

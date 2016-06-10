@@ -11,7 +11,7 @@
             [ring.util.response :as response]
             [graphviz.core :as graphviz]
             [cheshire.core :as json]
-            [app.worklog :as worklog])
+            [ccdashboard.ticket-import.core :as worklog])
 
   (:import (org.slf4j LoggerFactory)
            (java.util UUID)))

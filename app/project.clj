@@ -80,7 +80,7 @@
   :clean-targets ^{:protect false} ["resources/public/js/compiled" "target"]
 
   :cljsbuild {:builds [{:id           "dev"
-                        :source-paths ["src"]
+                        :source-paths ["graphviz-src"]
                         ;                        :figwheel     {:on-jsload "app.client/on-js-reload"}
 
                         :compiler     {:main                 graphviz.interact
