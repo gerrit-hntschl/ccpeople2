@@ -186,6 +186,9 @@
                          (s/optional-key :user/start-date) LocalDate
                          s/Keyword                         s/Any})
 
+(s/defschema DomainTeam {:team/id   s/Int
+                         :team/name NonEmptyString})
+
 ;;;;;;;;;;;; transformations
 (def datetime-regex #"\d{4}-\d{2}-\d{2}")
 
@@ -278,3 +281,5 @@
 
 (def to-domain-user (comp throw-on-invalid-schema-error
                           domain-user-coercer))
+
+(def to-domain-team (partial s/validate DomainTeam))
