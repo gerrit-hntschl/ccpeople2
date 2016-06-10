@@ -1,4 +1,4 @@
-(ns ccdashboard.test.user-and-team
+(ns ccdashboard.test.user_and_team
   (:require [schema.experimental.complete :as c]
             [ccdashboard.ticket-import.core :refer :all]
             [datomic.api :as d]
