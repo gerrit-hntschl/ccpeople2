@@ -50,20 +50,37 @@
   (mixpanel/track "signin"))
 
 (defn handle-api-response [data]
-  (swap! app-state merge (assoc-in data [:user :user/signed-in?] true))
-  (track-user (get-in data [:user :user/jira-username])))
+  (let [current-user (get-in data [:user :user/jira-username])]
+    (swap! app-state
+           merge
+           (-> data
+               (assoc-in [:user :user/signed-in?] true)
+               (assoc-in [:consultant :consultant/selected] current-user)))
+    (track-user current-user)))
 
-
-(defn call-api []
+(defn call-api [& [params]]
   (ajax/GET "/api"
-     {:handler         handle-api-response
-      :error-handler   error-handler-fn
-      :response-format :transit
-      :keywords?       true
-      :reader          (transit/reader :json
-                                       {:handlers
-                                        {"date/local" (fn [date-fields]
-                                                        (apply time/local-date date-fields))}})}))
+            (cond-> {:handler         handle-api-response
+                     :error-handler   error-handler-fn
+                     :response-format :transit
+                     :keywords?       true
+                     :reader          (transit/reader :json
+                                                      {:handlers
+                                                       {"date/local" (fn [date-fields]
+                                                                       (apply time/local-date date-fields))}})}
+                    params
+                    (assoc :params params))))
+
+
+(add-watch app-state
+           :load-data-for-consultant
+           (fn [_ _ old-state new-state]
+             (when (get-in old-state [:user :user/signed-in?])
+               (let [prev-consultant (get-in old-state [:consultant :consultant/selected])
+                     new-consultant (get-in new-state [:consultant :consultant/selected])]
+                 (when (and (not= prev-consultant new-consultant)
+                            (some? new-consultant))
+                   (call-api {:consultant new-consultant}))))))
 
 (defn current-period-start [today]
   ;; period is closed on 5th of next month, unless in January

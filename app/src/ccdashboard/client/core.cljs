@@ -6,12 +6,14 @@
     [bidi.bidi :as bidi]
     [goog.events :as events]
     cljsjs.react
+    cljsjs.react-select
     [ccdashboard.client.dataviz :as dataviz]
     ;    [material-ui.core :as ui :include-macros true]
     [goog.history.EventType :as EventType]
     [ccdashboard.domain.days :as days]
     [cljs.pprint :as pprint]
-    [clojure.string :as str])
+    [clojure.string :as str]
+    [clojure.set :as set])
   (:import [goog.history Html5History EventType]))
 
 (enable-console-print!)
@@ -124,6 +126,8 @@
        [:br]
        (formatted-days-comma-separated days)])))
 
+(def select (reagent/adapt-react-class js/Select))
+
 (defn user-stats [state]
   (let [model-data (domain/app-model {:state state})
         rem-holidays (:number-holidays-remaining model-data)
@@ -137,10 +141,24 @@
     [:div {:style {:overflow "hidden"}}
      (days-info "days w/o booked hours: " "#e36588" "white" days-without-booked-hours)
      (days-info "days w/ less than 4 hours booked: " "#f1db4b" "#626161" days-below-threshold)
+
      [:div {:style {:margin-left  "auto"
                     :margin-right "auto"
                     :width        "100%"
                     :color        "#121212"}}
+      [:div {:style {:display         "flex"
+                     :justify-content "center"
+                     :border-bottom   "1px solid #f3f3f3"}}
+       [select {:name     "elelele"
+                :autosize false
+                :value    (-> state :consultant :consultant/selected)
+                :options  (->> state
+                               :users/all
+                               (into []
+                                     (map (fn [consultant]
+                                            (set/rename-keys consultant {:user/display-name  :label
+                                                                         :user/jira-username :value})))))
+                :onChange (fn [selected] (swap! domain/app-state assoc-in [:consultant :consultant/selected] (:value (js->clj selected :keywordize-keys true))))}]]
       [:div {:style {:display         "flex"
                      :flex-wrap       "wrap"
                      :justify-content "center"

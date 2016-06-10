@@ -43,12 +43,13 @@
         (if (and (instance? IllegalArgumentException c)
                  ))))))
 
-(defn all-usernames [dbval]
-  (->> (d/q '{:find  [?username]
+(defn all-users [dbval]
+  (->> (d/q '{:find  [(pull ?e [:user/jira-username :user/display-name])]
               :in    [$]
               :where [[?e :user/jira-username ?username]]}
             dbval)
-       (into #{} (map first))))
+       (map first)
+       (sort-by :user/jira-username)))
 
 (defn entity-id-by-username [dbval username]
   (q-one '{:find  [?e]
@@ -154,10 +155,14 @@
   (map->DatomicSchema {:schema-file (:schema-file options)
                        :schema-name (:schema-name options)}))
 
+(defn with-all-users [dbval m]
+  (assoc m :users/all (all-users dbval)))
+
 (defn existing-user-data-for-user [conn user-id]
   (let [dbval (db conn)]
     (some->> (user-id-by-external-user-id dbval user-id)
-             (existing-user-data dbval))))
+             (existing-user-data dbval)
+             (with-all-users dbval))))
 
 (defn all-team-informations [dbval]
   (into #{}
@@ -167,3 +172,8 @@
         (d/q '{:find  [(pull ?t [*])]
                :where [[?t :team/id]]}
              dbval)))
+
+(defn existing-user-data-by-username [conn consultant-username]
+  (let [dbval (db conn)]
+    (some->> (entity-id-by-username dbval consultant-username) (existing-user-data dbval))))
+>>>>>>> View stats of other consultant
