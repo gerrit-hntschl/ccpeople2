@@ -346,8 +346,12 @@
                                             (:days-without-booked-hours unbooked-days-stats))
    :days-below-threshold                  (fnk [unbooked-days-stats]
                                             (sort (:days-below-threshold unbooked-days-stats)))
-   :number-sick-leave-days                (fnk [state]
-                                            (/ (sick-leave-hours state) 8))
+   :my-stats?                             (fnk [state]
+                                            (= (:user/identity state) (-> state :user :user/jira-username)))
+   :number-sick-leave-days                (fnk [my-stats? state]
+                                            (if my-stats?
+                                              (/ (sick-leave-hours state) 8)
+                                              "X"))
    })
 
 (def app-model (graph/compile-cancelling app-model-graph))
