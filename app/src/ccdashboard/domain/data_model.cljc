@@ -182,7 +182,8 @@
                          :user/jira-username               NonEmptyString
                          :user/email                       EmailAddress
                          :user/display-name                NonEmptyString
-                         :user/team                        PositiveInt
+                         ;; TODO optional for now as devs can't import all teams
+                         (s/optional-key :user/team)       PositiveInt
                          (s/optional-key :user/start-date) LocalDate
                          s/Keyword                         s/Any})
 

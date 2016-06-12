@@ -109,7 +109,7 @@
 (defn domain-user [db-user]
   (-> db-user
       (as-map)
-      (update :user/team :team/id)
+      (update-in-when [:user/team] :team/id)
       (model/to-domain-user)))
 
 (defn existing-user-data [dbval id]
@@ -158,11 +158,16 @@
 (defn with-all-users [dbval m]
   (assoc m :users/all (all-users dbval)))
 
+(defn add-identity [user-data]
+  (assoc user-data :user/identity (get-in user-data [:user :user/jira-username])))
+
 (defn existing-user-data-for-user [conn user-id]
   (let [dbval (db conn)]
     (some->> (user-id-by-external-user-id dbval user-id)
              (existing-user-data dbval)
-             (with-all-users dbval))))
+             (with-all-users dbval)
+             (add-identity))))
+
 
 (defn all-team-informations [dbval]
   (into #{}
@@ -176,4 +181,5 @@
 (defn existing-user-data-by-username [conn consultant-username]
   (let [dbval (db conn)]
     (some->> (entity-id-by-username dbval consultant-username) (existing-user-data dbval))))
->>>>>>> View stats of other consultant
+
+
