@@ -71,15 +71,20 @@
   (let [model-data (domain/app-model {:state @state-atom})
         stat (get model-data stat-key)
         total-stat (get model-data total-stat-key)]
-    (dataviz/progress component-name stat total-stat format-fn)))
+    (dataviz/progress-create component-name)
+    (dataviz/progress-update component-name stat total-stat format-fn)))
 
-(defn progress-update [state-atom component-name stat-key total-stat-key])
+(defn progress-update [state-atom component-name stat-key total-stat-key format-fn]
+  (let [model-data (domain/app-model {:state @state-atom})
+        stat (get model-data stat-key)
+        total-stat (get model-data total-stat-key)]
+    (dataviz/progress-update component-name stat total-stat format-fn)))
 
 (defn progress-component [state-atom component-name stat-key total-stat-key & [format-fn]]
   (let [format-fn (or format-fn str)]
     (reagent/create-class {:reagent-render       (partial progress-render state-atom component-name)
                            :component-did-mount  (partial progress-did-mount state-atom component-name stat-key total-stat-key format-fn)
-                           :component-did-update (partial progress-update state-atom component-name stat-key total-stat-key)})))
+                           :component-did-update (partial progress-update state-atom component-name stat-key total-stat-key format-fn)})))
 
 (defn format-days [n]
   (if (= n 1)
@@ -149,8 +154,11 @@
       [:div {:style {:display         "flex"
                      :justify-content "center"
                      :border-bottom   "1px solid #f3f3f3"}}
-       [select {:name     "elelele"
+       [select {:name     "consultant-search"
                 :autosize false
+                :clearable false
+                :backspaceRemoves false
+                :noResultsText "Unknown consultant"
                 :value    (-> state :consultant :consultant/selected)
                 :options  (->> state
                                :users/all
