@@ -78,7 +78,9 @@
 (defn api-handler [conn req]
   (def apireq req)
   (if-let [user-id (oauth/get-signed-user-id req)]
-    (response (storage/existing-user-data-for-user conn (UUID/fromString user-id)))
+    (if-let [consultant-username (get-in req [:params :consultant])]
+      (response (storage/existing-user-data-by-username conn consultant-username))
+      (response (storage/existing-user-data-for-user conn (UUID/fromString user-id))))
     (-> (response {:error :error/unknown-user})
         (resp/status 401))))
 

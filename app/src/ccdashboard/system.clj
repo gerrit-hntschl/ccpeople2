@@ -10,13 +10,13 @@
             [ccdashboard.server.middlewared-handler :refer [handler-component router-component]]
             [ccdashboard.persistence.core :as storage]
             [ccdashboard.ticket-import.core :as worklog]
+            [ccdashboard.assets :refer [wrap-assets]]
             [ring.middleware.format :as ring-format]
             [ring.middleware.stacktrace :as stacktrace]
     ;; to load data reader
             ccdashboard.data-readers.local-date
             [cognitect.transit :as transit]
-            [ccdashboard.log :as log]
-            [ccdashboard.oauth.core :as oauth])
+            [ccdashboard.log :as log])
   (:import (com.stuartsierra.component Lifecycle)
            (java.io Closeable)
            (java.util.concurrent Executors TimeUnit)
@@ -26,6 +26,7 @@
 (def base-config
   {:app {:middleware     [[wrap-not-found :not-found]
                           [ring-format/wrap-restful-format :transit-custom]
+                          [wrap-assets]
                           [wrap-defaults :defaults]
                           [stacktrace/wrap-stacktrace-log]]
          :not-found      (io/resource "errors/404.html")
