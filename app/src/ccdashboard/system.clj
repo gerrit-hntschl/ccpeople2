@@ -26,8 +26,8 @@
 (def base-config
   {:app {:middleware     [[wrap-not-found :not-found]
                           [ring-format/wrap-restful-format :transit-custom]
-                          [wrap-defaults :defaults]
                           [wrap-assets]
+                          [wrap-defaults :defaults]
                           [stacktrace/wrap-stacktrace-log]]
          :not-found      (io/resource "errors/404.html")
          :defaults       (meta-merge site-defaults {:static {:resources "public"}})
