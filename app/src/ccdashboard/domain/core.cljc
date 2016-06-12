@@ -49,18 +49,28 @@
   (mixpanel/identify jira-username)
   (mixpanel/track "signin"))
 
-(defn handle-api-response [data]
-  (let [current-user (get-in data [:user :user/jira-username])]
+(defn handle-initial-api-response [data]
+  (let [selected-username (get-in data [:user :user/jira-username])]
     (swap! app-state
            merge
            (-> data
                (assoc-in [:user :user/signed-in?] true)
-               (assoc-in [:consultant :consultant/selected] current-user)))
-    (track-user current-user)))
+               (assoc-in [:consultant :consultant/selected] selected-username)))
+    (track-user selected-username)))
+
+(defn handle-consultant-api-response [data]
+  (swap! app-state
+         merge
+         (-> data
+             (assoc-in [:user :user/signed-in?] true)
+             (assoc-in [:consultant :consultant/selected]
+                       (get-in data [:user :user/jira-username])))))
 
 (defn call-api [& [params]]
   (ajax/GET "/api"
-            (cond-> {:handler         handle-api-response
+            (cond-> {:handler         (if (:consultant params)
+                                        handle-consultant-api-response
+                                        handle-initial-api-response)
                      :error-handler   error-handler-fn
                      :response-format :transit
                      :keywords?       true
@@ -80,7 +90,8 @@
                      new-consultant (get-in new-state [:consultant :consultant/selected])]
                  (when (and (not= prev-consultant new-consultant)
                             (some? new-consultant))
-                   (call-api {:consultant new-consultant}))))))
+                   (call-api {:consultant new-consultant})
+                   (mixpanel/track "consultant/search"))))))
 
 (defn current-period-start [today]
   ;; period is closed on 5th of next month, unless in January
