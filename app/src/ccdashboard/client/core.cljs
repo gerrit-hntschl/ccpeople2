@@ -273,10 +273,10 @@
             [:a.button {:href "/login"} "Sign-in"]
             [:p "Yes, it uses Duo Mobile... But you only need to log-in once, then a cookie will keep you logged in for a year."]]])))
 
-(defn toggle-show-menu-to-user [e]
-  (let [show-menu (.getElementById js/document "show-menu")
-        state (.-checked show-menu)]
-    (set! (.-checked show-menu) (not state))))
+(def toggle-show-menu (reagent/atom false))
+
+(defn toggle-for-show-menu []
+  (swap! toggle-show-menu not))
 
 (defn page []
   (let [user-signed-in (domain/user-sign-in-state @domain/app-state)]
@@ -288,14 +288,16 @@
       [:span#banner
        [:a {:href "/#"} "ccDashboard"]]
       [:input#show-menu {:type "checkbox"
-                         :role "button"}]
+                         :role "button"
+                         :on-click toggle-for-show-menu
+                         :checked @toggle-show-menu}]
       [:span#menu
        [:ul
         (doall
           (keep (fn [[href content]]
                   (if user-signed-in
                     ^{:key href} [:li.menuitem [:a {:href href
-                                                    :on-click toggle-show-menu-to-user}
+                                                    :on-click toggle-for-show-menu}
                                                 content]]))
                 [["/#" "Home"]
                  ["/#locations" "Locations"]
