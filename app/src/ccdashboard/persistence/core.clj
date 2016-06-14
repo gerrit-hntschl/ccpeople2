@@ -182,4 +182,14 @@
   (let [dbval (db conn)]
     (some->> (entity-id-by-username dbval consultant-username) (existing-user-data dbval))))
 
-
+(defn billable-hours-for-teams [dbval]
+  (d/q '{:find  [(sum ?hours) ?name]
+         :where [[?cc :customer/name "codecentric"]
+                 (not [?ticket :ticket/customer ?cc])
+                 (not [?ticket :ticket/invoicing :invoicing/not-billable])
+                 [?worklog :worklog/ticket ?ticket]
+                 [?worklog :worklog/hours ?hours]
+                 [?worklog :worklog/user ?user]
+                 [?user :user/team ?team]
+                 [?team :team/name ?name]]}
+       dbval))
