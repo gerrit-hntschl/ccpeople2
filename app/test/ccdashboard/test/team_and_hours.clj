@@ -71,6 +71,26 @@
                            :worklog/hours      4.}]]
    :expected-result     #{{:team/name "Berlin", :hours 8.0} {:team/name "Hamburg", :hours 4.0}}})
 
+(def two-user-same-team-two-ticket-scenario
+  {:fixture             default-fixtures
+   :billable-components [[{:db/id              (storage/people-tempid)
+                           :ticket/id          201
+                           :ticket/customer    [:customer/id 2]
+                           :ticket/invoicing   :invoicing/fixed-price}
+                          {:db/id              (storage/people-tempid)
+                           :ticket/id          202
+                           :ticket/customer    [:customer/id 2]
+                           :ticket/invoicing   :invoicing/fixed-price}]
+                         [{:db/id              (storage/people-tempid)
+                           :worklog/ticket     [:ticket/id 201]
+                           :worklog/user       [:user/jira-username "peter.lustig"]
+                           :worklog/hours      8.}
+                          {:db/id              (storage/people-tempid)
+                           :worklog/ticket     [:ticket/id 202]
+                           :worklog/user       [:user/jira-username "pipi.langstrumpf"]
+                           :worklog/hours      4.}]]
+   :expected-result     #{{:team/name "Berlin", :hours 12.0}}})
+
 (def two-user-same-team-one-ticket-scenario
   {:fixture             default-fixtures
    :billable-components [[{:db/id              (storage/people-tempid)
@@ -157,6 +177,9 @@
 
 (deftest should-be-billable-for-one-team-one-ticket
   (test-scenario two-user-same-team-one-ticket-scenario))
+
+(deftest should-be-billable-for-one-team-two-ticket
+  (test-scenario two-user-same-team-two-ticket-scenario))
 
 (deftest should-not-book-codecentric-ticket
   (test-scenario booking-codecentric-ticket-scenario))
