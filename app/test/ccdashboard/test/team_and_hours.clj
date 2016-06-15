@@ -55,6 +55,23 @@
    :expected-result     #{{:team/name "Berlin"
                            :team/hours 8.0}}})
 
+(def one-user-one-ticket-equal-worklog-scenario
+  {:fixture             default-fixtures
+   :billable-components [[{:db/id              (storage/people-tempid)
+                           :ticket/id          201
+                           :ticket/customer    [:customer/id 2]
+                           :ticket/invoicing   :invoicing/fixed-price}]
+                         [{:db/id              (storage/people-tempid)
+                           :worklog/ticket     [:ticket/id 201]
+                           :worklog/user       [:user/jira-username "peter.lustig"]
+                           :worklog/hours      4.}
+                          {:db/id              (storage/people-tempid)
+                           :worklog/ticket     [:ticket/id 201]
+                           :worklog/user       [:user/jira-username "peter.lustig"]
+                           :worklog/hours      4.}]]
+   :expected-result     #{{:team/name "Berlin"
+                           :team/hours 8.0}}})
+
 (def two-user-different-team-one-ticket-scenario
   {:fixture             default-fixtures
    :billable-components [[{:db/id              (storage/people-tempid)
@@ -178,6 +195,9 @@
 
 (deftest should-be-billable-for-one-user-one-ticket
   (test-scenario one-user-one-ticket-scenario))
+
+(deftest should-be-billable-for-one-user-one-ticket-equal-worklog
+  (test-scenario one-user-one-ticket-equal-worklog-scenario))
 
 (deftest should-be-billable-for-two-teams-two-tickets
   (test-scenario two-user-different-team-one-ticket-scenario))
