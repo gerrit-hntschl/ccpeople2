@@ -55,6 +55,22 @@
                            :worklog/hours      8.}]]
    :expected-result     #{{:team/name "Berlin" :hours 8.0}}})
 
+(def two-user-different-team-one-ticket-scenario
+  {:fixture             default-fixtures
+   :billable-components [[{:db/id              (storage/people-tempid)
+                           :ticket/id          201
+                           :ticket/customer    [:customer/id 2]
+                           :ticket/invoicing   :invoicing/fixed-price}]
+                         [{:db/id              (storage/people-tempid)
+                           :worklog/ticket     [:ticket/id 201]
+                           :worklog/user       [:user/jira-username "peter.lustig"]
+                           :worklog/hours      8.}
+                          {:db/id              (storage/people-tempid)
+                           :worklog/ticket     [:ticket/id 201]
+                           :worklog/user       [:user/jira-username "bob.baumeister"]
+                           :worklog/hours      4.}]]
+   :expected-result     #{{:team/name "Berlin", :hours 8.0} {:team/name "Hamburg", :hours 4.0}}})
+
 (defn new-in-memory-system [config]
   (assoc-in config [:datomic :connect-url] (format "datomic:mem://%s" (UUID/randomUUID))))
 
@@ -79,3 +95,6 @@
 
 (deftest should-be-billable-for-one-team-easy
   (test-scenario one-user-one-ticket-scenario))
+
+(deftest should-be-billable-for-two-teams-easy
+  (test-scenario two-user-different-team-one-ticket-scenario))
