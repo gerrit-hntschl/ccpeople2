@@ -188,6 +188,7 @@
                {:team/name (first team)
                 :team/hours (second team)}))
         (d/q '{:find  [?name (sum ?hours)]
+               :with  [?worklog]
                :where [[?cc :customer/name "codecentric"]
                        (not [?ticket :ticket/customer ?cc])
                        (not [?ticket :ticket/invoicing :invoicing/not-billable])
