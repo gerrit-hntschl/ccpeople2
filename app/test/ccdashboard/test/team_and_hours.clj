@@ -1,11 +1,5 @@
 (ns ccdashboard.test.team_and_hours
-  (:require [schema.experimental.complete :as c]
-            [ccdashboard.ticket-import.core :refer :all]
-            [datomic.api :as d]
-            [ccdashboard.system :as system]
-            [ccdashboard.config :as config]
-            [ccdashboard.domain.data-model :as model]
-            [com.stuartsierra.component :as component]
+  (:require [datomic.api :as d]
             [ccdashboard.persistence.core :as storage]
             [clojure.test :refer [is deftest run-tests]])
   (:import (java.util UUID)))
@@ -171,19 +165,20 @@
    :expected-result     #{{:team/name "Berlin"
                            :team/billable-hours 4.0}}})
 
-(defn new-in-memory-system [config]
-  (assoc-in config [:datomic :connect-url] (format "datomic:mem://%s" (UUID/randomUUID))))
+(defn create-and-start-new-test-system [db-uri]
+  (d/create-database db-uri)
+  (let [conn (d/connect db-uri)
+        schema (storage/load-resource "datomic-schema.edn")]
+    (doseq [tx (get-in schema [:ccpeople2/schema1 :txes])]
+      @(d/transact conn tx))
+    conn))
 
-(defn new-test-system [scenario]
-  (-> (system/new-system (new-in-memory-system config/defaults))
-      ;; don't need an http server for testing currently
-      (dissoc :http)
-      (assoc :jira-client (map->JiraFakeClient (:jira-state scenario)))
-      (component/system-using {:jira-importer [:conn :jira-client :scheduler]})))
+(defn stop-test-system [db-uri]
+  (d/delete-database db-uri))
 
 (defn test-scenario [scenario]
-  (let [sys (component/start (new-test-system scenario))
-        conn (:conn sys)]
+  (let [db-uri "datomic:mem://test-db"
+        conn (create-and-start-new-test-system db-uri)]
     (try
       (doseq [tx (into (:fixture scenario)
                        (:billable-components scenario))]
@@ -191,7 +186,7 @@
       (is (= (:expected-result scenario)
              (storage/billable-hours-for-teams (d/db conn))))
       (finally
-        (component/stop sys)))))
+        (stop-test-system db-uri)))))
 
 (deftest should-be-billable-for-one-user-one-ticket
   (test-scenario one-user-one-ticket-scenario))
