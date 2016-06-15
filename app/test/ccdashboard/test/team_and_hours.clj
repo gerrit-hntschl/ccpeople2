@@ -87,6 +87,26 @@
                            :worklog/hours      4.}]]
    :expected-result     #{{:team/name "Berlin", :hours 12.0}}})
 
+(def booking-codecentric-ticket-scenario
+  {:fixture             default-fixtures
+   :billable-components [[{:db/id              (storage/people-tempid)
+                           :ticket/id          201
+                           :ticket/customer    [:customer/id 2]
+                           :ticket/invoicing   :invoicing/fixed-price}
+                          {:db/id              (storage/people-tempid)
+                           :ticket/id          202
+                           :ticket/customer    [:customer/id 1]
+                           :ticket/invoicing   :invoicing/fixed-price}]
+                         [{:db/id              (storage/people-tempid)
+                           :worklog/ticket     [:ticket/id 201]
+                           :worklog/user       [:user/jira-username "peter.lustig"]
+                           :worklog/hours      4.}
+                          {:db/id              (storage/people-tempid)
+                           :worklog/ticket     [:ticket/id 202]
+                           :worklog/user       [:user/jira-username "bob.baumeister"]
+                           :worklog/hours      4.}]]
+   :expected-result     #{{:team/name "Berlin", :hours 4.0}}})
+
 (defn new-in-memory-system [config]
   (assoc-in config [:datomic :connect-url] (format "datomic:mem://%s" (UUID/randomUUID))))
 
@@ -117,3 +137,6 @@
 
 (deftest should-be-billable-for-one-team-middle
   (test-scenario two-user-same-team-one-ticket-scenario))
+
+(deftest should-not-book-codecentric-ticket
+  (test-scenario booking-codecentric-ticket-scenario))
