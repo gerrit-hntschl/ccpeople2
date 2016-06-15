@@ -186,7 +186,7 @@
   (into #{}
         (map (fn [team]
                {:team/name (first team)
-                :hours (second team)}))
+                :team/hours (second team)}))
         (d/q '{:find  [?name (sum ?hours)]
                :where [[?cc :customer/name "codecentric"]
                        (not [?ticket :ticket/customer ?cc])

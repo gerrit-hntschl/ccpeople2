@@ -40,8 +40,7 @@
                          :customer/name      "codecentric"}
                         {:db/id              (storage/people-tempid)
                          :customer/id        2
-                         :customer/name      "BAU"}]]
-)
+                         :customer/name      "BAU"}]])
 
 (def one-user-one-ticket-scenario
   {:fixture             default-fixtures
@@ -53,7 +52,8 @@
                            :worklog/ticket     [:ticket/id 201]
                            :worklog/user       [:user/jira-username "peter.lustig"]
                            :worklog/hours      8.}]]
-   :expected-result     #{{:team/name "Berlin" :hours 8.0}}})
+   :expected-result     #{{:team/name "Berlin"
+                           :team/hours 8.0}}})
 
 (def two-user-different-team-one-ticket-scenario
   {:fixture             default-fixtures
@@ -69,7 +69,10 @@
                            :worklog/ticket     [:ticket/id 201]
                            :worklog/user       [:user/jira-username "bob.baumeister"]
                            :worklog/hours      4.}]]
-   :expected-result     #{{:team/name "Berlin", :hours 8.0} {:team/name "Hamburg", :hours 4.0}}})
+   :expected-result     #{{:team/name "Berlin"
+                           :team/hours 8.0}
+                          {:team/name "Hamburg"
+                           :team/hours 4.0}}})
 
 (def two-user-same-team-two-ticket-scenario
   {:fixture             default-fixtures
@@ -89,7 +92,8 @@
                            :worklog/ticket     [:ticket/id 202]
                            :worklog/user       [:user/jira-username "pipi.langstrumpf"]
                            :worklog/hours      4.}]]
-   :expected-result     #{{:team/name "Berlin", :hours 12.0}}})
+   :expected-result     #{{:team/name "Berlin"
+                           :team/hours 12.0}}})
 
 (def two-user-same-team-one-ticket-scenario
   {:fixture             default-fixtures
@@ -105,7 +109,8 @@
                            :worklog/ticket     [:ticket/id 201]
                            :worklog/user       [:user/jira-username "pipi.langstrumpf"]
                            :worklog/hours      4.}]]
-   :expected-result     #{{:team/name "Berlin", :hours 12.0}}})
+   :expected-result     #{{:team/name "Berlin"
+                           :team/hours 12.0}}})
 
 (def booking-codecentric-ticket-scenario
   {:fixture             default-fixtures
@@ -125,7 +130,8 @@
                            :worklog/ticket     [:ticket/id 202]
                            :worklog/user       [:user/jira-username "pipi.langstrumpf"]
                            :worklog/hours      4.}]]
-   :expected-result     #{{:team/name "Berlin", :hours 4.0}}})
+   :expected-result     #{{:team/name "Berlin"
+                           :team/hours 4.0}}})
 
 (def invoicing-not-billable-ticket-scenario
   {:fixture             default-fixtures
@@ -145,7 +151,8 @@
                            :worklog/ticket     [:ticket/id 202]
                            :worklog/user       [:user/jira-username "pipi.langstrumpf"]
                            :worklog/hours      4.}]]
-   :expected-result     #{{:team/name "Berlin", :hours 4.0}}})
+   :expected-result     #{{:team/name "Berlin"
+                           :team/hours 4.0}}})
 
 (defn new-in-memory-system [config]
   (assoc-in config [:datomic :connect-url] (format "datomic:mem://%s" (UUID/randomUUID))))
