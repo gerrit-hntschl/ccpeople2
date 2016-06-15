@@ -185,7 +185,7 @@
 (defn billable-hours-for-teams [dbval]
   (into #{}
         (map (fn [team]
-               (zipmap [:team/name :team/hours] team)))
+               (zipmap [:team/name :team/billable-hours] team)))
         (d/q '{:find  [?name (sum ?hours)]
                :with  [?worklog]
                :where [[?cc :customer/name "codecentric"]
