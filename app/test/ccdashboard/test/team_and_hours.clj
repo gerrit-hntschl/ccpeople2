@@ -129,13 +129,13 @@
       (finally
         (component/stop sys)))))
 
-(deftest should-be-billable-for-one-team-easy
+(deftest should-be-billable-for-one-user-one-ticket
   (test-scenario one-user-one-ticket-scenario))
 
-(deftest should-be-billable-for-two-teams-easy
+(deftest should-be-billable-for-two-teams-two-tickets
   (test-scenario two-user-different-team-one-ticket-scenario))
 
-(deftest should-be-billable-for-one-team-middle
+(deftest should-be-billable-for-one-team-one-ticket
   (test-scenario two-user-same-team-one-ticket-scenario))
 
 (deftest should-not-book-codecentric-ticket
