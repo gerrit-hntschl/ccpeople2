@@ -103,7 +103,27 @@
                            :worklog/hours      4.}
                           {:db/id              (storage/people-tempid)
                            :worklog/ticket     [:ticket/id 202]
-                           :worklog/user       [:user/jira-username "bob.baumeister"]
+                           :worklog/user       [:user/jira-username "pipi.langstrumpf"]
+                           :worklog/hours      4.}]]
+   :expected-result     #{{:team/name "Berlin", :hours 4.0}}})
+
+(def invoicing-not-billable-ticket-scenario
+  {:fixture             default-fixtures
+   :billable-components [[{:db/id              (storage/people-tempid)
+                           :ticket/id          201
+                           :ticket/customer    [:customer/id 2]
+                           :ticket/invoicing   :invoicing/fixed-price}
+                          {:db/id              (storage/people-tempid)
+                           :ticket/id          202
+                           :ticket/customer    [:customer/id 2]
+                           :ticket/invoicing   :invoicing/not-billable}]
+                         [{:db/id              (storage/people-tempid)
+                           :worklog/ticket     [:ticket/id 201]
+                           :worklog/user       [:user/jira-username "peter.lustig"]
+                           :worklog/hours      4.}
+                          {:db/id              (storage/people-tempid)
+                           :worklog/ticket     [:ticket/id 202]
+                           :worklog/user       [:user/jira-username "pipi.langstrumpf"]
                            :worklog/hours      4.}]]
    :expected-result     #{{:team/name "Berlin", :hours 4.0}}})
 
@@ -140,3 +160,6 @@
 
 (deftest should-not-book-codecentric-ticket
   (test-scenario booking-codecentric-ticket-scenario))
+
+(deftest should-not-book-not-billable-tikets
+  (test-scenario invoicing-not-billable-ticket-scenario))
