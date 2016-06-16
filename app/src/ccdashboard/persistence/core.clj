@@ -184,9 +184,10 @@
 
 (defn billable-hours-for-teams [dbval]
   (into #{}
-        (map (fn [team]
-               (zipmap [:team/name :team/billable-hours] team)))
-        (d/q '{:find  [?name (sum ?hours)]
+        (map (fn [team] (assoc (second team)
+                              :team/billable-hours
+                              (first team))))
+        (d/q '{:find  [(sum ?hours) (pull ?team [:team/id :team/name])]
                :with  [?worklog]
                :where [[?cc :customer/name "codecentric"]
                        (not [?ticket :ticket/customer ?cc])
@@ -194,6 +195,5 @@
                        [?worklog :worklog/ticket ?ticket]
                        [?worklog :worklog/hours ?hours]
                        [?worklog :worklog/user ?user]
-                       [?user :user/team ?team]
-                       [?team :team/name ?name]]}
+                       [?user :user/team ?team]]}
              dbval)))

@@ -42,7 +42,8 @@
                            :worklog/ticket     [:ticket/id 201]
                            :worklog/user       [:user/jira-username "peter.lustig"]
                            :worklog/hours      8.}]]
-   :expected-result     #{{:team/name "Berlin"
+   :expected-result     #{{:team/id             101
+                           :team/name           "Berlin"
                            :team/billable-hours 8.0}}})
 
 (def one-user-one-ticket-equal-worklog-scenario
@@ -59,7 +60,8 @@
                            :worklog/ticket     [:ticket/id 201]
                            :worklog/user       [:user/jira-username "peter.lustig"]
                            :worklog/hours      4.}]]
-   :expected-result     #{{:team/name "Berlin"
+   :expected-result     #{{:team/id             101
+                           :team/name           "Berlin"
                            :team/billable-hours 8.0}}})
 
 (def two-user-different-team-one-ticket-scenario
@@ -76,9 +78,11 @@
                            :worklog/ticket     [:ticket/id 201]
                            :worklog/user       [:user/jira-username "bob.baumeister"]
                            :worklog/hours      4.}]]
-   :expected-result     #{{:team/name "Berlin"
+   :expected-result     #{{:team/id             101
+                           :team/name           "Berlin"
                            :team/billable-hours 8.0}
-                          {:team/name "Hamburg"
+                          {:team/id             200
+                           :team/name           "Hamburg"
                            :team/billable-hours 4.0}}})
 
 (def two-user-same-team-two-ticket-scenario
@@ -99,7 +103,8 @@
                            :worklog/ticket     [:ticket/id 202]
                            :worklog/user       [:user/jira-username "pipi.langstrumpf"]
                            :worklog/hours      4.}]]
-   :expected-result     #{{:team/name "Berlin"
+   :expected-result     #{{:team/id             101
+                           :team/name           "Berlin"
                            :team/billable-hours 12.0}}})
 
 (def two-user-same-team-one-ticket-scenario
@@ -116,7 +121,8 @@
                            :worklog/ticket     [:ticket/id 201]
                            :worklog/user       [:user/jira-username "pipi.langstrumpf"]
                            :worklog/hours      4.}]]
-   :expected-result     #{{:team/name "Berlin"
+   :expected-result     #{{:team/id             101
+                           :team/name           "Berlin"
                            :team/billable-hours 12.0}}})
 
 (def booking-codecentric-ticket-scenario
@@ -137,7 +143,8 @@
                            :worklog/ticket     [:ticket/id 202]
                            :worklog/user       [:user/jira-username "pipi.langstrumpf"]
                            :worklog/hours      4.}]]
-   :expected-result     #{{:team/name "Berlin"
+   :expected-result     #{{:team/id             101
+                           :team/name           "Berlin"
                            :team/billable-hours 4.0}}})
 
 (def invoicing-not-billable-ticket-scenario
@@ -158,7 +165,8 @@
                            :worklog/ticket     [:ticket/id 202]
                            :worklog/user       [:user/jira-username "pipi.langstrumpf"]
                            :worklog/hours      4.}]]
-   :expected-result     #{{:team/name "Berlin"
+   :expected-result     #{{:team/id             101
+                           :team/name           "Berlin"
                            :team/billable-hours 4.0}}})
 
 (defn create-and-start-new-test-system [db-uri]
