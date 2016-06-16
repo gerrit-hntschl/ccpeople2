@@ -4,10 +4,6 @@
             [clojure.test :refer [is deftest run-tests]])
   (:import (java.util UUID)))
 
-(defn complete-non-nil [schema]
-  (fn [x]
-    (c/complete x schema)))
-
 (def default-fixtures [[{:db/id              (storage/people-tempid)
                          :team/id            101
                          :team/name          "Berlin"}
