@@ -43,12 +43,13 @@
         (if (and (instance? IllegalArgumentException c)
                  ))))))
 
-(defn all-usernames [dbval]
-  (->> (d/q '{:find  [?username]
+(defn all-users [dbval]
+  (->> (d/q '{:find  [(pull ?e [:user/jira-username :user/display-name])]
               :in    [$]
               :where [[?e :user/jira-username ?username]]}
             dbval)
-       (into #{} (map first))))
+       (map first)
+       (sort-by :user/jira-username)))
 
 (defn entity-id-by-username [dbval username]
   (q-one '{:find  [?e]
@@ -73,8 +74,6 @@
          external-user-id))
 
 (defn user-id-by-email-or-create [conn domain-user]
-  (def cxc conn)
-  (def dus domain-user)
   (if-let [id (user-id-by-email (db conn) (:user/email domain-user))]
     id
     (create-openid-user conn domain-user)))
@@ -110,10 +109,10 @@
 (defn domain-user [db-user]
   (-> db-user
       (as-map)
+      (update-in-when [:user/team] :team/id)
       (model/to-domain-user)))
 
 (defn existing-user-data [dbval id]
-  (def xxid id)
   (let [user-entity (d/entity dbval id)
         db-worklogs (:worklog/_user user-entity)
         tickets (into #{} (map :worklog/ticket) db-worklogs)
@@ -156,7 +155,44 @@
   (map->DatomicSchema {:schema-file (:schema-file options)
                        :schema-name (:schema-name options)}))
 
+(defn with-all-users [dbval m]
+  (assoc m :users/all (all-users dbval)))
+
+(defn add-identity [user-data]
+  (assoc user-data :user/identity (get-in user-data [:user :user/jira-username])))
+
 (defn existing-user-data-for-user [conn user-id]
   (let [dbval (db conn)]
     (some->> (user-id-by-external-user-id dbval user-id)
-             (existing-user-data dbval))))
+             (existing-user-data dbval)
+             (with-all-users dbval)
+             (add-identity))))
+
+
+(defn all-team-informations [dbval]
+  (into #{}
+        (map (comp model/to-domain-team
+                   (fn [team] (dissoc team :db/id))
+                   first))
+        (d/q '{:find  [(pull ?t [*])]
+               :where [[?t :team/id]]}
+             dbval)))
+
+(defn existing-user-data-by-username [conn consultant-username]
+  (let [dbval (db conn)]
+    (some->> (entity-id-by-username dbval consultant-username) (existing-user-data dbval))))
+
+(defn billable-hours-for-teams [dbval]
+  (into #{}
+        (map (fn [[hours team]]
+               (assoc team :team/billable-hours hours)))
+        (d/q '{:find  [(sum ?hours) (pull ?team [:team/id :team/name])]
+               :with  [?worklog]
+               :where [[?cc :customer/name "codecentric"]
+                       (not [?ticket :ticket/customer ?cc])
+                       (not [?ticket :ticket/invoicing :invoicing/not-billable])
+                       [?worklog :worklog/ticket ?ticket]
+                       [?worklog :worklog/hours ?hours]
+                       [?worklog :worklog/user ?user]
+                       [?user :user/team ?team]]}
+             dbval)))

@@ -1,3 +1,6 @@
+@import url(../assets/cljsjs/react-select/common/react-select.inc.css);
+
+
 @font-face {
     font-family: dashboardFontello;
     src: url(font/fontello.woff);

@@ -49,21 +49,49 @@
   (mixpanel/identify jira-username)
   (mixpanel/track "signin"))
 
-(defn handle-api-response [data]
-  (swap! app-state merge (assoc-in data [:user :user/signed-in?] true))
-  (track-user (get-in data [:user :user/jira-username])))
+(defn handle-initial-api-response [data]
+  (let [selected-username (get-in data [:user :user/jira-username])]
+    (swap! app-state
+           merge
+           (-> data
+               (assoc-in [:user :user/signed-in?] true)
+               (assoc-in [:consultant :consultant/selected] selected-username)))
+    (track-user selected-username)))
 
+(defn handle-consultant-api-response [data]
+  (swap! app-state
+         merge
+         (-> data
+             (assoc-in [:user :user/signed-in?] true)
+             (assoc-in [:consultant :consultant/selected]
+                       (get-in data [:user :user/jira-username])))))
 
-(defn call-api []
+(defn call-api [& [params]]
   (ajax/GET "/api"
-     {:handler         handle-api-response
-      :error-handler   error-handler-fn
-      :response-format :transit
-      :keywords?       true
-      :reader          (transit/reader :json
-                                       {:handlers
-                                        {"date/local" (fn [date-fields]
-                                                        (apply time/local-date date-fields))}})}))
+            (cond-> {:handler         (if (:consultant params)
+                                        handle-consultant-api-response
+                                        handle-initial-api-response)
+                     :error-handler   error-handler-fn
+                     :response-format :transit
+                     :keywords?       true
+                     :reader          (transit/reader :json
+                                                      {:handlers
+                                                       {"date/local" (fn [date-fields]
+                                                                       (apply time/local-date date-fields))}})}
+                    params
+                    (assoc :params params))))
+
+
+(add-watch app-state
+           :load-data-for-consultant
+           (fn [_ _ old-state new-state]
+             (when (get-in old-state [:user :user/signed-in?])
+               (let [prev-consultant (get-in old-state [:consultant :consultant/selected])
+                     new-consultant (get-in new-state [:consultant :consultant/selected])]
+                 (when (and (not= prev-consultant new-consultant)
+                            (some? new-consultant))
+                   (call-api {:consultant new-consultant})
+                   (mixpanel/track "consultant/search"))))))
 
 (defn current-period-start [today]
   ;; period is closed on 5th of next month, unless in January
@@ -318,8 +346,12 @@
                                             (:days-without-booked-hours unbooked-days-stats))
    :days-below-threshold                  (fnk [unbooked-days-stats]
                                             (sort (:days-below-threshold unbooked-days-stats)))
-   :number-sick-leave-days                (fnk [state]
-                                            (/ (sick-leave-hours state) 8))
+   :my-stats?                             (fnk [state]
+                                            (= (:user/identity state) (-> state :user :user/jira-username)))
+   :number-sick-leave-days                (fnk [my-stats? state]
+                                            (if my-stats?
+                                              (/ (sick-leave-hours state) 8)
+                                              "X"))
    })
 
 (def app-model (graph/compile-cancelling app-model-graph))

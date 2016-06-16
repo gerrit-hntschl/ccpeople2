@@ -6,12 +6,14 @@
     [bidi.bidi :as bidi]
     [goog.events :as events]
     cljsjs.react
+    cljsjs.react-select
     [ccdashboard.client.dataviz :as dataviz]
     ;    [material-ui.core :as ui :include-macros true]
     [goog.history.EventType :as EventType]
     [ccdashboard.domain.days :as days]
     [cljs.pprint :as pprint]
-    [clojure.string :as str])
+    [clojure.string :as str]
+    [clojure.set :as set])
   (:import [goog.history Html5History EventType]))
 
 (enable-console-print!)
@@ -69,15 +71,20 @@
   (let [model-data (domain/app-model {:state @state-atom})
         stat (get model-data stat-key)
         total-stat (get model-data total-stat-key)]
-    (dataviz/progress component-name stat total-stat format-fn)))
+    (dataviz/progress-create component-name)
+    (dataviz/progress-update component-name stat total-stat format-fn)))
 
-(defn progress-update [state-atom component-name stat-key total-stat-key])
+(defn progress-update [state-atom component-name stat-key total-stat-key format-fn]
+  (let [model-data (domain/app-model {:state @state-atom})
+        stat (get model-data stat-key)
+        total-stat (get model-data total-stat-key)]
+    (dataviz/progress-update component-name stat total-stat format-fn)))
 
 (defn progress-component [state-atom component-name stat-key total-stat-key & [format-fn]]
   (let [format-fn (or format-fn str)]
     (reagent/create-class {:reagent-render       (partial progress-render state-atom component-name)
                            :component-did-mount  (partial progress-did-mount state-atom component-name stat-key total-stat-key format-fn)
-                           :component-did-update (partial progress-update state-atom component-name stat-key total-stat-key)})))
+                           :component-did-update (partial progress-update state-atom component-name stat-key total-stat-key format-fn)})))
 
 (defn format-days [n]
   (if (= n 1)
@@ -124,6 +131,8 @@
        [:br]
        (formatted-days-comma-separated days)])))
 
+(def select (reagent/adapt-react-class js/Select))
+
 (defn user-stats [state]
   (let [model-data (domain/app-model {:state state})
         rem-holidays (:number-holidays-remaining model-data)
@@ -137,10 +146,27 @@
     [:div {:style {:overflow "hidden"}}
      (days-info "days w/o booked hours: " "#e36588" "white" days-without-booked-hours)
      (days-info "days w/ less than 4 hours booked: " "#f1db4b" "#626161" days-below-threshold)
+
      [:div {:style {:margin-left  "auto"
                     :margin-right "auto"
                     :width        "100%"
                     :color        "#121212"}}
+      [:div {:style {:display         "flex"
+                     :justify-content "center"
+                     :border-bottom   "1px solid #f3f3f3"}}
+       [select {:name     "consultant-search"
+                :autosize false
+                :clearable false
+                :backspaceRemoves false
+                :noResultsText "Unknown consultant"
+                :value    (-> state :consultant :consultant/selected)
+                :options  (->> state
+                               :users/all
+                               (into []
+                                     (map (fn [consultant]
+                                            (set/rename-keys consultant {:user/display-name  :label
+                                                                         :user/jira-username :value})))))
+                :onChange (fn [selected] (swap! domain/app-state assoc-in [:consultant :consultant/selected] (:value (js->clj selected :keywordize-keys true))))}]]
       [:div {:style {:display         "flex"
                      :flex-wrap       "wrap"
                      :justify-content "center"
@@ -247,6 +273,11 @@
             [:a.button {:href "/login"} "Sign-in"]
             [:p "Yes, it uses Duo Mobile... But you only need to log-in once, then a cookie will keep you logged in for a year."]]])))
 
+(def toggle-show-menu (reagent/atom false))
+
+(defn toggle-for-show-menu []
+  (swap! toggle-show-menu not))
+
 (defn page []
   (let [user-signed-in (domain/user-sign-in-state @domain/app-state)]
     [:div
@@ -257,13 +288,17 @@
       [:span#banner
        [:a {:href "/#"} "ccDashboard"]]
       [:input#show-menu {:type "checkbox"
-                         :role "button"}]
+                         :role "button"
+                         :on-click toggle-for-show-menu
+                         :checked @toggle-show-menu}]
       [:span#menu
        [:ul
         (doall
           (keep (fn [[href content]]
                   (if user-signed-in
-                    ^{:key href} [:li.menuitem [:a {:href href} content]]))
+                    ^{:key href} [:li.menuitem [:a {:href href
+                                                    :on-click toggle-for-show-menu}
+                                                content]]))
                 [["/#" "Home"]
                  ["/#locations" "Locations"]
                  ["/logout" [:i.icon-off.medium-icon]]]))]]]
