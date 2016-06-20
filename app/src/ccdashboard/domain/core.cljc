@@ -67,20 +67,22 @@
 (defn handle-team-stats-api-response [data]
    (swap! app-state merge {:team/stats data}))
 
+(defn GET-template {:error-handler   error-handler-fn
+                    :response-format :transit
+                    :keywords?       true})
+
 (defn call-api [& [params]]
   (ajax/GET "/api"
-            (cond-> {:handler         (if (:consultant params)
-                                        handle-consultant-api-response
-                                        handle-initial-api-response)
-                     :error-handler   error-handler-fn
-                     :response-format :transit
-                     :keywords?       true
-                     :reader          (transit/reader :json
-                                                      {:handlers
-                                                       {"date/local" (fn [date-fields]
-                                                                       (apply time/local-date date-fields))}})}
-                    params
-                    (assoc :params params))))
+      (cond-> (merge GET-template
+                     {:handler         (if (:consultant params)
+                                         handle-consultant-api-response
+                                         handle-initial-api-response)
+                      :reader          (transit/reader :json
+                                                       {:handlers
+                                                        {"date/local" (fn [date-fields]
+                                                                        (apply time/local-date date-fields))}})})
+              params
+              (assoc :params params))))
 
 
 (add-watch app-state
@@ -97,10 +99,7 @@
 
 (defn call-team-stats-api []
   (ajax/GET "/team-stats"
-      {:handler         handle-team-stats-api-response
-       :error-handler   error-handler-fn
-       :response-format :transit
-       :keywords?       true}))
+      (assoc GET-template :handler handle-team-stats-api-response)))
 
 (defn current-period-start [today]
   ;; period is closed on 5th of next month, unless in January
