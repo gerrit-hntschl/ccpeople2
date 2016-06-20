@@ -28,7 +28,7 @@ To access Jira data, the dashboard-server uses OAuth. Jira access tokens are bou
 Requirement: your user needs to be in the `jira-developers` group to be able to perform all required queries. Check with your Jira admin.
 
 - Start the VM: `vagrant up`, start the server: `docker-compose up` or `u`, connect your IDE to the server: for Cursive use the `vagrant REPL` run-configuration.
-- In the REPL switch to the `app.oauth` namespace: `(ns app.oauth)`.
+- In the REPL switch to the `ccdashboard.oauth.core` namespace: `(ns ccdashboard.oauth.core)`.
 - Invoke the `request-token` function and store the result: `(def rt (request-token))`
 - The function returns a map containing an `:authorize-url` key. Copy that URL and open it in the browser. You will be prompted to log-in. After logging-in the browser displays a verifier string. Copy that string.
 - Invoke the `access-token` function using the request-token and verifier string: `(access-token rt <paste copied verifier string here>)`.
