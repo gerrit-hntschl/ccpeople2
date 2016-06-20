@@ -5,7 +5,6 @@
             [cognitect.transit :as transit]
             [ccdashboard.analytics.mixpanel :as mixpanel]
             [ccdashboard.util :refer [matching]]
-
             [ccdashboard.graph :as graph]
     #?@(:cljs [[reagent.core :refer [atom]]
                [goog.array :as garray]
@@ -13,9 +12,8 @@
                [goog.dom :as dom]
                cljs-time.extend
                [plumbing.core :refer-macros [fnk]]]
-        :clj  [
-            [clj-time.core :as time]
-            [plumbing.core :refer [fnk]]])
+        :clj  [[clj-time.core :as time]
+               [plumbing.core :refer [fnk]]])
             [clojure.set :as set]))
 
 (def standard-billable-days-goal 180)
@@ -66,6 +64,9 @@
              (assoc-in [:consultant :consultant/selected]
                        (get-in data [:user :user/jira-username])))))
 
+(defn handle-team-stats-api-response [data]
+   (swap! app-state merge {:team/stats data}))
+
 (defn call-api [& [params]]
   (ajax/GET "/api"
             (cond-> {:handler         (if (:consultant params)
@@ -92,6 +93,14 @@
                             (some? new-consultant))
                    (call-api {:consultant new-consultant})
                    (mixpanel/track "consultant/search"))))))
+
+
+(defn call-team-stats-api []
+  (ajax/GET "/team-stats"
+      {:handler         handle-team-stats-api-response
+       :error-handler   error-handler-fn
+       :response-format :transit
+       :keywords?       true}))
 
 (defn current-period-start [today]
   ;; period is closed on 5th of next month, unless in January

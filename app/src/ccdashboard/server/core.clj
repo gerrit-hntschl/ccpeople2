@@ -1,6 +1,5 @@
 (ns ccdashboard.server.core
-  (:require
-            [ccdashboard.persistence.core :as storage]
+  (:require [ccdashboard.persistence.core :as storage]
             [environ.core :refer [env]]
             [hiccup.page :as page]
             [ccdashboard.oauth.core :as oauth]
@@ -8,7 +7,8 @@
             [ring.util.response :refer [response redirect content-type] :as resp]
             [buddy.auth :as auth :refer [authenticated?]]
             [com.stuartsierra.component :as component]
-            [ring.util.response :as response])
+            [ring.util.response :as response]
+            [datomic.api :as d :refer [db]])
   (:import (org.slf4j LoggerFactory)
            (java.util UUID)))
 
