@@ -308,6 +308,7 @@
 
 (defn start []
   (domain/call-api)
+  (domain/call-team-stats-api)
   (reagent/render-component [page]
                             (.getElementById js/document "app")))
 

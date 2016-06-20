@@ -84,7 +84,6 @@
           :database (storage/new-datomic-database (:datomic config))
           :conn (storage/new-datomic-connection)
           :schema (storage/new-conform-schema (:datomic config))
-
           :scheduler (new-scheduler)
           :jira-importer (worklog/new-jira-importer)
           :app (handler-component (:app config))
@@ -94,13 +93,14 @@
           :login-endpoint (server/login-endpoint)
           :logout-endpoint (server/logout-endpoint)
           :api-endpoint (server/api-endpoint)
+          :team-stats-api-endpoint (server/team-stats-api-endpoint)
           :router (router-component))
 
         (component/system-using
           {;; web
            :http   [:app]
            :app    [:router]
-           :router [:index-endpoint :auth-endpoint :login-endpoint :api-endpoint :logout-endpoint]
+           :router [:index-endpoint :auth-endpoint :login-endpoint :api-endpoint :team-stats-api-endpoint :logout-endpoint]
 
            ;; datomic
            :database []
@@ -110,6 +110,7 @@
            ;; endpoints
            :auth-endpoint [:conn]
            :api-endpoint [:conn]
+           :team-stats-api-endpoint [:conn]
            }))))
 
 (defn new-live-system [config]
