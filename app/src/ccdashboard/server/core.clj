@@ -102,4 +102,16 @@
                                  (content-type "text/html")))
                   :tag     :index}))
 
+(defn team-stats-api-handler [conn req]
+  (if (oauth/get-signed-user-id req)
+    (response (storage/billable-hours-for-teams (d/db conn)))
+    (-> (response {:error :error/unknown-user})
+        (resp/status 401))))
 
+(defn team-stats-api-endpoint []
+   (component/using
+    (map->Endpoint {:route           "/team-stats"
+                    :handler-builder (fn [component]
+                                       (partial team-stats-api-handler (:conn component)))
+                    :tag             :team-stats})
+    [:conn]))
