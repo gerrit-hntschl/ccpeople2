@@ -43,7 +43,7 @@
                  [net.oauth.core/oauth-httpclient4 "20090617"]
                  [buddy/buddy-auth "0.9.0"]
                  [cljsjs/d3 "3.5.7-1"]
-                 ;[cljsjs/nvd3 "1.8.1-0"]
+                 [cljsjs/nvd3 "1.8.1-0"]
                  [cljsjs/react-select "1.0.0-beta13-0"]]
 
   :profiles
