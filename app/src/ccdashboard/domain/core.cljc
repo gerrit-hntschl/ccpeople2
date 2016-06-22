@@ -67,7 +67,7 @@
 (defn handle-team-stats-api-response [data]
    (swap! app-state merge {:team/stats data}))
 
-(defn GET-template {:error-handler   error-handler-fn
+(def GET-template {:error-handler   error-handler-fn
                     :response-format :transit
                     :keywords?       true})
 

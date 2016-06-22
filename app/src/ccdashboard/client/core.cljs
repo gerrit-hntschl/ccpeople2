@@ -8,6 +8,7 @@
     cljsjs.react
     cljsjs.react-select
     [ccdashboard.client.dataviz :as dataviz]
+    [ccdashboard.client.barchart :as bars]
     ;    [material-ui.core :as ui :include-macros true]
     [goog.history.EventType :as EventType]
     [ccdashboard.domain.days :as days]
@@ -225,7 +226,11 @@
           [user-stats state])))
 
 (defn location-page [_]
-  [:h1 "Coming soon..."])
+  (bars/create-barchart {:label "Team" :key :team/name}
+                        {:label "Hours" :key :team/hours}
+                        (:team/stats #{{:team/name "Solingen" :team/hours 15.0000 :team/id 1}
+                                       {:team/name "Berlin" :team/hours 7.0000 :team/id 2}
+                                       {:team/name "Muenchen" :team/hours 12.0000 :team/id 3}})))
 
 (defn tabs []
   [:div ""])
