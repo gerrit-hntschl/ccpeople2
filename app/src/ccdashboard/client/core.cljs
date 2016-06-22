@@ -7,8 +7,9 @@
     [goog.events :as events]
     cljsjs.react
     cljsjs.react-select
+    [cljsjs.d3]
+    [cljsjs.nvd3]
     [ccdashboard.client.dataviz :as dataviz]
-    [ccdashboard.client.barchart :as bars]
     ;    [material-ui.core :as ui :include-macros true]
     [goog.history.EventType :as EventType]
     [ccdashboard.domain.days :as days]
@@ -86,6 +87,27 @@
     (reagent/create-class {:reagent-render       (partial progress-render state-atom component-name)
                            :component-did-mount  (partial progress-did-mount state-atom component-name stat-key total-stat-key format-fn)
                            :component-did-update (partial progress-update state-atom component-name stat-key total-stat-key format-fn)})))
+
+(defn location-stats [state-atom component-name]
+  (let [_ state-atom]
+    [:div {:style {:margin-left  "auto"
+                   :margin-right "auto"}
+           :id    component-name}
+     [:svg]]))
+
+(defn location-stats-did-mount [state-atom component-name]
+  (.addGraph js/nv (fn []
+                     (let [chart (.. js/nv -models discreteBarChart
+                                     (x (fn [team] (aget team "name")))
+                                     (y (fn [team] (aget team "billable-hours"))))]
+                       (.. js/d3 (select (str "#" component-name " svg"))
+                           (datum (clj->js [{:values (:team/stats @state-atom)}]))
+                           (call chart))))))
+
+(defn locations-component [state-atom component-name]
+  (reagent/create-class {:reagent-render      (partial location-stats state-atom component-name)
+                         :component-did-mount (partial location-stats-did-mount state-atom component-name)
+                         :component-did-update identity}))
 
 (defn format-days [n]
   (if (= n 1)
@@ -226,15 +248,10 @@
           [user-stats state])))
 
 (defn location-page [_]
-  (bars/create-barchart {:label "Team" :key :team/name}
-                        {:label "Hours" :key :team/hours}
-                        (:team/stats #{{:team/name "Solingen" :team/hours 15.0000 :team/id 1}
-                                       {:team/name "Berlin" :team/hours 7.0000 :team/id 2}
-                                       {:team/name "Muenchen" :team/hours 12.0000 :team/id 3}})))
+  [locations-component domain/app-state "team-stats"])
 
 (defn tabs []
   [:div ""])
-
 
 (def routes ["" {"profile" :profile
                  "people" :people
