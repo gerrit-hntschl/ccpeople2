@@ -89,11 +89,10 @@
                            :component-did-update (partial progress-update state-atom component-name stat-key total-stat-key format-fn)})))
 
 (defn location-stats [state-atom component-name]
-  (let [_ state-atom]
-    [:div {:style {:margin-left  "auto"
-                   :margin-right "auto"}
-           :id    component-name}
-     [:svg]]))
+  [:div {:style {:margin-left  "auto"
+                 :margin-right "auto"}
+         :id    component-name}
+   [:svg]])
 
 (defn location-stats-did-mount [state-atom component-name]
   (.addGraph js/nv (fn []
@@ -106,8 +105,7 @@
 
 (defn locations-component [state-atom component-name]
   (reagent/create-class {:reagent-render      (partial location-stats state-atom component-name)
-                         :component-did-mount (partial location-stats-did-mount state-atom component-name)
-                         :component-did-update identity}))
+                         :component-did-mount (partial location-stats-did-mount state-atom component-name)}))
 
 (defn format-days [n]
   (if (= n 1)
@@ -280,8 +278,9 @@
 
 (defn sign-in-component []
   (let [state @domain/app-state
-        user-sign-in-state (domain/user-sign-in-state state)]
-    (cond (nil? user-sign-in-state)
+        user-sign-in-state (domain/user-sign-in-state state)
+        team-stats (:team/stats state)]
+    (cond (or (nil? user-sign-in-state) (nil? team-stats))
           [:p "Initializing..."]
           (= (:error state) :error/unexpected-api-response)
           [:h2 {:style {:color "black"}} "Oops, something went wrong. Please report issue in #ccdashboard-feedback."]

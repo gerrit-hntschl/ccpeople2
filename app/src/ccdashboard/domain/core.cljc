@@ -64,12 +64,16 @@
              (assoc-in [:consultant :consultant/selected]
                        (get-in data [:user :user/jira-username])))))
 
-(defn handle-team-stats-api-response [data]
-   (swap! app-state merge {:team/stats data}))
+(defn handle-team-stats-api-response [teams]
+  (swap! app-state
+         merge
+         (-> {}
+             (assoc-in [:user :user/signed-in?] true)
+             (assoc :team/stats teams))))
 
 (def GET-template {:error-handler   error-handler-fn
-                    :response-format :transit
-                    :keywords?       true})
+                   :response-format :transit
+                   :keywords?       true})
 
 (defn call-api [& [params]]
   (ajax/GET "/api"
