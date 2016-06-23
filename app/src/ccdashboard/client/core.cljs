@@ -98,14 +98,22 @@
   (.addGraph js/nv (fn []
                      (let [chart (.. js/nv -models discreteBarChart
                                      (x (fn [team] (aget team "name")))
-                                     (y (fn [team] (aget team "billable-hours"))))]
+                                     (y (fn [team] (aget team "billable-hours")))
+                                     (staggerLabels true)
+                                     (showValues true)
+                                     (showYAxis false)
+                                     (valueFormat (.format js/d3 ",.0f"))
+                                     (duration 1500))]
                        (.. js/d3 (select (str "#" component-name " svg"))
                            (datum (clj->js [{:values (:team/stats @state-atom)}]))
-                           (call chart))))))
+                           (call chart))
+                       (.windowResize js/nv.utils (.-update (.duration chart 0)))))))
 
 (defn locations-component [state-atom component-name]
-  (reagent/create-class {:reagent-render      (partial location-stats state-atom component-name)
-                         :component-did-mount (partial location-stats-did-mount state-atom component-name)}))
+  (if (nil? (:team/stats @state-atom))
+    [:p "Loading Stats..."]
+    (reagent/create-class {:reagent-render      (partial location-stats state-atom component-name)
+                           :component-did-mount (partial location-stats-did-mount state-atom component-name)})))
 
 (defn format-days [n]
   (if (= n 1)
@@ -278,9 +286,8 @@
 
 (defn sign-in-component []
   (let [state @domain/app-state
-        user-sign-in-state (domain/user-sign-in-state state)
-        team-stats (:team/stats state)]
-    (cond (or (nil? user-sign-in-state) (nil? team-stats))
+        user-sign-in-state (domain/user-sign-in-state state)]
+    (cond (or (nil? user-sign-in-state))
           [:p "Initializing..."]
           (= (:error state) :error/unexpected-api-response)
           [:h2 {:style {:color "black"}} "Oops, something went wrong. Please report issue in #ccdashboard-feedback."]
