@@ -196,3 +196,17 @@
                        [?worklog :worklog/user ?user]
                        [?user :user/team ?team]]}
              dbval)))
+
+(defn members-in-teams-map [dbval]
+  (into {}
+        (d/q '{:find [?id (count ?members)]
+               :where [[?team :team/id ?id]
+                       [?members :user/team ?team]]}
+             dbval)))
+
+(defn teams-stats-seq [dbval]
+  (let [members-map (members-in-teams-map dbval)
+        billable-hours-seq (billable-hours-for-teams dbval)]
+      (into #{}
+            (for [team billable-hours-seq]
+              (assoc team :team/member-count (get members-map (:team/id team)))))))

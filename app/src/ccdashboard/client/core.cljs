@@ -99,6 +99,7 @@
 (defn location-stats-did-mount [state-atom component-name]
   (.addGraph js/nv (fn []
                      (let [state @state-atom
+                           stats (:team/stats state)
                            chart (if (> location-stats-orientation-switch-threshold
                                         (get-in state [:viewport/size :width]))
                                    (.. js/nv -models multiBarHorizontalChart
@@ -108,16 +109,21 @@
                                    (.. js/nv -models multiBarChart
                                        (staggerLabels true)))]
                        (.. chart
-                           (x (fn [team] (aget team "name")))
-                           (y (fn [team] (aget team "billable-hours")))
-                           (showLegend false)
+                           (x (fn [team] (.-name team)))
+                           (y (fn [team] (.-attr team)))
                            (showControls false)
                            (duration 1500))
                        (.. js/d3 (select (str "#" component-name " svg"))
-                           (datum (clj->js [{:key "Billable Hours"
-                                             :values (:team/stats state)}
-                                            {:key ""
-                                             :values []}]))
+                           (datum (clj->js [{:key "Billable Days"
+                                             :color "#4F99B4"
+                                             :values (map (fn [team]
+                                                            (assoc team :attr (/ (:team/billable-hours team) 24)))
+                                                          stats)}
+                                            {:key "Members"
+                                             :color "#D67777"
+                                             :values (map (fn [team]
+                                                            (assoc team :attr (:team/member-count team)))
+                                                          stats)}]))
                            (call chart))
                        (.windowResize js/nv.utils (.-update (.duration chart 0)))))))
 
