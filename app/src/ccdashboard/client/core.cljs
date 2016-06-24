@@ -7,8 +7,8 @@
     [goog.events :as events]
     cljsjs.react
     cljsjs.react-select
-    [cljsjs.d3]
-    [cljsjs.nvd3]
+    cljsjs.d3
+    cljsjs.nvd3
     [ccdashboard.client.dataviz :as dataviz]
     ;    [material-ui.core :as ui :include-macros true]
     [goog.history.EventType :as EventType]
@@ -88,6 +88,8 @@
                            :component-did-mount  (partial progress-did-mount state-atom component-name stat-key total-stat-key format-fn)
                            :component-did-update (partial progress-update state-atom component-name stat-key total-stat-key format-fn)})))
 
+(def ^:const location-stats-orientation-switch-threshold 992)
+
 (defn location-stats [state-atom component-name]
   [:div {:style {:margin-left  "auto"
                  :margin-right "auto"}
@@ -97,11 +99,12 @@
 (defn location-stats-did-mount [state-atom component-name]
   (.addGraph js/nv (fn []
                      (let [state @state-atom
-                           chart (if (> 992 (get-in state [:viewport/size :width]))
+                           chart (if (> location-stats-orientation-switch-threshold
+                                        (get-in state [:viewport/size :width]))
                                    (.. js/nv -models multiBarHorizontalChart
                                        (showValues true)
                                        (valueFormat (.format js/d3 ",.0f"))
-                                       (margin (clj->js {:left 80})))
+                                       (margin #js {:left 80}))
                                    (.. js/nv -models multiBarChart
                                        (staggerLabels true)))]
                        (.. chart
@@ -296,7 +299,7 @@
 (defn sign-in-component []
   (let [state @domain/app-state
         user-sign-in-state (domain/user-sign-in-state state)]
-    (cond (or (nil? user-sign-in-state))
+    (cond (nil? user-sign-in-state)
           [:p "Initializing..."]
           (= (:error state) :error/unexpected-api-response)
           [:h2 {:style {:color "black"}} "Oops, something went wrong. Please report issue in #ccdashboard-feedback."]
