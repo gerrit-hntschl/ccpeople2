@@ -259,7 +259,7 @@
   (team-member [this team-id]
     (fetch-team-member team-id jira-base-url jira-access-token jira-consumer-private-key)))
 
-(defrecord JiraFakeClient [prefetched-worklogs prefetched-issues prefetched-users]
+(defrecord JiraFakeClient [prefetched-worklogs prefetched-issues prefetched-users teams-all team-members-all]
   Jira
   (worklogs [this from-date to-date]
     {:worklogs prefetched-worklogs})
@@ -267,7 +267,10 @@
     prefetched-issues)
   (users [this usernames]
     prefetched-users)
-  (teams [this]))
+  (teams [this]
+    teams-all)
+  (team-member [this team-id]
+    team-members-all))
 
 (defn work-date-between [from-date to-date]
   (fn [jira-worklog]
@@ -468,6 +471,14 @@
    :user/start-date (get-team-member-start-date team-member)
    :user/jira-username (get-team-member-jira-username team-member)})
 
+(defn to-datomic-team-name-with-id [team]
+  {:db/id (storage/people-tempid)
+   :team/name (:team-name team)
+   :team/id (:team-id team)})
+
+(defn to-datomic-user-with-team-id [member]
+  [:db/add [:user/jira-username (:jira-username member)] :user/team [:team/id (:team-id member)]])
+
 (def jira-start-date-import-graph
   ;; input: jira :- Jira Client implementation
   ;;        dbval :- datomic database value
@@ -483,6 +494,23 @@
                                          (into []
                                                (mapcat (partial team-member jira))
                                                team-ids-all))
+          :jira-username-and-team-ids  (fnk [team-members-all]
+                                         (into []
+                                               (map (fn [member]
+                                                         {:jira-username (get-in member [:member :name])
+                                                          :team-id       (get-in member [:membership :teamId])}))
+                                               team-members-all))
+          :imported-jira-users-and-team-ids (fnk [jira-username-and-team-ids db-usernames-all]
+                                              (into []
+                                                    (filter (fn [{:keys [jira-username]}]
+                                                              (contains? db-usernames-all jira-username)))
+                                                    jira-username-and-team-ids))
+          :team-name-and-team-ids      (fnk [teams-all]
+                                         (into []
+                                               (map (fn [team]
+                                                         {:team-name (:name team)
+                                                          :team-id   (:id team)}))
+                                               teams-all))
           :team-members-with-join-date (fnk [team-members-all]
                                          (into []   ;; ignore spurious empty values
                                                (comp (filter (comp seq get-team-member-start-date))
@@ -496,9 +524,19 @@
                                          (into []
                                                (map to-datomic-user-join-date)
                                                team-members-with-join-date))
-          :db-transactions             (fnk [db-user-with-join-date domain-users-new]
+          :db-team-name-with-team-id   (fnk [team-name-and-team-ids]
+                                         (into []
+                                               (map to-datomic-team-name-with-id)
+                                               team-name-and-team-ids))
+          :db-user-with-team-id        (fnk [imported-jira-users-and-team-ids]
+                                         (into []
+                                               (map to-datomic-user-with-team-id)
+                                               imported-jira-users-and-team-ids))
+          :db-transactions             (fnk [db-user-with-join-date domain-users-new db-team-name-with-team-id db-user-with-team-id]
                                          (vector domain-users-new
-                                                 db-user-with-join-date))
+                                                 db-user-with-join-date
+                                                 db-team-name-with-team-id
+                                                 db-user-with-team-id))
           :import-stats                (fnk [db-user-with-join-date domain-users-new]
                                          {:number-of-users-with-join-date         (count db-user-with-join-date)
                                           :number-of-corresponding-new-jira-users (count domain-users-new)})}))

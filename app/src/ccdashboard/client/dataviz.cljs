@@ -465,50 +465,70 @@
     (update-balance-view component-name balance-view-height todays-target-hours 0 total-hours-goal)
     (update-balance-view-transitioned component-name todays-target-hours actual-hours-today total-hours-goal)))
 
-(defn progress [component-name current-value total-value format-fn]
-  (let [width 180
-        height 180
-        radius 85
-        current-percentage (- 1 (/ current-value total-value))
-        target-angle (* two-pi current-percentage)
-        component-id-selector (str "#" component-name " ")
-        inner-radius (- radius 10)
+(def ^:const progress-width 180)
+(def ^:const progress-height 180)
+(def ^:const progress-radius 85)
+(def ^:const progress-inner-radius (- progress-radius 10))
+
+(defn progress-create [component-name]
+  (let [component-id-selector (str "#" component-name " ")
         target-arc (-> js/d3
                        (.-svg)
                        (.arc)
                        (.startAngle 0)
-                       (.endAngle target-angle)
-                       (.outerRadius radius)
-                       (.innerRadius inner-radius))
+                       ;(.endAngle target-angle)
+                       (.endAngle 0)
+                       (.outerRadius progress-radius)
+                       (.innerRadius progress-inner-radius))
         svg (-> js/d3
                 (.select (str component-id-selector "svg"))
-                (.attr "width" width)
-                (.attr "height" height))]
+                (.attr "width" progress-width)
+                (.attr "height" progress-height))]
     (-> svg
         (.append "circle")
         (.style "fill" "#e9e8e8")
-        (.attr "transform" (str "translate(" (/ width 2) "," (/ height 2) ")"))
-        (.attr "r" radius))
+        (.attr "transform" (str "translate(" (/ progress-width 2) "," (/ progress-height 2) ")"))
+        (.attr "r" progress-radius))
     (-> svg
         (.append "circle")
         (.style "fill" "#a5e2ed")
-        (.attr "transform" (str "translate(" (/ width 2) "," (/ height 2) ")"))
-        (.attr "r" inner-radius))
+        (.attr "transform" (str "translate(" (/ progress-width 2) "," (/ progress-height 2) ")"))
+        (.attr "r" progress-inner-radius))
     (-> svg
         (.append "text")
-        (.attr "x" (/ width 2))
-        (.attr "y" (/ height 2))
+        (.classed "progress-text" true)
+        (.attr "x" (/ progress-width 2))
+        (.attr "y" (/ progress-height 2))
         (.style "fill" "#196674")
         (.style "text-anchor" "middle")
         (.style "alignment-baseline" "middle")
         (.style "dominant-baseline" "middle")
         (.style "font-size" "3.0em")
-        (.text (format-fn current-value)))
+        (.text "?"))
     (-> svg
         (.append "path")
+        (.classed "progress-arc" true)
         (.attr "d" target-arc)
         (.style "fill" "#196674")
-        (.attr "transform" (str "translate(" (/ width 2) "," (/ height 2) ")")))))
+        (.attr "transform" (str "translate(" (/ progress-width 2) "," (/ progress-height 2) ")")))))
+
+(defn progress-update [component-name current-value total-value format-fn]
+  (let [current-percentage (- 1 (/ current-value total-value))
+        target-angle (* two-pi current-percentage)
+        component-id-selector (str "#" component-name " ")
+        target-arc (-> js/d3
+                       (.-svg)
+                       (.arc)
+                       (.startAngle 0)
+                       (.endAngle target-angle)
+                       (.outerRadius progress-radius)
+                       (.innerRadius progress-inner-radius))
+        d3-progress-text (.select js/d3 (str component-id-selector ".progress-text"))
+        d3-progress-arc (.select js/d3 (str component-id-selector ".progress-arc"))]
+    (-> d3-progress-arc
+        (.attr "d" target-arc))
+    (-> d3-progress-text
+        (.text (format-fn current-value)))))
 
 #_(defn create-donut [colors billed-hours]
   (let [width 250

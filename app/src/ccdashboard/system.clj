@@ -10,13 +10,13 @@
             [ccdashboard.server.middlewared-handler :refer [handler-component router-component]]
             [ccdashboard.persistence.core :as storage]
             [ccdashboard.ticket-import.core :as worklog]
+            [ccdashboard.assets :refer [wrap-assets]]
             [ring.middleware.format :as ring-format]
             [ring.middleware.stacktrace :as stacktrace]
     ;; to load data reader
             ccdashboard.data-readers.local-date
             [cognitect.transit :as transit]
-            [ccdashboard.log :as log]
-            [ccdashboard.oauth.core :as oauth])
+            [ccdashboard.log :as log])
   (:import (com.stuartsierra.component Lifecycle)
            (java.io Closeable)
            (java.util.concurrent Executors TimeUnit)
@@ -26,6 +26,7 @@
 (def base-config
   {:app {:middleware     [[wrap-not-found :not-found]
                           [ring-format/wrap-restful-format :transit-custom]
+                          [wrap-assets]
                           [wrap-defaults :defaults]
                           [stacktrace/wrap-stacktrace-log]]
          :not-found      (io/resource "errors/404.html")
@@ -83,7 +84,6 @@
           :database (storage/new-datomic-database (:datomic config))
           :conn (storage/new-datomic-connection)
           :schema (storage/new-conform-schema (:datomic config))
-
           :scheduler (new-scheduler)
           :jira-importer (worklog/new-jira-importer)
           :app (handler-component (:app config))
@@ -93,13 +93,14 @@
           :login-endpoint (server/login-endpoint)
           :logout-endpoint (server/logout-endpoint)
           :api-endpoint (server/api-endpoint)
+          :team-stats-api-endpoint (server/team-stats-api-endpoint)
           :router (router-component))
 
         (component/system-using
           {;; web
            :http   [:app]
            :app    [:router]
-           :router [:index-endpoint :auth-endpoint :login-endpoint :api-endpoint :logout-endpoint]
+           :router [:index-endpoint :auth-endpoint :login-endpoint :api-endpoint :team-stats-api-endpoint :logout-endpoint]
 
            ;; datomic
            :database []
@@ -109,6 +110,7 @@
            ;; endpoints
            :auth-endpoint [:conn]
            :api-endpoint [:conn]
+           :team-stats-api-endpoint [:conn]
            }))))
 
 (defn new-live-system [config]

@@ -1,6 +1,5 @@
 (ns ccdashboard.server.core
-  (:require
-            [ccdashboard.persistence.core :as storage]
+  (:require [ccdashboard.persistence.core :as storage]
             [environ.core :refer [env]]
             [hiccup.page :as page]
             [ccdashboard.oauth.core :as oauth]
@@ -8,7 +7,8 @@
             [ring.util.response :refer [response redirect content-type] :as resp]
             [buddy.auth :as auth :refer [authenticated?]]
             [com.stuartsierra.component :as component]
-            [ring.util.response :as response])
+            [ring.util.response :as response]
+            [datomic.api :as d :refer [db]])
   (:import (org.slf4j LoggerFactory)
            (java.util UUID)))
 
@@ -78,7 +78,9 @@
 (defn api-handler [conn req]
   (def apireq req)
   (if-let [user-id (oauth/get-signed-user-id req)]
-    (response (storage/existing-user-data-for-user conn (UUID/fromString user-id)))
+    (if-let [consultant-username (get-in req [:params :consultant])]
+      (response (storage/existing-user-data-by-username conn consultant-username))
+      (response (storage/existing-user-data-for-user conn (UUID/fromString user-id))))
     (-> (response {:error :error/unknown-user})
         (resp/status 401))))
 
@@ -100,4 +102,16 @@
                                  (content-type "text/html")))
                   :tag     :index}))
 
+(defn team-stats-api-handler [conn req]
+  (if (oauth/get-signed-user-id req)
+    (response (storage/billable-hours-for-teams (d/db conn)))
+    (-> (response {:error :error/unknown-user})
+        (resp/status 401))))
 
+(defn team-stats-api-endpoint []
+   (component/using
+    (map->Endpoint {:route           "/team-stats"
+                    :handler-builder (fn [component]
+                                       (partial team-stats-api-handler (:conn component)))
+                    :tag             :team-stats})
+    [:conn]))
