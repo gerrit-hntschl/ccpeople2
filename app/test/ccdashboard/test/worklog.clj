@@ -301,4 +301,9 @@
   (is (= #date/local[2016 3 1] (:current-period-start (jira-import-date-graph {:today #date/local [2016 4 1]}))))
   (is (= #date/local[2016 4 1] (:current-period-start (jira-import-date-graph {:today #date/local [2016 4 6]})))))
 
+(deftest should-be-able-to-import-shit-users
+  (with-redefs [ccdashboard.ticket-import.core/fetch-users (fn [& _] [{:name "Hans" :emailAddress "Hans_Meier" :displayName "Hans Meier"}])]
+    (fetch-all-jira-users "" "" ""))
+  )
+
 
