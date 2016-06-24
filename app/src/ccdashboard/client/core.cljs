@@ -33,7 +33,7 @@
         model-data (domain/app-model {:state state})
         monthly-hours (:monthly-hours model-data)
         viewport-size (:viewport/size state)]
-    (donut-service/chart-view component-name
+    (dataviz/chart-view component-name
                               monthly-hours)))
 
 (defn current-stats-did-mount [state-atom component-name]
