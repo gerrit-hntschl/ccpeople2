@@ -100,11 +100,9 @@
         (.text (fn [d] (int (Math/ceil (billable d)))))
         (.attr "x" (fn [d,i] (+ 355 (* (if (> (billable d) 99) 40 41) i))))
         (.attr "y" (fn [d] (+ (if (> (billable d) 70) 50 (if(> (billable d) 20) 20 10) ) (- height (billable d)))))
-        (.style "fill" "#ffffff")
-        )
+        (.style "fill" "#ffffff"))))
 
-    )
-  )
+(defn create-stacked-bar-view [component-name ])
 
 (defn create-balance-view [component-name width height]
   (let [x-padding (* width 0.24)

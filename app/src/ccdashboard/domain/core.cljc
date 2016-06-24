@@ -161,16 +161,9 @@
         ticket->worktype (-> (zipmap billable-ticket-ids (repeat :billable))
                              (assoc vacation-ticket-id :vacation
                                     sick-leave-ticket-id :sickness
-                                    parental-leave-ticket-id :parental-leave
-                                    )
-                             )
-
-        ]
+                                    parental-leave-ticket-id :parental-leave))]
     (fn [worklog]
-      (get ticket->worktype (:worklog/ticket worklog) :other)
-      )
-    )
-  )
+      (get ticket->worktype (:worklog/ticket worklog) :other))))
 
 (defn hours-by-month [app-state]
   (->> (:worklogs app-state)
