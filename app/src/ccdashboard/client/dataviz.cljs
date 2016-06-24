@@ -518,3 +518,26 @@
           (.attr "dy" ".15em")
           (.style "text-anchor" "middle")
           (.text (fn [d] (-> d (.-data) (.-age))))))))
+
+
+(def ^:const stats-orientation-switch-threshold 992)
+
+(defn team-stats-multibarchart [component-name viewport-width stats-to-display]
+  (.addGraph js/nv (fn []
+                     (let [chart (if (> stats-orientation-switch-threshold
+                                        viewport-width)
+                                   (.. js/nv -models multiBarHorizontalChart
+                                       (showValues true)
+                                       (valueFormat (.format js/d3 ",.0f"))
+                                       (margin #js {:left 80}))
+                                   (.. js/nv -models multiBarChart
+                                      (staggerLabels true)))]
+                       (.. chart
+                           (x (fn [team] (.-name team)))
+                           (y (fn [team] (.-attr team)))
+                           (showControls false)
+                           (duration 1500))
+                      (.. js/d3 (select (str "#" component-name " svg"))
+                          (datum (clj->js stats-to-display))
+                          (call chart))
+                      (.windowResize js/nv.utils (.-update (.duration chart 0)))))))

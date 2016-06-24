@@ -88,7 +88,6 @@
                            :component-did-mount  (partial progress-did-mount state-atom component-name stat-key total-stat-key format-fn)
                            :component-did-update (partial progress-update state-atom component-name stat-key total-stat-key format-fn)})))
 
-(def ^:const location-stats-orientation-switch-threshold 992)
 
 (defn location-stats [state-atom component-name]
   [:div {:style {:margin-left  "auto"
@@ -97,29 +96,23 @@
    [:svg]])
 
 (defn location-stats-did-mount [state-atom component-name]
-  (.addGraph js/nv (fn []
-                     (let [state @state-atom
-                           chart (if (> location-stats-orientation-switch-threshold
-                                        (get-in state [:viewport/size :width]))
-                                   (.. js/nv -models multiBarHorizontalChart
-                                       (showValues true)
-                                       (valueFormat (.format js/d3 ",.0f"))
-                                       (margin #js {:left 80}))
-                                   (.. js/nv -models multiBarChart
-                                       (staggerLabels true)))]
-                       (.. chart
-                           (x (fn [team] (aget team "name")))
-                           (y (fn [team] (aget team "billable-hours")))
-                           (showLegend false)
-                           (showControls false)
-                           (duration 1500))
-                       (.. js/d3 (select (str "#" component-name " svg"))
-                           (datum (clj->js [{:key "Billable Hours"
-                                             :values (:team/stats state)}
-                                            {:key ""
-                                             :values []}]))
-                           (call chart))
-                       (.windowResize js/nv.utils (.-update (.duration chart 0)))))))
+  (let [state @state-atom
+        viewport-width (get-in state [:viewport/size :width])
+        stats (:team/stats state)
+        team-member-count (map (fn [team]
+                                 (assoc team :attr (:team/member-count team)))
+                               stats)
+        team-hours-stats (map (fn [team]
+                                (assoc team :attr (/ (:team/billable-hours team) 24)))
+                              stats)]
+    (dataviz/team-stats-multibarchart component-name
+                                      viewport-width
+                                      [{:key    "Billable Days"
+                                        :color  "#4F99B4"
+                                        :values team-hours-stats}
+                                       {:key    "Members"
+                                        :color  "#D67777"
+                                        :values team-member-count}])))
 
 (defn locations-component [state-atom component-name]
   (if (nil? (:team/stats @state-atom))
