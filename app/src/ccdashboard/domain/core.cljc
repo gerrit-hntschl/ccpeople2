@@ -152,6 +152,14 @@
 ;; parental leave TS-345
 (def parental-leave-ticket-id 71746)
 
+(def worktype-order [:billable :other :vacation :parental-leave :sickness])
+
+(def worktype->display-name {:vacation "Holidays"
+                             :parental-leave "Parental leave"
+                             :sickness "Sickness"
+                             :other "Other"
+                             :billable "Billable hours"})
+
 (defn worktype-fn [{:keys [worklogs tickets customers]}]
   (let [codecentric-id (customer-id-by-name "codecentric" customers)
         codecentric-ticket-ids (->> tickets
@@ -176,6 +184,36 @@
                    (->> worklogs
                         (group-by (worktype-fn app-state))
                         (map-vals (sum-of :worklog/hours)))))))
+
+(defn get-worktypes [monthly-hours]
+  (distinct (mapcat keys (vals monthly-hours))))
+
+(def i->month {1 "Jan"
+               2 "Feb"
+               3 "Mar"
+               4 "Apr"
+               5 "May"
+               6 "Jun"
+               7 "Jul"
+               8 "Aug"
+               9 "Sep"
+               10 "Oct"
+               11 "Nov"
+               12 "Dec"})
+
+(defn get-monthly-hours-by-worktype [monthly-hours worktype]
+  (reduce (fn [hours-per-month month]
+            (conj hours-per-month [(get i->month month) (get-in monthly-hours [month worktype] 0)]))
+          []
+          (range 1 (inc (count monthly-hours)))))
+
+(defn get-stacked-hours-data [monthly-hours]
+  (let [worktypes (get-worktypes monthly-hours)
+        worktype->data (map (juxt identity (partial get-monthly-hours-by-worktype monthly-hours)) worktypes)]
+    (into []
+          (map (fn [[worktype data]] {:key    (get worktype->display-name worktype)
+                                      :values data}))
+          worktype->data)))
 
 (defn working-days-left-without-today [today]
   (dec (count (days/workdays-till-end-of-year today))))

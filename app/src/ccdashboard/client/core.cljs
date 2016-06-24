@@ -33,9 +33,9 @@
 (defn monthly-stats-hours [state-atom component-name]
   (let [state @state-atom
         model-data (domain/app-model {:state state})
-        monthly-hours (:monthly-hours model-data)
-        viewport-size (:viewport/size state)]
-    (dataviz/chart-view component-name
+        monthly-hours (:monthly-hours model-data)]
+    (dataviz/create-stacked-bar-view component-name monthly-hours)
+    #_(dataviz/chart-view component-name
                               monthly-hours)))
 
 (defn current-stats-did-mount [state-atom component-name]
@@ -70,7 +70,9 @@
 (defn monthly-stats [state-atom component-name]
   (let [_ @state-atom]
   [:div {:style {:margin-left  "auto"
-                 :margin-right "auto"}
+                 :margin-right "auto"
+                 :width 700
+                 :height 300}
          :id    component-name}
    [:svg]]))
 
