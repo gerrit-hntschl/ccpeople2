@@ -96,16 +96,25 @@
 
 (defn location-stats-did-mount [state-atom component-name]
   (.addGraph js/nv (fn []
-                     (let [chart (.. js/nv -models discreteBarChart
-                                     (x (fn [team] (aget team "name")))
-                                     (y (fn [team] (aget team "billable-hours")))
-                                     (staggerLabels true)
-                                     (showValues true)
-                                     (showYAxis false)
-                                     (valueFormat (.format js/d3 ",.0f"))
-                                     (duration 1500))]
+                     (let [state @state-atom
+                           chart (if (> 992 (get-in state [:viewport/size :width]))
+                                   (.. js/nv -models multiBarHorizontalChart
+                                       (showValues true)
+                                       (valueFormat (.format js/d3 ",.0f"))
+                                       (margin (clj->js {:left 80})))
+                                   (.. js/nv -models multiBarChart
+                                       (staggerLabels true)))]
+                       (.. chart
+                           (x (fn [team] (aget team "name")))
+                           (y (fn [team] (aget team "billable-hours")))
+                           (showLegend false)
+                           (showControls false)
+                           (duration 1500))
                        (.. js/d3 (select (str "#" component-name " svg"))
-                           (datum (clj->js [{:values (:team/stats @state-atom)}]))
+                           (datum (clj->js [{:key "Billable Hours"
+                                             :values (:team/stats state)}
+                                            {:key ""
+                                             :values []}]))
                            (call chart))
                        (.windowResize js/nv.utils (.-update (.duration chart 0)))))))
 
@@ -254,7 +263,7 @@
           [user-stats state])))
 
 (defn location-page [_]
-  [locations-component domain/app-state "team-stats"])
+  [locations-component domain/app-state "teamstats"])
 
 (defn tabs []
   [:div ""])
