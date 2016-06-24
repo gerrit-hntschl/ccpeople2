@@ -7,6 +7,8 @@
     [goog.events :as events]
     cljsjs.react
     cljsjs.react-select
+    [cljsjs.d3]
+    [cljsjs.nvd3]
     [ccdashboard.client.dataviz :as dataviz]
     ;    [material-ui.core :as ui :include-macros true]
     [goog.history.EventType :as EventType]
@@ -105,6 +107,42 @@
     (reagent/create-class {:reagent-render       (partial progress-render state-atom component-name)
                            :component-did-mount  (partial progress-did-mount state-atom component-name stat-key total-stat-key format-fn)
                            :component-did-update (partial progress-update state-atom component-name stat-key total-stat-key format-fn)})))
+
+(defn location-stats [state-atom component-name]
+  [:div {:style {:margin-left  "auto"
+                 :margin-right "auto"}
+         :id    component-name}
+   [:svg]])
+
+(defn location-stats-did-mount [state-atom component-name]
+  (.addGraph js/nv (fn []
+                     (let [state @state-atom
+                           chart (if (> 992 (get-in state [:viewport/size :width]))
+                                   (.. js/nv -models multiBarHorizontalChart
+                                       (showValues true)
+                                       (valueFormat (.format js/d3 ",.0f"))
+                                       (margin (clj->js {:left 80})))
+                                   (.. js/nv -models multiBarChart
+                                       (staggerLabels true)))]
+                       (.. chart
+                           (x (fn [team] (aget team "name")))
+                           (y (fn [team] (aget team "billable-hours")))
+                           (showLegend false)
+                           (showControls false)
+                           (duration 1500))
+                       (.. js/d3 (select (str "#" component-name " svg"))
+                           (datum (clj->js [{:key "Billable Hours"
+                                             :values (:team/stats state)}
+                                            {:key ""
+                                             :values []}]))
+                           (call chart))
+                       (.windowResize js/nv.utils (.-update (.duration chart 0)))))))
+
+(defn locations-component [state-atom component-name]
+  (if (nil? (:team/stats @state-atom))
+    [:p "Loading Stats..."]
+    (reagent/create-class {:reagent-render      (partial location-stats state-atom component-name)
+                           :component-did-mount (partial location-stats-did-mount state-atom component-name)})))
 
 (defn format-days [n]
   (if (= n 1)
@@ -251,11 +289,10 @@
           [user-stats state])))
 
 (defn location-page [_]
-  [:h1 "Coming soon..."])
+  [locations-component domain/app-state "teamstats"])
 
 (defn tabs []
   [:div ""])
-
 
 (def routes ["" {"profile" :profile
                  "people" :people
@@ -285,7 +322,7 @@
 (defn sign-in-component []
   (let [state @domain/app-state
         user-sign-in-state (domain/user-sign-in-state state)]
-    (cond (nil? user-sign-in-state)
+    (cond (or (nil? user-sign-in-state))
           [:p "Initializing..."]
           (= (:error state) :error/unexpected-api-response)
           [:h2 {:style {:color "black"}} "Oops, something went wrong. Please report issue in #ccdashboard-feedback."]
