@@ -87,7 +87,7 @@
                                        :asset-path           "js/compiled/out"
                                        :output-to            "resources/public/js/compiled/graphviz-interact.js"
                                        :output-dir           "resources/public/js/compiled/out"
-                                       :optimizations :whitespace
+                                       :optimizations :advanced
                                        :source-map-timestamp true}}
                        {:id           "min"
                         :source-paths ["src"]
