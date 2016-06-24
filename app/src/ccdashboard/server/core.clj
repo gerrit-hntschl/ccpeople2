@@ -1,6 +1,5 @@
 (ns ccdashboard.server.core
-  (:require
-            [ccdashboard.persistence.core :as storage]
+  (:require [ccdashboard.persistence.core :as storage]
             [environ.core :refer [env]]
             [hiccup.page :as page]
             [ccdashboard.oauth.core :as oauth]
@@ -9,10 +8,11 @@
             [buddy.auth :as auth :refer [authenticated?]]
             [com.stuartsierra.component :as component]
             [ring.util.response :as response]
+
             [graphviz.core :as graphviz]
             [cheshire.core :as json]
-            [ccdashboard.ticket-import.core :as worklog])
-
+            [ccdashboard.ticket-import.core :as worklog]
+            [datomic.api :as d :refer [db]])
   (:import (org.slf4j LoggerFactory)
            (java.util UUID)))
 
@@ -105,4 +105,18 @@
                                  (response)
                                  (content-type "text/html")))
                   :tag     :index}))
+
+(defn team-stats-api-handler [conn req]
+  (if (oauth/get-signed-user-id req)
+    (response (storage/billable-hours-for-teams (d/db conn)))
+    (-> (response {:error :error/unknown-user})
+        (resp/status 401))))
+
+(defn team-stats-api-endpoint []
+   (component/using
+    (map->Endpoint {:route           "/team-stats"
+                    :handler-builder (fn [component]
+                                       (partial team-stats-api-handler (:conn component)))
+                    :tag             :team-stats})
+    [:conn]))
 
