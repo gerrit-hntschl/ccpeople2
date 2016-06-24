@@ -181,7 +181,7 @@
 (defn fetch-all-jira-users [jira-base-url jira-token jira-consumer-private-key]
   (->> (seq "abcdefghijklmnopqrstuvwxyz")
        (mapcat (partial fetch-users jira-base-url jira-token jira-consumer-private-key))
-       (map (fn [user] (s/validate model/JiraUser user)))
+       (remove (fn [user] (s/check model/JiraUser user)))
        (filter (fn [user] (.endsWith (:emailAddress user) "@codecentric.de")))
        ;; remove duplicate email user
        (remove (comp ignored-users :name))
