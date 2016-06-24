@@ -106,25 +106,3 @@
                                  (content-type "text/html")))
                   :tag     :index}))
 
-(defn dev-html [graph-svg-str graph-desc]
-  (page/html5
-    [:head
-     [:link {:rel "stylesheet" :href "css/dev.css"}]
-     [:link {:rel "stylesheet" :href "//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.3.0/styles/default.min.css"}]
-     [:link {:rel "stylesheet" :href "css/default.css"}]
-     ]
-    [:body
-     graph-svg-str
-     [:script {:src "js/compiled/graphviz-interact.js"}]
-     [:script (str "graphviz.interact.start(" (json/generate-string graph-desc) ");")]
-     [:script {:src "js/highlight.pack.js"}]
-     [:script "hljs.initHighlightingOnLoad();"]]))
-
-(defn graph-endpoint []
-  (map->Endpoint {:route   "/dev"
-                  :handler (fn [req]
-                             (-> (graphviz/as-svg-str worklog/jira-import-graph)
-                                 (dev-html (graphviz/graph-description worklog/jira-import-graph))
-                                 (response)
-                                 (content-type "text/html")))
-                  :tag     :dev-graph}))

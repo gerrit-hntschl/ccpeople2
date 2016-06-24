@@ -15,7 +15,7 @@
                [plumbing.core :refer-macros [fnk]]]
         :clj  [
             [clj-time.core :as time]
-            [plumbing.core :refer [fnk]]])
+            [graphviz.core :refer [fnk]]])
             [clojure.set :as set]))
 
 (def standard-billable-days-goal 180)

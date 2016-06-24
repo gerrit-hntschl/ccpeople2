@@ -9,6 +9,7 @@
             [meta-merge.core :refer [meta-merge]]
             [com.stuartsierra.component :as component]
             [ring.middleware.stacktrace :refer [wrap-stacktrace]]
+            [graphviz.html :refer [wrap-viz-graph]]
             [eftest.runner :as eftest]
             [ccdashboard.config :as config]
             [ccdashboard.system :as system]
@@ -32,7 +33,8 @@
   reload/system)
 
 (def dev-config
-  {:app {:middleware [wrap-stacktrace
+  {:app {:middleware [wrap-viz-graph
+                      wrap-stacktrace
                       wrap-last-request]}})
 
 (def config

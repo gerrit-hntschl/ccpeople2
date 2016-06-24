@@ -192,16 +192,14 @@
   [doc ns tag]
   (elements-helper doc ns tag))
 
-(def ^:const symbol-with-dash-regex #"(\S+(?:-\S+)+)")
-
 (defn foreign-object [text width input-keys]
   (let [input-names (into #{}
                           (map (fn [input-key]
                                  (-> input-key name (.replace \-  \u2011))))
                           input-keys)
         formatted-code (-> (read-string text)
-                           (clojure.pprint/write
-                             :dispatch clojure.pprint/code-dispatch)
+                           (pprint/write
+                             :dispatch pprint/code-dispatch)
                            (with-out-str)
                            (.replace \-  \u2011))
         code-with-marked-input (reduce (fn [code input-name]
@@ -210,10 +208,9 @@
                                            formatted-code
                                            input-names)
         code-markup (-> code-with-marked-input
-                        ;(str/replace symbol-with-dash-regex "@@@$1@@@")
                         (str/split #"@@@")
                         (->> (map (fn [s]
-                                    (if (contains? input-names s)                    ;(.contains s "-")
+                                    (if (contains? input-names s)
                                       [:span {:class "input-param"} s]
                                       [:span s])))))
 
@@ -228,10 +225,7 @@
       [:div {:style "border-radius: 5px; background:white; overflow:auto;"
              :class "node-code"}
        [:pre
-        (into [:code {:class "clojure"}
-
-               ;[:span formatted-code]
-          ]
+        (into [:code {:class "clojure"}]
               code-markup)]]]]))
 
 (defrecord RectNodeView2
@@ -267,7 +261,6 @@
                             (lacij.view.utils.style/apply-styles default-style style)
                             (lacij.view.utils.style/apply-attrs attrs)))
                       texts
-                      ;                      code
                       decorations
                       )]
       ;      (prn "xml =")
@@ -294,12 +287,12 @@
     (let [margin 5]
       [(- x margin) (- y margin) (+ width (* 2 margin)) (+ (* 2 height) (* 2 margin))])))
 
-(defn add-nodes [g nodes style]
+(defn add-nodes [g nodes style min-width]
   (reduce (fn [g node]
             (lacij/add-node g node (name node)
                             :style style
                             :class "node"
-                            :width (max 350 (* (count (name node)) 6))))
+                            :width (max min-width (* (count (name node)) 6))))
           g
           nodes))
 
@@ -346,7 +339,7 @@
                         [src dest])
                       srcs)))))
 
-(defn as-svg [g]
+(defn as-svg [g node-width]
   (let [nodes (get-nodes g)
         edges (get-edges g nodes)
         target-nodes (->> edges (group-by second) (keys) (into #{}))
@@ -362,9 +355,9 @@
                                                                             }
                                                              {:keys [x y width height r] :or {x x y y width 100 height 40 r 20}} attrs]
                                                          (->RectNodeView2 id x y width height [] default-style style attrs #{})))))
-                      (add-nodes in-nodes {:fill "lightgreen"})
-                      (add-nodes out-nodes {:fill "royalblue"})
-                      (add-nodes inner-nodes {:fill "white"})
+                      (add-nodes in-nodes {:fill "lightgreen"} node-width)
+                      (add-nodes out-nodes {:fill "royalblue"} node-width)
+                      (add-nodes inner-nodes {:fill "white"} node-width)
                       (add-decorator inner-nodes (->CodeDecorator g))
                       (add-decorator out-nodes (->CodeDecorator g))
                       (add-edges edges)
@@ -374,10 +367,10 @@
         (assoc :height fix-height)
         (lacij/build))))
 
-(defn as-svg-str [g]
-  (tikkba/spit-str (:xmldoc (as-svg g))))
+(defn as-svg-str [g node-width]
+  (tikkba/spit-str (:xmldoc (as-svg g node-width))))
 
-(defn graph-description [g]
+(defn graph-description [g node-width]
   (let [nodes (get-nodes g)
         edges (get-edges g nodes)
         node->out-nodes (->> edges
@@ -386,8 +379,10 @@
         node->in-nodes (->> edges
                             (group-by second)
                             (map-vals (fn [edges] (into #{} (map first) edges))))]
-    (into {}
-          (map (fn [node]
-                 [node {:in  (get node->in-nodes node)
-                   :out (get node->out-nodes node)}]))
-          nodes)))
+    {:nodes (into {}
+                  (map (fn [node]
+                         [node {:in  (get node->in-nodes node)
+                                :out (get node->out-nodes node)}]))
+                  nodes)
+     :sizes {:node/width node-width
+             :node/height 120}}))

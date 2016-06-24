@@ -94,14 +94,13 @@
           :login-endpoint (server/login-endpoint)
           :logout-endpoint (server/logout-endpoint)
           :api-endpoint (server/api-endpoint)
-          :dev-graph-endpoint (server/graph-endpoint)
           :router (router-component))
 
         (component/system-using
           {;; web
            :http   [:app]
            :app    [:router]
-           :router [:index-endpoint :auth-endpoint :login-endpoint :api-endpoint :logout-endpoint :dev-graph-endpoint]
+           :router [:index-endpoint :auth-endpoint :login-endpoint :api-endpoint :logout-endpoint]
 
            ;; datomic
            :database []
