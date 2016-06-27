@@ -1,4 +1,6 @@
 @import url(../assets/cljsjs/react-select/common/react-select.inc.css);
+@import url(../assets/cljsjs/nvd3/common/nvd3.min.css);
+
 
 
 @font-face {
@@ -157,7 +159,17 @@ i {
      font-size: 1.3em;
  }
 
- @media screen and (max-width : 760px){
+ #teamstats svg {
+     height: calc(50vh - 25px);
+ }
+
+ @media screen and (max-width : 992px) {
+     #teamstats svg {
+         height: calc(100vh - 50px);
+     }
+ }
+
+ @media screen and (max-width : 768px) {
      #navbar {
          display: block;
      }
@@ -186,7 +198,7 @@ i {
      }
  }
 
- @media screen and (min-width : 760px) {
+ @media screen and (min-width : 768px) {
      #menu ul li {
          display: inline-block;
          margin: 0 20px;

@@ -104,7 +104,7 @@
 
 (defn team-stats-api-handler [conn req]
   (if (oauth/get-signed-user-id req)
-    (response (storage/billable-hours-for-teams (d/db conn)))
+    (response (storage/teams-stats-seq (d/db conn)))
     (-> (response {:error :error/unknown-user})
         (resp/status 401))))
 

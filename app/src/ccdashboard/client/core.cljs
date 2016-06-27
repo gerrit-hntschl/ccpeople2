@@ -7,6 +7,8 @@
     [goog.events :as events]
     cljsjs.react
     cljsjs.react-select
+    cljsjs.d3
+    cljsjs.nvd3
     [ccdashboard.client.dataviz :as dataviz]
     ;    [material-ui.core :as ui :include-macros true]
     [goog.history.EventType :as EventType]
@@ -85,6 +87,36 @@
     (reagent/create-class {:reagent-render       (partial progress-render state-atom component-name)
                            :component-did-mount  (partial progress-did-mount state-atom component-name stat-key total-stat-key format-fn)
                            :component-did-update (partial progress-update state-atom component-name stat-key total-stat-key format-fn)})))
+
+
+(defn location-stats [state-atom component-name]
+  [:div {:style {:margin-left  "auto"
+                 :margin-right "auto"}
+         :id    component-name}
+   [:svg]])
+
+(defn location-stats-did-mount [state-atom component-name]
+  (let [state @state-atom
+        viewport-width (get-in state [:viewport/size :width])
+        stats (:team/stats state)
+        team-hours-stats (map (fn [team]
+                                (update team :value (partial * (/ 24))))
+                              (set/rename stats {:team/billable-hours :value}))
+        team-member-count (set/rename stats {:team/member-count :value})]
+    (dataviz/team-stats-multibarchart component-name
+                                      viewport-width
+                                      [{:key    "Billable Days"
+                                        :color  "#A5E2ED"
+                                        :values team-hours-stats}
+                                       {:key    "Members"
+                                        :color  "#F1DB4B"
+                                        :values team-member-count}])))
+
+(defn locations-component [state-atom component-name]
+  (if (nil? (:team/stats @state-atom))
+    [:p "Loading Stats..."]
+    (reagent/create-class {:reagent-render      (partial location-stats state-atom component-name)
+                           :component-did-mount (partial location-stats-did-mount state-atom component-name)})))
 
 (defn format-days [n]
   (if (= n 1)
@@ -225,11 +257,10 @@
           [user-stats state])))
 
 (defn location-page [_]
-  [:h1 "Coming soon..."])
+  [locations-component domain/app-state "teamstats"])
 
 (defn tabs []
   [:div ""])
-
 
 (def routes ["" {"profile" :profile
                  "people" :people
