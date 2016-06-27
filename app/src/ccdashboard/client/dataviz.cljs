@@ -534,7 +534,7 @@
                                       (staggerLabels true)))]
                        (.. chart
                            (x (fn [team] (.-name team)))
-                           (y (fn [team] (.-attr team)))
+                           (y (fn [team] (.-value team)))
                            (showControls false)
                            (duration 1500))
                       (.. js/d3 (select (str "#" component-name " svg"))

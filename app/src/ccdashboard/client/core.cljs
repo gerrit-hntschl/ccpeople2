@@ -99,19 +99,17 @@
   (let [state @state-atom
         viewport-width (get-in state [:viewport/size :width])
         stats (:team/stats state)
-        team-member-count (map (fn [team]
-                                 (assoc team :attr (:team/member-count team)))
-                               stats)
         team-hours-stats (map (fn [team]
-                                (assoc team :attr (/ (:team/billable-hours team) 24)))
-                              stats)]
+                                (update team :value (partial * (/ 24))))
+                              (set/rename stats {:team/billable-hours :value}))
+        team-member-count (set/rename stats {:team/member-count :value})]
     (dataviz/team-stats-multibarchart component-name
                                       viewport-width
                                       [{:key    "Billable Days"
-                                        :color  "#4F99B4"
+                                        :color  "#A5E2ED"
                                         :values team-hours-stats}
                                        {:key    "Members"
-                                        :color  "#D67777"
+                                        :color  "#F1DB4B"
                                         :values team-member-count}])))
 
 (defn locations-component [state-atom component-name]
