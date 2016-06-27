@@ -276,9 +276,8 @@
 (defmulti handlers :handler :default :profile)
 
 (defmethod handlers :profile [& params]
-  (let [{:keys [route-params]} (first params)]
-    (if (not (nil? route-params))
-      (change-selected-user-to (:consultant route-params))))
+  (if-let [{{consultant :consultant} :route-params} (first params)]
+    (change-selected-user-to consultant))
   profile-page)
 
 (defmethod handlers :locations [] location-page)
