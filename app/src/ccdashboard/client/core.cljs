@@ -15,7 +15,8 @@
     [ccdashboard.domain.days :as days]
     [cljs.pprint :as pprint]
     [clojure.string :as str]
-    [clojure.set :as set])
+    [clojure.set :as set]
+    [ccdashboard.analytics.mixpanel :as mixpanel])
   (:import [goog.history Html5History EventType]))
 
 (enable-console-print!)
@@ -257,6 +258,7 @@
           [user-stats state])))
 
 (defn location-page [_]
+  (mixpanel/track "locations")
   [locations-component domain/app-state "teamstats"])
 
 (defn tabs []
