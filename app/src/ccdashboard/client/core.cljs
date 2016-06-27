@@ -165,6 +165,12 @@
 
 (def select (reagent/adapt-react-class js/Select))
 
+(defn change-selected-user-to [selected]
+  (swap! domain/app-state
+        assoc-in
+        [:consultant :consultant/selected]
+        selected))
+
 (defn user-stats [state]
   (let [model-data (domain/app-model {:state state})
         rem-holidays (:number-holidays-remaining model-data)
@@ -198,7 +204,8 @@
                                      (map (fn [consultant]
                                             (set/rename-keys consultant {:user/display-name  :label
                                                                          :user/jira-username :value})))))
-                :onChange (fn [selected] (swap! domain/app-state assoc-in [:consultant :consultant/selected] (:value (js->clj selected :keywordize-keys true))))}]]
+                :onChange (fn [selected]
+                            (change-selected-user-to (:value (js->clj selected :keywordize-keys true))))}]]
       [:div {:style {:display         "flex"
                      :flex-wrap       "wrap"
                      :justify-content "center"
@@ -262,13 +269,17 @@
 (defn tabs []
   [:div ""])
 
-(def routes ["" {"profile" :profile
-                 "people" :people
+(def routes ["" {"profile/"  {[:consultant ""] :profile}
+                 "people"    :people
                  "locations" :locations}])
 
 (defmulti handlers :handler :default :profile)
 
-(defmethod handlers :profile [] profile-page)
+(defmethod handlers :profile [& params]
+  (let [{:keys [route-params]} (first params)]
+    (if (not (nil? route-params))
+      (change-selected-user-to (:consultant route-params))))
+  profile-page)
 
 (defmethod handlers :locations [] location-page)
 
@@ -324,15 +335,17 @@
                          :checked @toggle-show-menu}]
       [:span#menu
        [:ul
-        (doall
-          (keep (fn [[href content]]
-                  (if user-signed-in
-                    ^{:key href} [:li.menuitem [:a {:href href
-                                                    :on-click toggle-for-show-menu}
-                                                content]]))
-                [["/#" "Home"]
-                 ["/#locations" "Locations"]
-                 ["/logout" [:i.icon-off.medium-icon]]]))]]]
+        [:li.menuitem [:a {:href "/#"
+                           :on-click (fn []
+                                       (change-selected-user-to (:user/identity @domain/app-state))
+                                       (toggle-for-show-menu))}
+                       "Home"]]
+        [:li.menuitem [:a {:href "/#locations"
+                           :on-click toggle-for-show-menu}
+                       "Locations"]]
+        [:li.menuitem [:a {:href "/login"
+                           :on-click toggle-for-show-menu}
+                       [:i.icon-off.medium-icon]]]]]]
      [:div {:style {:text-align "center"}}
       [sign-in-component]]]))
 
