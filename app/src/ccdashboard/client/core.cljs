@@ -89,7 +89,6 @@
                            :component-did-mount  (partial progress-did-mount state-atom component-name stat-key total-stat-key format-fn)
                            :component-did-update (partial progress-update state-atom component-name stat-key total-stat-key format-fn)})))
 
-
 (defn location-stats [state-atom component-name]
   [:div {:style {:margin-left  "auto"
                  :margin-right "auto"}
@@ -98,14 +97,13 @@
 
 (defn location-stats-did-mount [state-atom component-name]
   (let [state @state-atom
-        viewport-width (get-in state [:viewport/size :width])
         stats (:team/stats state)
         team-hours-stats (map (fn [team]
                                 (update team :value (partial * (/ 8))))
                               (set/rename stats {:team/billable-hours :value}))
         team-member-count (set/rename stats {:team/member-count :value})]
     (dataviz/team-stats-multibarchart component-name
-                                      viewport-width
+                                      (get-in state [:viewport/size :width])
                                       [{:key    "Billable Work Days"
                                         :color  "#A5E2ED"
                                         :values team-hours-stats}

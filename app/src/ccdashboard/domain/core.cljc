@@ -359,7 +359,7 @@
    :days-below-threshold                  (fnk [unbooked-days-stats]
                                             (sort (:days-below-threshold unbooked-days-stats)))
    :my-stats?                             (fnk [state]
-                                            (= (:user/identity state) (-> state :user :user/jira-username)))
+                                            (= (:user/identity state) (-> state :consultant :consultant/selected)))
    :number-sick-leave-days                (fnk [my-stats? state]
                                             (if my-stats?
                                               (/ (sick-leave-hours state) 8)
