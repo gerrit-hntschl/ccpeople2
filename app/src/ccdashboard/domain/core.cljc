@@ -65,11 +65,7 @@
                        (get-in data [:user :user/jira-username])))))
 
 (defn handle-team-stats-api-response [teams]
-  (swap! app-state
-         merge
-         (-> {}
-             (assoc-in [:user :user/signed-in?] true)
-             (assoc :team/stats teams))))
+  (swap! app-state merge {:team/stats teams}))
 
 (def GET-template {:error-handler   error-handler-fn
                    :response-format :transit
