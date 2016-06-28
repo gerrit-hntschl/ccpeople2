@@ -165,12 +165,6 @@
 
 (def select (reagent/adapt-react-class js/Select))
 
-(defn change-selected-user-to [selected]
-  (swap! domain/app-state
-        assoc-in
-        [:consultant :consultant/selected]
-        selected))
-
 (defn user-stats [state]
   (let [model-data (domain/app-model {:state state})
         rem-holidays (:number-holidays-remaining model-data)
@@ -205,7 +199,7 @@
                                             (set/rename-keys consultant {:user/display-name  :label
                                                                          :user/jira-username :value})))))
                 :onChange (fn [selected]
-                            (change-selected-user-to (:value (js->clj selected :keywordize-keys true))))}]]
+                            (set! (.. js/window -location) (str "#profile/" (.-value selected))))}]]
       [:div {:style {:display         "flex"
                      :flex-wrap       "wrap"
                      :justify-content "center"
@@ -276,8 +270,12 @@
 (defmulti handlers :handler :default :profile)
 
 (defmethod handlers :profile [& params]
-  (if-let [{{consultant :consultant} :route-params} (first params)]
-    (change-selected-user-to consultant))
+  (swap! domain/app-state
+         assoc-in
+         [:consultant :consultant/selected]
+         (if-let [{{consultant :consultant} :route-params} (first params)]
+           consultant
+           (:user/identity @domain/app-state)))
   profile-page)
 
 (defmethod handlers :locations [] location-page)
@@ -335,9 +333,7 @@
       [:span#menu
        [:ul
         [:li.menuitem [:a {:href "/#"
-                           :on-click (fn []
-                                       (change-selected-user-to (:user/identity @domain/app-state))
-                                       (toggle-for-show-menu))}
+                           :on-click toggle-for-show-menu}
                        "Home"]]
         [:li.menuitem [:a {:href "/#locations"
                            :on-click toggle-for-show-menu}
