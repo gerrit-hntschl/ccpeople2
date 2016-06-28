@@ -101,12 +101,12 @@
         viewport-width (get-in state [:viewport/size :width])
         stats (:team/stats state)
         team-hours-stats (map (fn [team]
-                                (update team :value (partial * (/ 24))))
+                                (update team :value (partial * (/ 8))))
                               (set/rename stats {:team/billable-hours :value}))
         team-member-count (set/rename stats {:team/member-count :value})]
     (dataviz/team-stats-multibarchart component-name
                                       viewport-width
-                                      [{:key    "Billable Days"
+                                      [{:key    "Billable Work Days"
                                         :color  "#A5E2ED"
                                         :values team-hours-stats}
                                        {:key    "Members"
