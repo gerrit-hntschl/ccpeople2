@@ -165,6 +165,9 @@
 
 (def select (reagent/adapt-react-class js/Select))
 
+(defn set-location-profile! [jira-username]
+  (set! (.. js/window -location) (str "#profile/" (.-value jira-username))))
+
 (defn user-stats [state]
   (let [model-data (domain/app-model {:state state})
         rem-holidays (:number-holidays-remaining model-data)
@@ -198,8 +201,7 @@
                                      (map (fn [consultant]
                                             (set/rename-keys consultant {:user/display-name  :label
                                                                          :user/jira-username :value})))))
-                :onChange (fn [selected]
-                            (set! (.. js/window -location) (str "#profile/" (.-value selected))))}]]
+                :onChange set-location-profile!}]]
       [:div {:style {:display         "flex"
                      :flex-wrap       "wrap"
                      :justify-content "center"
@@ -269,11 +271,11 @@
 
 (defmulti handlers :handler :default :profile)
 
-(defmethod handlers :profile [& params]
+(defmethod handlers :profile [params]
   (swap! domain/app-state
          assoc-in
          [:consultant :consultant/selected]
-         (if-let [{{consultant :consultant} :route-params} (first params)]
+         (if-let [{{consultant :consultant} :route-params} params]
            consultant
            (:user/identity @domain/app-state)))
   profile-page)
