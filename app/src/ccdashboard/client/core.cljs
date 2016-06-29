@@ -164,6 +164,9 @@
 
 (def select (reagent/adapt-react-class js/Select))
 
+(defn set-location-profile! [jira-username]
+  (set! (.. js/window -location) (str "#profile/" (.-value jira-username))))
+
 (defn user-stats [state]
   (let [model-data (domain/app-model {:state state})
         rem-holidays (:number-holidays-remaining model-data)
@@ -197,7 +200,7 @@
                                      (map (fn [consultant]
                                             (set/rename-keys consultant {:user/display-name  :label
                                                                          :user/jira-username :value})))))
-                :onChange (fn [selected] (swap! domain/app-state assoc-in [:consultant :consultant/selected] (:value (js->clj selected :keywordize-keys true))))}]]
+                :onChange set-location-profile!}]]
       [:div {:style {:display         "flex"
                      :flex-wrap       "wrap"
                      :justify-content "center"
@@ -262,13 +265,25 @@
 (defn tabs []
   [:div ""])
 
-(def routes ["" {"profile" :profile
-                 "people" :people
+(defn change-selected-consultant [consultant]
+  (swap! domain/app-state
+         assoc-in
+         [:consultant :consultant/selected]
+         consultant))
+
+(def routes ["" {"profile/"  {[:consultant ""] :profile}
+                 "people"    :people
                  "locations" :locations}])
 
 (defmulti handlers :handler :default :profile)
 
-(defmethod handlers :profile [] profile-page)
+(defmethod handlers :profile [params]
+  (let [{{consultant :consultant} :route-params} params]
+    (cond (nil? consultant)
+          (change-selected-consultant (:user/identity @domain/app-state))
+          (not= consultant (get-in @domain/app-state [:consultant :consultant/selected]))
+          (change-selected-consultant consultant)))
+  profile-page)
 
 (defmethod handlers :locations [] location-page)
 
@@ -324,15 +339,15 @@
                          :checked @toggle-show-menu}]
       [:span#menu
        [:ul
-        (doall
-          (keep (fn [[href content]]
-                  (if user-signed-in
-                    ^{:key href} [:li.menuitem [:a {:href href
-                                                    :on-click toggle-for-show-menu}
-                                                content]]))
-                [["/#" "Home"]
-                 ["/#locations" "Locations"]
-                 ["/logout" [:i.icon-off.medium-icon]]]))]]]
+        [:li.menuitem [:a {:href "/#"
+                           :on-click toggle-for-show-menu}
+                       "Home"]]
+        [:li.menuitem [:a {:href "/#locations"
+                           :on-click toggle-for-show-menu}
+                       "Locations"]]
+        [:li.menuitem [:a {:href "/login"
+                           :on-click toggle-for-show-menu}
+                       [:i.icon-off.medium-icon]]]]]]
      [:div {:style {:text-align "center"}}
       [sign-in-component]]]))
 
