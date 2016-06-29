@@ -265,6 +265,12 @@
 (defn tabs []
   [:div ""])
 
+(defn change-selected-consultant [consultant]
+  (swap! domain/app-state
+         assoc-in
+         [:consultant :consultant/selected]
+         consultant))
+
 (def routes ["" {"profile/"  {[:consultant ""] :profile}
                  "people"    :people
                  "locations" :locations}])
@@ -272,12 +278,11 @@
 (defmulti handlers :handler :default :profile)
 
 (defmethod handlers :profile [params]
-  (swap! domain/app-state
-         assoc-in
-         [:consultant :consultant/selected]
-         (if-let [{{consultant :consultant} :route-params} params]
-           consultant
-           (:user/identity @domain/app-state)))
+  (let [{{consultant :consultant} :route-params} params]
+    (cond (nil? consultant)
+          (change-selected-consultant (:user/identity @domain/app-state))
+          (not= consultant (get-in @domain/app-state [:consultant :consultant/selected]))
+          (change-selected-consultant consultant)))
   profile-page)
 
 (defmethod handlers :locations [] location-page)
