@@ -106,10 +106,10 @@
                                       (get-in state [:viewport/size :width])
                                       [{:key    "Billable Work Days"
                                         :color  "#A5E2ED"
-                                        :values team-hours-stats}
+                                        :values (sort-by :name team-hours-stats)}
                                        {:key    "Members"
                                         :color  "#F1DB4B"
-                                        :values team-member-count}])))
+                                        :values (sort-by :name team-member-count)}])))
 
 (defn locations-component [state-atom component-name]
   (if (nil? (:team/stats @state-atom))
