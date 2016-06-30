@@ -104,12 +104,11 @@
                        :customers []}}})
 
 (defn user-to-team-test-function [dbval scenario]
-  (is (= (:expected-result scenario)
-         (into #{}
-               (map (comp (partial storage/existing-user-data dbval)
-                          (partial storage/entity-id-by-username dbval)
-                          (partial :user/jira-username)))
-               (first (:fixture scenario))))))
+  (let [data (set (->> (first (:fixture scenario))
+                       (map :user/jira-username)
+                       (map (partial storage/entity-id-by-username dbval))
+                       (map (partial storage/existing-user-data dbval))))]
+    (is (= (:expected-result scenario) data))))
 
 (defn new-in-memory-system [config]
   (assoc-in config [:datomic :connect-url] (format "datomic:mem://%s" (UUID/randomUUID))))
@@ -123,15 +122,14 @@
 
 (defn test-scenario [scenario test-function]
   (let [sys (component/start (new-test-system scenario))
-        conn (:conn sys)
-        dbval (d/db conn)
-        jira-import-data (jira-user-start-date-import {:dbval dbval
-                                                       :jira  (:jira-client sys)})]
+        conn (:conn sys)]
     (try
-      (doseq [tx (into (:fixture scenario)
-                       (:db-transactions jira-import-data))]
+      (doseq [tx (:fixture scenario)]
         @(d/transact conn tx))
-      (test-function dbval scenario)
+      (doseq [tx (:db-transactions (jira-user-start-date-import {:dbval (d/db conn)
+                                                                 :jira  (:jira-client sys)}))]
+        @(d/transact conn tx))
+      (test-function (d/db conn) scenario)
       (finally
         (component/stop sys)))))
 
