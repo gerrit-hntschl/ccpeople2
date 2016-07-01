@@ -203,6 +203,12 @@
                11 "Nov"
                12 "Dec"})
 
+(def worktype->color {:vacation "#e36588"
+                      :parental-leave "#f1db4b"
+                      :sickness "#a5e2ed"
+                      :other "#1FB7D4"
+                      :billable "#7FFBC6"})
+
 (defn get-monthly-hours-by-worktype [monthly-hours worktype]
   (reduce (fn [hours-per-month month]
             (conj hours-per-month [(get i->month month) (get-in monthly-hours [month worktype] 0)]))
@@ -214,7 +220,8 @@
         worktype->data (map (juxt identity (partial get-monthly-hours-by-worktype monthly-hours)) worktypes)]
     (into []
           (map (fn [[worktype data]] {:key    (get worktype->display-name worktype)
-                                      :values data}))
+                                      :values data
+                                      :color (get worktype->color worktype)}))
           worktype->data)))
 
 (defn working-days-left-without-today [today]

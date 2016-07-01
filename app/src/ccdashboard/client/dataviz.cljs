@@ -2,7 +2,8 @@
   (:require [cljs.pprint :as pprint]
             [ccdashboard.domain.core :as domain]
             cljsjs.d3
-            cljsjs.nvd3))
+            cljsjs.nvd3
+            [reagent.core :as reagent]))
 
 (enable-console-print!)
 
@@ -111,7 +112,7 @@
 ;.showControls(true)   //Allow user to switch between 'Grouped' and 'Stacked' mode.
 ;.groupSpacing(0.1)
 
-(defn create-stacked-bar-view [component-name monthly-hours]
+(defn create-stacked-bar-view [component-name component monthly-hours]
   (.addGraph js/nv (fn []
                      (let [chart (.. js/nv -models multiBarChart)]
                        (.. chart
@@ -125,11 +126,17 @@
                            (groupSpacing 0.3))
 
                        (.. js/d3 (select (str "#" component-name " svg"))
-                           #_(datum #js [#js {:key "Holidays" :values #js [#js["J" 10] #js["A" 102]]}
-                                       #js {:key "Sick" :values #js [#js["J" 0] #js["A" 73.2]]}])
                            (datum (clj->js (domain/get-stacked-hours-data monthly-hours)))
                            (call chart))
-                       (.windowResize js/nv.utils (.-update (.duration chart 0)))))))
+                       (.windowResize js/nv.utils (.-update (.duration chart 0)))
+                       (reagent/set-state component {:chart chart})))))
+
+(defn update-bar-data [component-name chart monthly-hours]
+  (println "new hours")
+  (.. js/d3
+      (select (str "#" component-name " svg"))
+      (datum (clj->js (domain/get-stacked-hours-data monthly-hours)))
+      (call chart)))
 
 (defn create-balance-view [component-name width height]
   (let [x-padding (* width 0.24)

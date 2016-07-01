@@ -3,10 +3,12 @@
             [io.rkn.conformity :as c]
             [clojure.java.io :as io]
             [environ.core :refer [env]]
+            [ccdashboard.util :refer [matching]]
             [plumbing.core :refer [update-in-when]]
             [com.stuartsierra.component :as component]
             ccdashboard.data-readers.local-date
-            [ccdashboard.domain.data-model :as model])
+            [ccdashboard.domain.data-model :as model]
+            [ccdashboard.domain.core :as domain])
   (:import (java.util.concurrent ExecutionException)))
 
 (def people-tempid
@@ -161,6 +163,12 @@
 (defn add-identity [user-data]
   (assoc user-data :user/identity (get-in user-data [:user :user/jira-username])))
 
+(defn remove-sickness-worklogs [user-data]
+  (update user-data :worklogs (fn [worklogs]
+                                (->> worklogs
+                                     (remove (matching :worklog/ticket domain/sick-leave-ticket-id))
+                                     (into [])))))
+
 (defn existing-user-data-for-user [conn user-id]
   (let [dbval (db conn)]
     (some->> (user-id-by-external-user-id dbval user-id)
@@ -180,7 +188,10 @@
 
 (defn existing-user-data-by-username [conn consultant-username]
   (let [dbval (db conn)]
-    (some->> (entity-id-by-username dbval consultant-username) (existing-user-data dbval))))
+    (some->> (entity-id-by-username dbval consultant-username)
+             (existing-user-data dbval)
+             (remove-sickness-worklogs)
+             )))
 
 (defn billable-hours-for-teams [dbval]
   (into #{}
