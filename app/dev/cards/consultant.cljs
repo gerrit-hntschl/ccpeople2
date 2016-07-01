@@ -1,7 +1,7 @@
 (ns cards.consultant
   (:require
     [devcards.core]
-    [ccdashboard.client.core :refer [current-stats-component progress-component]]
+    [ccdashboard.client.user-stats :refer [current-stats-component progress-component]]
     [ccdashboard.domain.core :as domain]
     [reagent.core :as reagent]
     [cljs-time.core :as time]

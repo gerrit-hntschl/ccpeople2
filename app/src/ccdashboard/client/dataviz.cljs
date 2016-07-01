@@ -1,6 +1,7 @@
 (ns ccdashboard.client.dataviz
   (:require [cljs.pprint :as pprint]
             [ccdashboard.domain.core :as domain]
+            cljsjs.d3
             cljsjs.nvd3))
 
 (enable-console-print!)
