@@ -79,17 +79,18 @@
                          :role "button"
                          :on-click toggle-for-show-menu
                          :checked @toggle-show-menu}]
-      [:span#menu
-       [:ul
-        [:li.menuitem [:a {:href "/#"
-                           :on-click toggle-for-show-menu}
-                       "Home"]]
-        [:li.menuitem [:a {:href "/#locations"
-                           :on-click toggle-for-show-menu}
-                       "Locations"]]
-        [:li.menuitem [:a {:href "/login"
-                           :on-click toggle-for-show-menu}
-                       [:i.icon-off.medium-icon]]]]]]
+      (if user-signed-in
+        [:span#menu
+         [:ul
+          [:li.menuitem [:a {:href "/#"
+                             :on-click toggle-for-show-menu}
+                         "Home"]]
+          [:li.menuitem [:a {:href "/#locations"
+                            :on-click toggle-for-show-menu}
+                         "Locations"]]
+          [:li.menuitem [:a {:href "/login"
+                             :on-click toggle-for-show-menu}
+                         [:i.icon-off.medium-icon]]]]])]
      [:div {:style {:text-align "center"}}
       [sign-in-component]]]))
 

@@ -135,6 +135,7 @@
 
 (defn user-stats [state]
   (let [model-data (domain/app-model {:state state})
+        logged-in-user? (:my-stats? model-data)
         rem-holidays (:number-holidays-remaining model-data)
         days-without-booked-hours (:days-without-booked-hours model-data)
         days-below-threshold (:days-below-threshold model-data)
@@ -212,16 +213,17 @@
          [days-rect "icon-flight" "black" "#f3f3f3" "Planned" number-planned-vacation-days]
          [days-rect "icon-globe" "white" "#9eb25d" "Free" rem-holidays]
          [days-rect "icon-cancel" "black" "#f3f3f3" "Used" used-leave]]]
-       [:div {:style {:display        "flex"
-                      :flex-direction "column"
-                      :align-items    "flex-start"
-                      :border-left    "1px solid #f3f3f3"
-                      :padding-left   "10px"}}
-        [:h2 "Absence"]
-        [:div {:style {:display "flex"}}
-         [days-rect "icon-medkit" "black" "#a5e2ed" "Sickness" num-sick-leave-days]
-         (when (pos? number-parental-leave-days)
-           [days-rect "icon-award" "white" "#9eb25d" "Parental leave" number-parental-leave-days])]]]]]))
+       (if logged-in-user?
+         (list [:div {:style {:display        "flex"
+                              :flex-direction "column"
+                              :align-items    "flex-start"
+                              :border-left    "1px solid #f3f3f3"
+                              :padding-left   "10px"}}
+                [:h2 "Absence"]
+                [:div {:style {:display "flex"}}
+                 [days-rect "icon-medkit" "black" "#a5e2ed" "Sickness" num-sick-leave-days]
+                 (when (pos? number-parental-leave-days)
+                   [days-rect "icon-award" "white" "#9eb25d" "Parental leave" number-parental-leave-days])]]))]]]))
 
 (defn profile-page [_]
   (let [state @domain/app-state]
