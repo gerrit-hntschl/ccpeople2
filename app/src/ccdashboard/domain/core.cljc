@@ -43,6 +43,12 @@
   (mixpanel/track "hit")
   (println (str "api response: " status " " status-text)))
 
+(defn change-selected-consultant [consultant]
+  (swap! app-state
+         assoc-in
+         [:consultant :consultant/selected]
+         consultant))
+
 (defn track-user [jira-username]
   (mixpanel/identify jira-username)
   (mixpanel/track "signin"))

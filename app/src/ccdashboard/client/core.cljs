@@ -21,16 +21,6 @@
 
 (enable-console-print!)
 
-;; define your app data so that it doesn't get over-written on reload
-
-(defn latest-worklog-work-date [state]
-  (if-let [worklogs (seq (:worklogs state))]
-    (days/format-simple-date (apply max-key #(.getTime %) (map :worklog/work-date worklogs)))
-    "?"))
-
-(defn metric-style [text]
-  [:span {:style {:font-size 60}} text])
-
 (defn current-stats-did-mount [state-atom component-name]
   (let [state @state-atom
         model-data (domain/app-model {:state state})
@@ -262,15 +252,6 @@
   (mixpanel/track "locations")
   [locations-component domain/app-state "teamstats"])
 
-(defn tabs []
-  [:div ""])
-
-(defn change-selected-consultant [consultant]
-  (swap! domain/app-state
-         assoc-in
-         [:consultant :consultant/selected]
-         consultant))
-
 (def routes ["" {"profile/"  {[:consultant ""] :profile}
                  "people"    :people
                  "locations" :locations}])
@@ -280,9 +261,9 @@
 (defmethod handlers :profile [params]
   (let [{{consultant :consultant} :route-params} params]
     (cond (nil? consultant)
-          (change-selected-consultant (:user/identity @domain/app-state))
+          (domain/change-selected-consultant (:user/identity @domain/app-state))
           (not= consultant (get-in @domain/app-state [:consultant :consultant/selected]))
-          (change-selected-consultant consultant)))
+          (domain/change-selected-consultant consultant)))
   profile-page)
 
 (defmethod handlers :locations [] location-page)
