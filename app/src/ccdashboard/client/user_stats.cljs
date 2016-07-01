@@ -7,11 +7,16 @@
             [clojure.set :as set]
             [ccdashboard.client.react :refer [select]]))
 
-(defn monthly-stats-hours [state-atom component-name]
+(defn monthly-stats-hours [state-atom component-name component]
   (let [state @state-atom
         model-data (domain/app-model {:state state})
         monthly-hours (:monthly-hours model-data)]
-    (dataviz/create-stacked-bar-view component-name monthly-hours)))
+    (dataviz/create-stacked-bar-view component-name component monthly-hours)))
+
+(defn monthly-stats-update [state-atom component-name component]
+  (dataviz/update-bar-data component-name
+                           (:chart (reagent/state component))
+                           (:monthly-hours (domain/app-model {:state @state-atom}))))
 
 (defn current-stats-did-mount [state-atom component-name]
   (let [state @state-atom
@@ -52,9 +57,9 @@
      [:svg]]))
 
 (defn monthly-component [state-atom component-name]
-  (reagent/create-class {:reagent-render      (partial monthly-stats state-atom component-name)
-                         :component-did-mount (partial monthly-stats-hours state-atom component-name)
-                         }))
+  (reagent/create-class {:reagent-render       (partial monthly-stats state-atom component-name)
+                         :component-did-mount  (partial monthly-stats-hours state-atom component-name)
+                         :component-did-update (partial monthly-stats-update state-atom component-name)}))
 
 (defn current-stats-component [state-atom component-name]
   (reagent/create-class {:reagent-render       (partial current-stats state-atom component-name)
@@ -228,6 +233,7 @@
 (defn profile-page [_]
   (let [state @domain/app-state]
     (cond (= (:error state) :error/unknown-user)
-          [:h2 {:style {:color "black"}} "Sorry, but we don't know that user."]
+          (list [:h2 {:style {:color "black"}} "Sorry, but we don't know that user. "]
+                [:p "Users are created only for users that booked on a TS ticket or users that have a start-date configured in Jira. If you started during the year, ask your administrator to add a start-date."])
           (:user state)
           [user-stats state])))
