@@ -1,5 +1,7 @@
 (ns ccdashboard.client.dataviz
-  (:require [cljs.pprint :as pprint]))
+  (:require [cljs.pprint :as pprint]
+            [ccdashboard.domain.core :as domain]
+            cljsjs.nvd3))
 
 (enable-console-print!)
 
@@ -51,6 +53,82 @@
       (.style "fill" line-color)
       (.style "text-anchor" "middle")
       (.text label-text)))
+
+(defn billable[hours-by-month]
+  (get (js->clj hours-by-month) "billable")
+  )
+
+(defn create-monthly-bar-view [component-name width height billed-hours-by-month]
+
+  (let [x-padding (* width 0.26)
+        x-line-padding (* width 0.21)
+        balance-width (- width (* 2 10))
+        label-color "black"
+        dataset (clj->js '(100 200 300))
+        balance-line-color "#e9e8e8"
+        svg (-> js/d3
+                (.select (str "#" component-name " svg"))
+                (.attr "width" width)
+                (.attr "height" height)
+                (.attr "viewBox" (str "0 0 " width " " height))
+                (.attr "preserveAspectRatio" "xMidYMid meet")
+               )]
+
+    (-> svg
+        (.append "rect")
+        (.attr "x" x-padding)
+        (.attr "width" 550)
+        (.attr "y" 0)
+        (.attr "height" height)
+        (.style "fill" "#f3f3f3")
+        )
+
+    (-> svg
+        (.selectAll "rect.month")
+        (.data billed-hours-by-month)
+        (.enter)
+        (.append "rect")
+        (.attr "x" (fn [d,i] (+ (* i 40) 350)))
+        (.attr "y" (fn [d] (- height (billable d))))
+        (.attr "width" 38)
+        (.attr "height" (fn [d] (billable d)))
+        (.style "fill" (fn [d] (str "rgb(0,0," (int (Math/ceil (billable d))) ")")))
+        )
+
+    (-> svg (.selectAll "text")
+        (.data billed-hours-by-month)
+        (.enter)
+        (.append "text")
+        (.text (fn [d] (int (Math/ceil (billable d)))))
+        (.attr "x" (fn [d,i] (+ 355 (* (if (> (billable d) 99) 40 41) i))))
+        (.attr "y" (fn [d] (+ (if (> (billable d) 70) 50 (if(> (billable d) 20) 20 10) ) (- height (billable d)))))
+        (.style "fill" "#ffffff"))))
+
+; .transitionDuration(350)
+;.reduceXTicks(true)   //If 'false', every single x-axis tick label will be rendered.
+;.rotateLabels(0)      //Angle to rotate x-axis labels.
+;.showControls(true)   //Allow user to switch between 'Grouped' and 'Stacked' mode.
+;.groupSpacing(0.1)
+
+(defn create-stacked-bar-view [component-name monthly-hours]
+  (.addGraph js/nv (fn []
+                     (let [chart (.. js/nv -models multiBarChart)]
+                       (.. chart
+                           (duration 350)
+                           (x first)
+                           (y second)
+                           (showControls false)
+                           (showLegend true)
+                           (reduceXTicks false)
+                           (stacked true)
+                           (groupSpacing 0.3))
+
+                       (.. js/d3 (select (str "#" component-name " svg"))
+                           #_(datum #js [#js {:key "Holidays" :values #js [#js["J" 10] #js["A" 102]]}
+                                       #js {:key "Sick" :values #js [#js["J" 0] #js["A" 73.2]]}])
+                           (datum (clj->js (domain/get-stacked-hours-data monthly-hours)))
+                           (call chart))
+                       (.windowResize js/nv.utils (.-update (.duration chart 0)))))))
 
 (defn create-balance-view [component-name width height]
   (let [x-padding (* width 0.24)
@@ -393,6 +471,14 @@
     (update-y d3-goal-label (goal-label-offset-fn goal-y))
     (-> d3-balance-in-days-text
         (.text (format-days-and-hours balance-hours)))))
+
+(defn chart-view [component-name monthly-hours]
+  (->> monthly-hours
+       (into (sorted-map-by <))
+       (vals)
+       (clj->js)
+       (create-monthly-bar-view component-name 1200 200))
+  )
 
 (defn balance-view [component-name viewport-size todays-target-hours actual-hours-today total-days-goal]
   (let [{total-width :width} viewport-size

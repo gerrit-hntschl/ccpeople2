@@ -31,6 +31,14 @@
 (defn metric-style [text]
   [:span {:style {:font-size 60}} text])
 
+(defn monthly-stats-hours [state-atom component-name]
+  (let [state @state-atom
+        model-data (domain/app-model {:state state})
+        monthly-hours (:monthly-hours model-data)]
+    (dataviz/create-stacked-bar-view component-name monthly-hours)
+    #_(dataviz/chart-view component-name
+                              monthly-hours)))
+
 (defn current-stats-did-mount [state-atom component-name]
   (let [state @state-atom
         model-data (domain/app-model {:state state})
@@ -59,6 +67,20 @@
                    :margin-right "auto"}
            :id    component-name}
      [:svg]]))
+
+(defn monthly-stats [state-atom component-name]
+  (let [_ @state-atom]
+  [:div {:style {:margin-left  "auto"
+                 :margin-right "auto"
+                 :width 700
+                 :height 300}
+         :id    component-name}
+   [:svg]]))
+
+(defn monthly-component [state-atom component-name]
+(reagent/create-class {:reagent-render       (partial monthly-stats state-atom component-name)
+                       :component-did-mount    (partial monthly-stats-hours state-atom component-name)
+                      }))
 
 (defn current-stats-component [state-atom component-name]
   (reagent/create-class {:reagent-render       (partial current-stats state-atom component-name)
@@ -224,6 +246,12 @@
           "workdays-left"
           :workdays-left-actually
           :workdays-total]]]]
+      [:div {:style {:display "flex"
+                     :flex-wrap "wrap"
+                     :justify-content "center"
+                     :border-bottom "1px solid #f3f3f3"}}
+       [:div [:h2 "Billed hours by month"]
+        [monthly-component domain/app-state "monthly-stats"]]]
       [:div {:style {:display         "flex"
                      :justify-content "center"
                      :flex-wrap       "wrap"

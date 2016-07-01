@@ -139,14 +139,6 @@
   (fn [vs]
     (reduce + (map k vs))))
 
-(defn billed-hours-by-month [app-state]
-  (->> (billable-worklogs app-state)
-       (group-by (comp time/month :worklog/work-date))
-       (map-vals (sum-of :worklog/hours))))
-
-(defn working-days-left-without-today [today]
-  (dec (count (days/workdays-till-end-of-year today))))
-
 ;; vacation ticket TS-2
 (def vacation-ticket-id 68000)
 
@@ -155,6 +147,74 @@
 
 ;; parental leave TS-345
 (def parental-leave-ticket-id 71746)
+
+(def worktype-order [:billable :other :vacation :parental-leave :sickness])
+
+(def worktype->display-name {:vacation "Holidays"
+                             :parental-leave "Parental leave"
+                             :sickness "Sickness"
+                             :other "Other"
+                             :billable "Billable hours"})
+
+(defn worktype-fn [{:keys [worklogs tickets customers]}]
+  (let [codecentric-id (customer-id-by-name "codecentric" customers)
+        codecentric-ticket-ids (->> tickets
+                                    (filter (matching :ticket/customer codecentric-id))
+                                    (into #{} (map :ticket/id)))
+        billable-ticket-ids (->> tickets
+                                 (filter (fn [ticket]
+                                           (not= (:ticket/invoicing ticket)
+                                                 :invoicing/not-billable)))
+                                 (into #{} (map :ticket/id)))
+        ticket->worktype (-> (zipmap billable-ticket-ids (repeat :billable))
+                             (assoc vacation-ticket-id :vacation
+                                    sick-leave-ticket-id :sickness
+                                    parental-leave-ticket-id :parental-leave))]
+    (fn [worklog]
+      (get ticket->worktype (:worklog/ticket worklog) :other))))
+
+(defn hours-by-month [app-state]
+  (->> (:worklogs app-state)
+       (group-by (comp time/month :worklog/work-date))
+       (map-vals (fn [worklogs]
+                   (->> worklogs
+                        (group-by (worktype-fn app-state))
+                        (map-vals (sum-of :worklog/hours)))))))
+
+(defn get-worktypes [monthly-hours]
+  (distinct (mapcat keys (vals monthly-hours))))
+
+(def i->month {1 "Jan"
+               2 "Feb"
+               3 "Mar"
+               4 "Apr"
+               5 "May"
+               6 "Jun"
+               7 "Jul"
+               8 "Aug"
+               9 "Sep"
+               10 "Oct"
+               11 "Nov"
+               12 "Dec"})
+
+(defn get-monthly-hours-by-worktype [monthly-hours worktype]
+  (reduce (fn [hours-per-month month]
+            (conj hours-per-month [(get i->month month) (get-in monthly-hours [month worktype] 0)]))
+          []
+          (range 1 (inc (count monthly-hours)))))
+
+(defn get-stacked-hours-data [monthly-hours]
+  (let [worktypes (get-worktypes monthly-hours)
+        worktype->data (map (juxt identity (partial get-monthly-hours-by-worktype monthly-hours)) worktypes)]
+    (into []
+          (map (fn [[worktype data]] {:key    (get worktype->display-name worktype)
+                                      :values data}))
+          worktype->data)))
+
+(defn working-days-left-without-today [today]
+  (dec (count (days/workdays-till-end-of-year today))))
+
+
 
 (defn ticket-days [ticket-id worklogs]
   (into #{}
@@ -276,7 +336,9 @@
   (get-in state [:user :user/signed-in?]))
 
 (def app-model-graph
-  {:worklogs-billable                     (fnk [state]
+  {:monthly-hours                    (fnk [state]
+                                            (hours-by-month state))
+   :worklogs-billable                     (fnk [state]
                                             (billable-worklogs state))
    ;; the consultant specific goal start date...
    ;; 1st of January if consultant employment did not start this year, otherwise employment start.
