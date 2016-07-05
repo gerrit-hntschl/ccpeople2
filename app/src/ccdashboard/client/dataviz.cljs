@@ -166,7 +166,7 @@
         (.attr "height" 0)
         (.attr "width" balance-width))
 
-    (append-label svg "actual-hours-label" label-color "Your billable hours" width)
+    (append-label svg "actual-hours-label" label-color "your billable hours" width)
     (append-line svg
                  "goal-line"
                  balance-line-color
@@ -177,7 +177,7 @@
     ;; goal stats
     (append-right-side-text svg "goal-percent-text" label-color (- width x-line-padding))
     (append-left-side-text svg "goal-hours-text" label-color x-line-padding)
-    (append-label svg "goal-label" label-color "Today's goal" width)
+    (append-label svg "goal-label" label-color "today's goal" width)
 
     ;; balance stats
     (append-line svg "actual-hours-line" balance-line-color width (/ height 2) x-line-padding)
