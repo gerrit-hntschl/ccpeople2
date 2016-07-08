@@ -14,7 +14,7 @@ This part has to be done only once.
 
 - Clone this repo.
 - Copy `provision/private_vars/env.yml.sample` to `provision/private_vars/env.yml` and fill out the placeholders:
-    * `JIRA_TEMPO`, `JIRA_BASE_URL` and `JIRA_CONSUMER_PRIVATE_KEY` can be provided by your colleagues
+    * `JIRA_TEMPO`, `JIRA_BASE_URL` and `JIRA_CONSUMER_PRIVATE_KEY` can be provided by your colleagues. Make sure that there is no trailing `/` on the `JIRA_BASE_URL`.
     * `DATOMIC_USER` and `DATOMIC_PASSWORD`: Create an account at [Datomic](https://my.datomic.com/account/create) and copy `username` and `password` from [Datomic account page](https://my.datomic.com/account)
     * `DATOMIC_POSTGRES_PASSWORD`, `APP_HOSTNAME`, `JWS_TOKEN_SECRET`: you can leave them as they are.
     * `DATOMIC_LICENSE_KEY`: the license key received after Datomic registration
