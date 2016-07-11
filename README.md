@@ -29,9 +29,9 @@ Requirement: your user needs to be in the `jira-developers` group to be able to 
 
 - Start the VM: `vagrant up`. Log into the VM: `vagrant ssh`. Then start the server within the VM: `docker-compose up` or `u`, connect your IDE to the server: for Cursive use the `Vagrant REPL` run-configuration. If the run configurations cannot be found, check your GIT log in app/.idea/runConfigurations and restore the deleted xml files.
 - In the REPL switch to the `ccdashboard.oauth.core` namespace: `(ns ccdashboard.oauth.core)`.
-- Invoke the `request-token` function and store the result: `(def rt (request-token))`
+- Invoke the `request-token` function and store the result: `(def rt (request-token))` then call `rt`.
 - The function returns a map containing an `:authorize-url` key. Copy that URL and open it in the browser. You will be prompted to log-in. After logging-in the browser displays a verifier string. Copy that string.
-- Invoke the `access-token` function using the request-token and verifier string: `(access-token rt <paste copied verifier string here>)`.
+- Invoke the `access-token` function using the request-token and verifier string: `(access-token rt "<paste copied verifier string here>")`.
 - The function returns the Jira access token which you should paste into `provision/private_vars/env.yml`.
 - Important: run `vagrant provision` afterwards to make sure the VM picks up the access token.
 
