@@ -200,7 +200,7 @@
                      :flex-wrap "wrap"
                      :justify-content "center"
                      :border-bottom "1px solid #f3f3f3"}}
-       [:div [:h2 "Billed hours by month"]
+       [:div [:h2 "hours by month"]
         [monthly-component domain/app-state "monthly-stats"]]]
       [:div {:style {:display         "flex"
                      :justify-content "center"
