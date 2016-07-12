@@ -213,7 +213,7 @@
   (reduce (fn [hours-per-month month]
             (conj hours-per-month [(get i->month month) (get-in monthly-hours [month worktype] 0)]))
           []
-          (range 1 (inc (count monthly-hours)))))
+          (range 1 (inc (apply max (keys monthly-hours))))))
 
 (defn get-stacked-hours-data [monthly-hours]
   (let [worktypes (get-worktypes monthly-hours)
