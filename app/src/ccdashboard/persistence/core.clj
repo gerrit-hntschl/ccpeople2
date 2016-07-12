@@ -199,8 +199,11 @@
                (assoc team :team/billable-hours hours)))
         (d/q '{:find  [(sum ?hours) (pull ?team [:team/id :team/name])]
                :with  [?worklog]
-               :where [[?cc :customer/name "codecentric"]
-                       (not [?ticket :ticket/customer ?cc])
+               :where [[?ticket :ticket/id]
+                       (not-join [?ticket]
+                                 [?cc :customer/name "codecentric"]
+                                 [?ticket :ticket/customer ?cc]
+                                 (not [?ticket :ticket/invoicing :invoicing/support]))
                        (not [?ticket :ticket/invoicing :invoicing/not-billable])
                        [?worklog :worklog/ticket ?ticket]
                        [?worklog :worklog/hours ?hours]
