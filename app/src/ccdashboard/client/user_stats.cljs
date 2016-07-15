@@ -67,9 +67,10 @@
                          :component-did-update (partial current-stats-update state-atom component-name)}))
 
 (defn progress-render [state-atom component-name]
-  [:div {:id component-name
-         :style {:margin-top "10px"}}
-   [:svg]])
+  (let [_ @state-atom]
+    [:div {:id    component-name
+           :style {:margin-top "10px"}}
+     [:svg]]))
 
 (defn progress-did-mount [state-atom component-name stat-key total-stat-key format-fn]
   (let [model-data (domain/app-model {:state @state-atom})
