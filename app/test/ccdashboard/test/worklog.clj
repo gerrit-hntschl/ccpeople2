@@ -66,8 +66,8 @@
                                                   {:id     154
                                                    :fields {:components [{:id   99
                                                                           :name "codecentric"}]
-                                                            :issuetype  {:value "Support"
-                                                                         :name "Quote"}}}]
+                                                            :customfield_12300 {:value "Support"}
+                                                            :issuetype  {:name "Quote"}}}]
                                                  (mapv (complete-non-nil model/JiraIssue)))
                        :prefetched-users    (->> [{:name         bob-baumeister
                                                    :emailAddress bob-email}]
