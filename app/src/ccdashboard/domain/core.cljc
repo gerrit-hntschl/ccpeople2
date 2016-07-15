@@ -125,16 +125,17 @@
 
 (defn billable-worklogs [{:keys [worklogs tickets customers]}]
   (let [codecentric-id (customer-id-by-name "codecentric" customers)
-        codecentric-ticket-ids (->> tickets
-                                    (filter (matching :ticket/customer codecentric-id))
-                                    (into #{} (map :ticket/id)))
+        non-billable-codecentric-ticket-ids (->> tickets
+                                                 (filter (every-pred (matching :ticket/customer codecentric-id)
+                                                                     (complement (matching :ticket/invoicing :invoicing/support))))
+                                                 (into #{} (map :ticket/id)))
         billable-ticket-ids (->> tickets
                                  (filter (fn [ticket]
                                            (not= (:ticket/invoicing ticket)
                                                  :invoicing/not-billable)))
                                  (into #{} (map :ticket/id)))]
     (->> worklogs
-         (remove (comp codecentric-ticket-ids :worklog/ticket))
+         (remove (comp non-billable-codecentric-ticket-ids :worklog/ticket))
          (filter (comp billable-ticket-ids :worklog/ticket)))))
 
 (defn hours-billed [app-state]
