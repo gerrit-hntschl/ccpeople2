@@ -169,6 +169,28 @@
                            :team/name           "Berlin"
                            :team/billable-hours 4.0}}})
 
+(def codecentric-support-is-billable
+  {:fixture             default-fixtures
+   :billable-components [[{:db/id              (storage/people-tempid)
+                           :ticket/id          201
+                           :ticket/customer    [:customer/id 2]
+                           :ticket/invoicing   :invoicing/fixed-price}
+                          {:db/id              (storage/people-tempid)
+                           :ticket/id          202
+                           :ticket/customer    [:customer/id 1]
+                           :ticket/invoicing   :invoicing/support}]
+                         [{:db/id              (storage/people-tempid)
+                           :worklog/ticket     [:ticket/id 201]
+                           :worklog/user       [:user/jira-username "peter.lustig"]
+                           :worklog/hours      4.}
+                          {:db/id              (storage/people-tempid)
+                           :worklog/ticket     [:ticket/id 202]
+                           :worklog/user       [:user/jira-username "pipi.langstrumpf"]
+                           :worklog/hours      4.}]]
+   :expected-result     #{{:team/id             101
+                           :team/name           "Berlin"
+                           :team/billable-hours 8.0}}})
+
 (defn create-and-start-new-test-system [db-uri]
   (d/create-database db-uri)
   (let [conn (d/connect db-uri)
@@ -212,3 +234,6 @@
 
 (deftest should-not-book-not-billable-tikets
   (test-scenario invoicing-not-billable-ticket-scenario))
+
+(deftest should-book-codecentric-support
+  (test-scenario codecentric-support-is-billable))
