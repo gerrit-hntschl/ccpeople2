@@ -33,6 +33,8 @@
 
 (s/defschema NonEmptyString (s/constrained s/Str seq "Non-empty string"))
 
+(s/defschema Percentage (s/constrained NonNegativeNumber (fn [n] (<= 0 n 1)) "Double between 0 and 1"))
+
 (s/defschema EmailAddress (s/constrained NonEmptyString
                                          (fn [s] (re-matches #"[^@]+@[^@]+" s))
                                          "Email address"))
@@ -145,6 +147,18 @@
    ;:mission :summary :lead :leadUser
    s/Keyword s/Any})
 
+(s/defschema JiraMember
+  {:id         s/Int
+   :membership {:teamId         s/Int
+                (s/optional-key :dateFromANSI) IDate
+                (s/optional-key :dateToANSI) IDate
+                :availability   Percentage
+                s/Keyword       s/Any}
+   :member     {:name     NonEmptyString
+                s/Keyword s/Any}
+   s/Keyword   s/Any
+   })
+
 (s/defschema JiraTeamMember
   {:id         s/Int
    :membership {(s/optional-key :dateFromANSI) IDate
@@ -210,6 +224,14 @@
 (def date-and-string-coercer
   (coerce/first-matcher [datetime-matcher coerce/string-coercion-matcher]))
 
+(defn percentage-coercer [schema]
+  (when (= Percentage schema)
+    (coerce/safe
+     (fn [x]
+       (if (and (string? x) (re-matches #"^\d{1,2}|100$" x))
+         (/ (Integer/parseInt x) 100)
+         x)))))
+
 (def jira-worklog-coercer
   (coerce/coercer JiraWorkLog
                   date-and-string-coercer))
@@ -217,6 +239,10 @@
 (def jira-issue-coercer
   (coerce/coercer JiraIssue
                   date-and-string-coercer))
+
+(def jira-member-coercer
+  (coerce/coercer JiraMember
+                  (coerce/first-matcher [percentage-coercer date-and-string-coercer])))
 
 (def jira-team-member-coercer
   (coerce/coercer JiraTeamMember
@@ -260,6 +286,9 @@
                            keep-known-worklog-fields
                            throw-on-invalid-schema-error
                            jira-worklog-coercer))
+
+(def to-jira-member (comp throw-on-invalid-schema-error
+                          jira-member-coercer))
 
 (def to-jira-team-member (comp throw-on-invalid-schema-error
                                jira-team-member-coercer))
