@@ -229,7 +229,7 @@
     (coerce/safe
      (fn [x]
        (if (and (string? x) (re-matches #"^\d{1,2}|100$" x))
-         (/ (Integer/parseInt x) 100)
+         (double (/ (Integer/parseInt x) 100))
          x)))))
 
 (def jira-worklog-coercer
