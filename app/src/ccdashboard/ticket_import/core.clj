@@ -167,6 +167,9 @@
 (defn get-team-member-start-date [jira-team-member]
   (get-in jira-team-member [:membership :dateFromANSI]))
 
+(defn get-team-member-end-date [jira-team-member]
+  (get-in jira-team-member [:membership :dateToANSI]))
+
 (defn get-team-member-jira-username [team-member]
   (get-in team-member [:member :name]))
 
@@ -476,8 +479,13 @@
    :team/name (:team-name team)
    :team/id (:team-id team)})
 
-(defn to-datomic-user-with-team-id [member]
-  [:db/add [:user/jira-username (:jira-username member)] :user/team [:team/id (:team-id member)]])
+(defn to-datomic-membership [{{:keys [name]} :member
+                              {:keys [teamId dateFromANSI dateToANSI availability]} :membership}]
+  {:db/id           [:user/jira-username name]
+   :user/membership [(cond-> {:membership/team [:team/id teamId]
+                              :membership/availability availability}
+                       dateFromANSI (assoc :membership/start-date dateFromANSI)
+                       dateToANSI (assoc :membership/end-date dateToANSI))]})
 
 (def jira-start-date-import-graph
   ;; input: jira :- Jira Client implementation
@@ -494,19 +502,21 @@
                                          (into []
                                                (mapcat (partial team-member jira))
                                                team-ids-all))
-          :jira-username-and-team-ids  (fnk [team-members-all]
-                                         (into []
-                                               (map (fn [member]
-                                                         {:jira-username (get-in member [:member :name])
-                                                          :team-id       (get-in member [:membership :teamId])}))
+          :jira-user-membership        (fnk [team-members-all db-usernames-all]
+                                         (into [] ;; remove keys for suprious empty values
+                                               (comp (filter (fn [{{:keys [name]} :member}]
+                                                               (contains? db-usernames-all name)))
+                                                     (map (fn [member]
+                                                            (def memm member)
+                                                            (cond-> member ;; TODO Find a nicer Version
+                                                              (= "" (get-team-member-start-date member))
+                                                              (update :membership dissoc :dateFromANSI)
+                                                              (= "" (get-team-member-end-date member))
+                                                              (update :membership dissoc :dateToANSI))))
+                                                     (map model/to-jira-member))
                                                team-members-all))
-          :imported-jira-users-and-team-ids (fnk [jira-username-and-team-ids db-usernames-all]
-                                              (into []
-                                                    (filter (fn [{:keys [jira-username]}]
-                                                              (contains? db-usernames-all jira-username)))
-                                                    jira-username-and-team-ids))
           :team-name-and-team-ids      (fnk [teams-all]
-                                         (into []
+                                         (into [] ;; TODO Remove and add destructuring to-datomic-transform
                                                (map (fn [team]
                                                          {:team-name (:name team)
                                                           :team-id   (:id team)}))
@@ -528,15 +538,16 @@
                                          (into []
                                                (map to-datomic-team-name-with-id)
                                                team-name-and-team-ids))
-          :db-user-with-team-id        (fnk [imported-jira-users-and-team-ids]
+          :db-user-and-membership      (fnk [jira-user-membership]
                                          (into []
-                                               (map to-datomic-user-with-team-id)
-                                               imported-jira-users-and-team-ids))
-          :db-transactions             (fnk [db-user-with-join-date domain-users-new db-team-name-with-team-id db-user-with-team-id]
+                                               (map to-datomic-membership)
+                                               jira-user-membership))
+          :db-transactions             (fnk [db-user-with-join-date domain-users-new db-team-name-with-team-id db-user-and-membership]
                                          (vector domain-users-new
                                                  db-user-with-join-date
                                                  db-team-name-with-team-id
-                                                 db-user-with-team-id))
+                                                 db-user-and-membership
+                                                 ))
           :import-stats                (fnk [db-user-with-join-date domain-users-new]
                                          {:number-of-users-with-join-date         (count db-user-with-join-date)
                                           :number-of-corresponding-new-jira-users (count domain-users-new)})}))

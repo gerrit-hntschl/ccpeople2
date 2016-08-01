@@ -208,7 +208,8 @@
                        [?worklog :worklog/ticket ?ticket]
                        [?worklog :worklog/hours ?hours]
                        [?worklog :worklog/user ?user]
-                       [?user :user/team ?team]]}
+                       [?user :user/membership ?membership]
+                       [?membership :membership/team ?team]]}
              dbval)))
 
 (defn members-in-teams-map [dbval]
