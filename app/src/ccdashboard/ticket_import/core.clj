@@ -474,10 +474,10 @@
    :user/start-date (get-team-member-start-date team-member)
    :user/jira-username (get-team-member-jira-username team-member)})
 
-(defn to-datomic-team-name-with-id [team]
+(defn to-datomic-team-name-with-id [{:keys [id name]}]
   {:db/id (storage/people-tempid)
-   :team/name (:team-name team)
-   :team/id (:team-id team)})
+   :team/name name
+   :team/id id})
 
 (defn to-datomic-membership [{{:keys [name]} :member
                               {:keys [teamId dateFromANSI dateToANSI availability]} :membership}]
@@ -507,7 +507,6 @@
                                                (comp (filter (fn [{{:keys [name]} :member}]
                                                                (contains? db-usernames-all name)))
                                                      (map (fn [member]
-                                                            (def memm member)
                                                             (cond-> member ;; TODO Find a nicer Version
                                                               (= "" (get-team-member-start-date member))
                                                               (update :membership dissoc :dateFromANSI)
@@ -515,12 +514,6 @@
                                                               (update :membership dissoc :dateToANSI))))
                                                      (map model/to-jira-member))
                                                team-members-all))
-          :team-name-and-team-ids      (fnk [teams-all]
-                                         (into [] ;; TODO Remove and add destructuring to-datomic-transform
-                                               (map (fn [team]
-                                                         {:team-name (:name team)
-                                                          :team-id   (:id team)}))
-                                               teams-all))
           :team-members-with-join-date (fnk [team-members-all]
                                          (into []   ;; ignore spurious empty values
                                                (comp (filter (comp seq get-team-member-start-date))
@@ -534,10 +527,10 @@
                                          (into []
                                                (map to-datomic-user-join-date)
                                                team-members-with-join-date))
-          :db-team-name-with-team-id   (fnk [team-name-and-team-ids]
+          :db-team-name-with-team-id   (fnk [teams-all]
                                          (into []
                                                (map to-datomic-team-name-with-id)
-                                               team-name-and-team-ids))
+                                               teams-all))
           :db-user-and-membership      (fnk [jira-user-membership]
                                          (into []
                                                (map to-datomic-membership)
