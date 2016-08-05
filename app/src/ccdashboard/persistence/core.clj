@@ -108,20 +108,22 @@
       (dissoc :db/id)
       (model/to-domain-customer)))
 
-(defn domain-memberships [dbval db-memberships]
-  (into #{}
-        (->> db-memberships
-        (map #(:db/id %))
-        (d/pull-many dbval '[* {:membership/team [:team/id]}])
-        (map #(dissoc % :db/id))
-        (map model/to-domain-membership))))
+(defn domain-membership [dbval db-membership]
+  (-> db-membership
+      (:db/id)
+      ((fn [x] (d/pull dbval '[* {:membership/team [:team/id]}] x)))
+      (dissoc :db/id)
+      (model/to-domain-membership)))
 
 (defn domain-user [dbval db-user]
-  (-> db-user
-      (as-map)
-      (dissoc :db/id)
-      (update :user/membership (partial domain-memberships dbval))
-      (model/to-domain-user)))
+  (let [memberships (into #{}
+                          (map (partial domain-membership dbval))
+                          (:user/membership db-user))]
+   (-> db-user
+       (as-map)
+       (dissoc :db/id :user/team)
+       (assoc :user/membership memberships)
+       (model/to-domain-user))))
 
 (defn existing-user-data [dbval id]
   (let [user-entity (d/entity dbval id)
