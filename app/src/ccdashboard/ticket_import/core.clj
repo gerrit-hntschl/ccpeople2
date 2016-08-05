@@ -512,7 +512,7 @@
                                                               (update :membership dissoc :dateFromANSI)
                                                               (= "" (get-team-member-end-date member))
                                                               (update :membership dissoc :dateToANSI))))
-                                                     (map model/to-jira-member))
+                                                     (map model/to-jira-membership))
                                                team-members-all))
           :team-members-with-join-date (fnk [team-members-all]
                                          (into []   ;; ignore spurious empty values

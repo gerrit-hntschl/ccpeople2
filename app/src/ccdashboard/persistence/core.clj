@@ -108,10 +108,19 @@
       (dissoc :db/id)
       (model/to-domain-customer)))
 
-(defn domain-user [db-user]
+(defn domain-memberships [dbval db-memberships]
+  (into #{}
+        (->> db-memberships
+        (map #(:db/id %))
+        (d/pull-many dbval '[* {:membership/team [:team/id]}])
+        (map #(dissoc % :db/id))
+        (map model/to-domain-membership))))
+
+(defn domain-user [dbval db-user]
   (-> db-user
       (as-map)
-      (update-in-when [:user/team] :team/id)
+      (dissoc :db/id)
+      (update :user/membership (partial domain-memberships dbval))
       (model/to-domain-user)))
 
 (defn existing-user-data [dbval id]
@@ -119,7 +128,7 @@
         db-worklogs (:worklog/_user user-entity)
         tickets (into #{} (map :worklog/ticket) db-worklogs)
         customers (into #{} (keep :ticket/customer) tickets)]
-    {:user      (domain-user user-entity)
+    {:user      (domain-user dbval user-entity)
      :worklogs  (mapv domain-worklog db-worklogs)
      :tickets   (mapv domain-ticket tickets)
      :customers (mapv domain-customer customers)}))
