@@ -14,6 +14,8 @@
             [schema.core :as s]
             [clj-time.core :as time]
             [clj-time.coerce :as time-coerce]
+            [clj-time.format :as time-format]
+            [clj-time.local :as time-local]
             [cheshire.core :as json]
             [clojure.set :as set]
             [ccdashboard.retry :as retry]
@@ -479,13 +481,23 @@
    :team/name name
    :team/id id})
 
+(defn membership-id [name team date]
+  (str name "-"
+       team "-"
+       (if date
+         (time-format/unparse model/timestamp-formatter
+                              (time-local/to-local-date-time date))
+         "none")))
+
 (defn to-datomic-membership [{{:keys [name]} :member
                               {:keys [teamId dateFromANSI dateToANSI availability]} :membership}]
   {:db/id           [:user/jira-username name]
-   :user/membership [(cond-> {:membership/team [:team/id teamId]
+   :user/membership [(cond-> {:membership/id (membership-id name teamId dateFromANSI)
+                              :membership/team [:team/id teamId]
                               :membership/availability availability}
                        dateFromANSI (assoc :membership/start-date dateFromANSI)
                        dateToANSI (assoc :membership/end-date dateToANSI))]})
+
 
 (def jira-start-date-import-graph
   ;; input: jira :- Jira Client implementation
@@ -502,6 +514,9 @@
                                          (into []
                                                (mapcat (partial team-member jira))
                                                team-ids-all))
+
+          :existing-user-memberships    (fnk [dbval]
+                                            (storage/existing-memberships-map dbval))
           :jira-user-membership        (fnk [team-members-all db-usernames-all]
                                          (into [] ;; remove keys for suprious empty values
                                                (comp (filter (fn [{{:keys [name]} :member}]
@@ -531,9 +546,14 @@
                                          (into []
                                                (map to-datomic-team-name-with-id)
                                                teams-all))
-          :db-user-and-membership      (fnk [jira-user-membership]
+          :db-user-and-membership      (fnk [existing-user-memberships jira-user-membership]
                                          (into []
-                                               (map to-datomic-membership)
+                                               (comp (filter (fn [tx]
+                                                               (let [jira (first (:user/membership tx))
+                                                                     id (:membership/id jira)]
+                                                                 (not (= (update (get existing-user-memberships id) :membership/team :team/id)
+                                                                         (update jira :membership/team second))))))
+                                                     (map to-datomic-membership))
                                                jira-user-membership))
           :db-transactions             (fnk [db-user-with-join-date domain-users-new db-team-name-with-team-id db-user-and-membership]
                                          (vector domain-users-new

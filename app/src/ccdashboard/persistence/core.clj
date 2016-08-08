@@ -227,7 +227,8 @@
   (into {}
         (d/q '{:find [?id (count ?members)]
                :where [[?team :team/id ?id]
-                       [?members :user/team ?team]]}
+                       [?membership :membership/team ?team]
+                       [?members :user/membership ?memberhsip]]}
              dbval)))
 
 (defn teams-stats-seq [dbval]
@@ -236,3 +237,10 @@
       (into #{}
             (for [team billable-hours-seq]
               (assoc team :team/member-count (get members-map (:team/id team)))))))
+
+(defn existing-memberships-map [dbval]
+  (into {}
+        (map #(update % 1 dissoc :db/id))
+        (d/q '{:find [?id (pull ?m [* {:membership/team [:team/id]}])]
+               :where [[?m :membership/id ?id]]}
+             dbval)))

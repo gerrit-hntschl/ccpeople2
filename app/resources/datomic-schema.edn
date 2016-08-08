@@ -177,6 +177,12 @@
            :db/isComponent        true
            :db.install/_attribute :db.part/db}
           {:db/id                 #db/id [:db.part/db]
+           :db/ident              :membership/id
+           :db/valueType          :db.type/string
+           :db/cardinality        :db.cardinality/one
+           :db/unique             :db.unique/identity
+           :db.install/_attribute :db.part/db}
+          {:db/id                 #db/id [:db.part/db]
            :db/ident              :membership/team
            :db/valueType          :db.type/ref
            :db/cardinality        :db.cardinality/one
